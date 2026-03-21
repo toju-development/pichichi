@@ -1,0 +1,24 @@
+{
+  "name": "pichichi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pichichi — Tournament prediction platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "npm run dev -w apps/api",
+    "api:build": "npm run build -w apps/api",
+    "web:dev": "npm run dev -w apps/web",
+    "web:build": "npm run build -w apps/web",
+    "prisma:generate": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
+    "prisma:migrate": "npx prisma migrate dev --schema=apps/api/prisma/schema.prisma",
+    "prisma:studio": "npx prisma studio --schema=apps/api/prisma/schema.prisma",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED"
+}

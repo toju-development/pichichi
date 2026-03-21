@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  GOOGLE
+  INSTAGRAM
+  APPLE
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum TournamentStatus {
+  DRAFT
+  UPCOMING
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+enum TournamentType {
+  WORLD_CUP
+  COPA_AMERICA
+  EURO
+  CHAMPIONS_LEAGUE
+  CUSTOM
+}
+
+enum MatchPhase {
+  GROUP_STAGE
+  ROUND_OF_32
+  ROUND_OF_16
+  QUARTER_FINAL
+  SEMI_FINAL
+  THIRD_PLACE
+  FINAL
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+  CANCELLED
+}
+
+enum PredictionPointType {
+  EXACT
+  GOAL_DIFF
+  WINNER
+  MISS
+}
+
+enum NotificationType {
+  MATCH_REMINDER
+  MATCH_RESULT
+  PREDICTION_DEADLINE
+  GROUP_INVITE
+  LEADERBOARD_CHANGE
+  BONUS_REMINDER
+}
+
+model User {
+  id             String       @id @default(uuid()) @db.Uuid
+  email          String       @unique @db.VarChar(255)
+  displayName    String       @map("display_name") @db.VarChar(100)
+  username       String       @unique @db.VarChar(50)
+  avatarUrl      String?      @map("avatar_url") @db.VarChar(500)
+  authProvider   AuthProvider @map("auth_provider")
+  authProviderId String       @map("auth_provider_id") @db.VarChar(255)
+  refreshToken   String?      @map("refresh_token") @db.VarChar(500)
+  fcmToken       String?      @map("fcm_token") @db.VarChar(500)
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  groupMemberships GroupMember[]
+  predictions      Prediction[]
+  bonusPredictions BonusPrediction[]
+  notifications    Notification[]
+
+  @@unique([authProvider, authProviderId])
+  @@map("users")
+}
+
+model Tournament {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @db.VarChar(200)
+  slug        String           @unique @db.VarChar(200)
+  type        TournamentType
+  description String?          @db.VarChar(500)
+  logoUrl     String?          @map("logo_url") @db.VarChar(500)
+  startDate   DateTime         @map("start_date")
+  endDate     DateTime         @map("end_date")
+  status      TournamentStatus @default(DRAFT)
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  phases           TournamentPhase[]
+  tournamentTeams  TournamentTeam[]
+  matches          Match[]
+  groupTournaments GroupTournament[]
+  bonusTypes       TournamentBonusType[]
+
+  @@map("tournaments")
+}
+
+model TournamentPhase {
+  id           String     @id @default(uuid()) @db.Uuid
+  tournamentId String     @map("tournament_id") @db.Uuid
+  phase        MatchPhase
+  multiplier   Int        @default(1)
+  sortOrder    Int        @map("sort_order")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, phase])
+  @@map("tournament_phases")
+}
+
+model Team {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String  @db.VarChar(100)
+  shortName String  @map("short_name") @db.VarChar(5)
+  flagUrl   String? @map("flag_url") @db.VarChar(500)
+  country   String? @db.VarChar(100)
+
+  tournamentTeams TournamentTeam[]
+  homeMatches     Match[]          @relation("HomeTeam")
+  awayMatches     Match[]          @relation("AwayTeam")
+
+  @@map("teams")
+}
+
+model TournamentTeam {
+  id           String  @id @default(uuid()) @db.Uuid
+  tournamentId String  @map("tournament_id") @db.Uuid
+  teamId       String  @map("team_id") @db.Uuid
+  groupLetter  String? @map("group_letter") @db.VarChar(2)
+  isEliminated Boolean @default(false) @map("is_eliminated")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id])
+
+  @@unique([tournamentId, teamId])
+  @@map("tournament_teams")
+}
+
+model Match {
+  id                  String      @id @default(uuid()) @db.Uuid
+  tournamentId        String      @map("tournament_id") @db.Uuid
+  homeTeamId          String?     @map("home_team_id") @db.Uuid
+  awayTeamId          String?     @map("away_team_id") @db.Uuid
+  phase               MatchPhase
+  groupLetter         String?     @map("group_letter") @db.VarChar(2)
+  matchNumber         Int?        @map("match_number")
+  scheduledAt         DateTime    @map("scheduled_at")
+  venue               String?     @db.VarChar(200)
+  city                String?     @db.VarChar(100)
+  status              MatchStatus @default(SCHEDULED)
+  homeScore           Int?        @map("home_score")
+  awayScore           Int?        @map("away_score")
+  homeScorePenalties  Int?        @map("home_score_penalties")
+  awayScorePenalties  Int?        @map("away_score_penalties")
+  isExtraTime         Boolean     @default(false) @map("is_extra_time")
+  homeTeamPlaceholder String?     @map("home_team_placeholder") @db.VarChar(50)
+  awayTeamPlaceholder String?     @map("away_team_placeholder") @db.VarChar(50)
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  tournament  Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  homeTeam    Team?        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team?        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  predictions Prediction[]
+
+  @@map("matches")
+}
+
+model Group {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+  inviteCode  String   @unique @map("invite_code") @db.VarChar(8)
+  createdBy   String   @map("created_by") @db.Uuid
+  maxMembers  Int      @default(50) @map("max_members")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members          GroupMember[]
+  groupTournaments GroupTournament[]
+  predictions      Prediction[]
+  bonusPredictions BonusPrediction[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String          @id @default(uuid()) @db.Uuid
+  groupId  String          @map("group_id") @db.Uuid
+  userId   String          @map("user_id") @db.Uuid
+  role     GroupMemberRole  @default(MEMBER)
+  joinedAt DateTime        @default(now()) @map("joined_at")
+  isActive Boolean         @default(true) @map("is_active")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model GroupTournament {
+  id           String @id @default(uuid()) @db.Uuid
+  groupId      String @map("group_id") @db.Uuid
+  tournamentId String @map("tournament_id") @db.Uuid
+
+  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, tournamentId])
+  @@map("group_tournaments")
+}
+
+model Prediction {
+  id            String               @id @default(uuid()) @db.Uuid
+  userId        String               @map("user_id") @db.Uuid
+  matchId       String               @map("match_id") @db.Uuid
+  groupId       String               @map("group_id") @db.Uuid
+  predictedHome Int                  @map("predicted_home")
+  predictedAway Int                  @map("predicted_away")
+  pointsEarned  Int                  @default(0) @map("points_earned")
+  pointType     PredictionPointType? @map("point_type")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, matchId, groupId])
+  @@map("predictions")
+}
+
+model TournamentBonusType {
+  id           String @id @default(uuid()) @db.Uuid
+  tournamentId String @map("tournament_id") @db.Uuid
+  key          String @db.VarChar(50)
+  label        String @db.VarChar(200)
+  points       Int    @default(10)
+  sortOrder    Int    @map("sort_order")
+
+  tournament       Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  bonusPredictions BonusPrediction[]
+
+  @@unique([tournamentId, key])
+  @@map("tournament_bonus_types")
+}
+
+model BonusPrediction {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  groupId        String    @map("group_id") @db.Uuid
+  bonusTypeId    String    @map("bonus_type_id") @db.Uuid
+  predictedValue String    @map("predicted_value") @db.VarChar(200)
+  isCorrect      Boolean?  @map("is_correct")
+  pointsEarned   Int       @default(0) @map("points_earned")
+  lockedAt       DateTime? @map("locked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user      User                @relation(fields: [userId], references: [id])
+  group     Group               @relation(fields: [groupId], references: [id])
+  bonusType TournamentBonusType @relation(fields: [bonusTypeId], references: [id])
+
+  @@unique([userId, groupId, bonusTypeId])
+  @@map("bonus_predictions")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  body      String           @db.VarChar(500)
+  data      Json?            @db.JsonB
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
