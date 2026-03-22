@@ -95,3 +95,35 @@ export const NOTIFICATION_TYPE = {
 
 export type NotificationType =
   (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
+
+// ─── DTO Interfaces ─────────────────────────────────────────────────────────
+
+export type {
+  UserDto,
+  UpdateProfileDto,
+  AuthResponseDto,
+  RefreshTokenRequestDto,
+  GroupDto,
+  GroupMemberDto,
+  TournamentPhaseDto,
+  TournamentBonusTypeDto,
+  TournamentDto,
+  TournamentTeamDto,
+  MatchTeamDto,
+  MatchDto,
+  PredictionMatchDto,
+  PredictionDto,
+  PredictionStatsDto,
+  UserPredictionDto,
+  GroupPredictionsDto,
+  LeaderboardEntryDto,
+  LeaderboardDto,
+  BonusTypeDto,
+  BonusPredictionDto,
+  UserBonusPredictionDto,
+  GroupBonusPredictionsDto,
+  NotificationDto,
+  PaginationMeta,
+  PaginatedResponseDto,
+  ApiErrorResponseDto,
+} from './dto.js';

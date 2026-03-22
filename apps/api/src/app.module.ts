@@ -12,6 +12,7 @@ import { PredictionsModule } from './modules/predictions/predictions.module.js';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module.js';
 import { BonusPredictionsModule } from './modules/bonus-predictions/bonus-predictions.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { EventsModule } from './gateways/events.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
       envFilePath: '.env',
     }),
     PrismaModule,
+    EventsModule,
     AuthModule,
     UsersModule,
     TournamentsModule,
