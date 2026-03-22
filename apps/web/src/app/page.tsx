@@ -1,14 +1,23 @@
+import { Header } from "@/components/header";
+import { Hero } from "@/components/hero";
+import { HowItWorks } from "@/components/how-it-works";
+import { Features } from "@/components/features";
+import { MatchesPreview } from "@/components/matches-preview";
+import { CtaBanner } from "@/components/cta-banner";
+import { Footer } from "@/components/footer";
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-col items-center gap-8 text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          ⚽ Pichichi
-        </h1>
-        <p className="max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-          Tournament prediction platform — Coming Soon
-        </p>
+    <>
+      <Header />
+      <main className="flex-1">
+        <Hero />
+        <HowItWorks />
+        <Features />
+        <MatchesPreview />
+        <CtaBanner />
       </main>
-    </div>
+      <Footer />
+    </>
   );
 }

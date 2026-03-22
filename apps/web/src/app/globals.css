@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Selva Mundialista — Pichichi Design System */
+  --color-primary: #0B6E4F;
+  --color-primary-light: #14A76C;
+  --color-primary-surface: #D4EDDA;
+  --color-accent-gold: #FFD166;
+  --color-bg: #F0FAF4;
+  --color-surface: #FFFFFF;
+  --color-border: #D4EDDA;
+  --color-success: #14A76C;
+  --color-warning: #F4A261;
+  --color-danger: #EF476F;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-on-primary: #FFFFFF;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
