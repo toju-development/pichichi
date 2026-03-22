@@ -18,6 +18,9 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },
+  "overrides": {
+    "react-native-worklets": "0.7.2"
+  },
   "keywords": [],
   "author": "",
   "license": "UNLICENSED"

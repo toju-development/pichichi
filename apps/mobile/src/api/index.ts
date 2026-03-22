@@ -1,0 +1,10 @@
+export { api } from './client';
+export * as authApi from './auth';
+export * as usersApi from './users';
+export * as groupsApi from './groups';
+export * as tournamentsApi from './tournaments';
+export * as matchesApi from './matches';
+export * as predictionsApi from './predictions';
+export * as leaderboardApi from './leaderboard';
+export * as bonusPredictionsApi from './bonus-predictions';
+export * as notificationsApi from './notifications';
