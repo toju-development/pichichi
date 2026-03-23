@@ -1,3 +1,5 @@
+import { Logo } from "@/components/logo";
+
 const FOOTER_LINKS = [
   { label: "Términos y Condiciones", href: "#" },
   { label: "Política de Privacidad", href: "#" },
@@ -26,22 +28,21 @@ const SOCIAL_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-surface px-4 py-12 sm:px-6 lg:px-8">
+    <footer className="border-t border-primary/10 bg-surface px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
           {/* Logo and tagline */}
           <div className="flex flex-col items-center sm:items-start">
-            <a href="#" className="flex items-center gap-2 text-lg font-semibold text-primary">
-              <span className="text-xl">⚽</span>
-              <span>Pichichi</span>
+            <a href="#">
+              <Logo size="small" />
             </a>
-            <p className="mt-2 text-sm text-text-tertiary">
-              Hecho con ⚽ para el Mundial 2026
+            <p className="mt-3 text-sm text-text-tertiary">
+              Hecho con pasión para el Mundial 2026
             </p>
           </div>
 
           {/* Links */}
-          <div className="flex flex-col items-center gap-3 sm:items-end">
+          <div className="flex flex-col items-center gap-4 sm:items-end">
             <div className="flex gap-6">
               {FOOTER_LINKS.map((link) => (
                 <a
@@ -54,13 +55,13 @@ export function Footer() {
               ))}
             </div>
             {/* Social */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {SOCIAL_LINKS.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
                   aria-label={link.label}
-                  className="text-text-tertiary transition-colors hover:text-primary"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/5 text-text-tertiary transition-all hover:bg-primary/10 hover:text-primary"
                 >
                   {link.icon}
                 </a>
@@ -69,7 +70,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-border pt-6 text-center">
+        <div className="mt-10 border-t border-primary/10 pt-6 text-center">
           <p className="text-xs text-text-tertiary">
             © {new Date().getFullYear()} Pichichi. Todos los derechos reservados.
           </p>

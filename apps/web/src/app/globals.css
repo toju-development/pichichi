@@ -4,19 +4,23 @@
   /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk);
 
   /* Selva Mundialista — Pichichi Design System */
   --color-primary: #0B6E4F;
+  --color-primary-dark: #094D38;
   --color-primary-light: #14A76C;
   --color-primary-surface: #D4EDDA;
+  --color-primary-surface-light: #E8F5EE;
   --color-accent-gold: #FFD166;
+  --color-accent-gold-dark: #E6B84D;
   --color-bg: #F0FAF4;
   --color-surface: #FFFFFF;
   --color-border: #D4EDDA;
   --color-success: #14A76C;
   --color-warning: #F4A261;
   --color-danger: #EF476F;
-  --color-text-primary: #1A1A1A;
+  --color-text-primary: #1A1A2E;
   --color-text-secondary: #6B7280;
   --color-text-tertiary: #9CA3AF;
   --color-text-on-primary: #FFFFFF;
@@ -30,4 +34,26 @@ body {
   background: var(--color-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Gradient text utility */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFD166, #E6B84D);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, #0B6E4F, #14A76C);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
