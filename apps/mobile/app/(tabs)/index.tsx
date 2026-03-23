@@ -1,29 +1,105 @@
 /**
- * Home / Dashboard placeholder screen.
+ * Home / Dashboard screen.
  *
- * Will eventually show: upcoming matches, live matches, quick prediction cards.
+ * Shows: welcome card, quick stats, upcoming match placeholders.
+ * All static placeholder data — no API calls yet.
  */
 
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, Text, View } from 'react-native';
+
+import { PredictionIcon, PointsIcon, TrophyIcon } from '@/components/brand/icons';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ScreenHeader } from '@/components/ui/screen-header';
+import { COLORS } from '@/theme/colors';
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-center px-8">
-        <Text className="text-5xl">⚽</Text>
-        <Text className="mt-4 text-2xl font-bold text-text-primary">
-          Inicio
-        </Text>
-        <Text className="mt-2 text-center text-base text-text-secondary">
-          Próximos partidos y predicciones rápidas
-        </Text>
-        <View className="mt-6 rounded-xl bg-surface px-6 py-4">
-          <Text className="text-center text-sm text-text-muted">
-            Los partidos y predicciones van a aparecer acá
-          </Text>
+    <View className="flex-1 bg-background">
+      {/* Gradient header */}
+      <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient />
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      >
+        {/* Welcome card */}
+        <Card accent className="mb-5">
+          <View className="pl-3">
+            <Text className="text-lg font-bold text-text-primary">
+              ¡Bienvenido! 👋
+            </Text>
+            <Text className="mt-1 text-sm text-text-secondary">
+              Empezá a predecir los partidos del Mundial 2026
+            </Text>
+            <View className="mt-4">
+              <Button variant="gradient" title="Ver próximos partidos" />
+            </View>
+          </View>
+        </Card>
+
+        {/* Quick stats row */}
+        <View className="mb-5 flex-row gap-3">
+          <Card className="flex-1 items-center py-4">
+            <PredictionIcon size={16} color={COLORS.primary.DEFAULT} />
+            <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
+            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+              Predicciones
+            </Text>
+          </Card>
+
+          <Card className="flex-1 items-center py-4">
+            <PointsIcon size={16} color={COLORS.primary.DEFAULT} />
+            <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
+            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+              Puntos
+            </Text>
+          </Card>
+
+          <Card className="flex-1 items-center py-4">
+            <TrophyIcon size={16} color={COLORS.primary.DEFAULT} />
+            <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
+            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+              Posición
+            </Text>
+          </Card>
         </View>
-      </View>
-    </SafeAreaView>
+
+        {/* Upcoming matches section */}
+        <Text className="mb-3 text-lg font-bold text-text-primary">
+          Próximos partidos
+        </Text>
+
+        <Card className="mb-3">
+          <View className="flex-row items-center justify-between">
+            <Text className="flex-1 text-right text-sm font-semibold text-text-primary">
+              Argentina
+            </Text>
+            <Text className="mx-3 text-xs font-bold text-text-muted">vs</Text>
+            <Text className="flex-1 text-sm font-semibold text-text-primary">
+              Arabia Saudita
+            </Text>
+          </View>
+          <Text className="mt-2 text-center text-xs text-text-secondary">
+            11 Jun 2026
+          </Text>
+        </Card>
+
+        <Card>
+          <View className="flex-row items-center justify-between">
+            <Text className="flex-1 text-right text-sm font-semibold text-text-primary">
+              Brasil
+            </Text>
+            <Text className="mx-3 text-xs font-bold text-text-muted">vs</Text>
+            <Text className="flex-1 text-sm font-semibold text-text-primary">
+              Serbia
+            </Text>
+          </View>
+          <Text className="mt-2 text-center text-xs text-text-secondary">
+            12 Jun 2026
+          </Text>
+        </Card>
+      </ScrollView>
+    </View>
   );
 }

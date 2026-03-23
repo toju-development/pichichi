@@ -6,12 +6,34 @@
  * This is the ONE screen that's semi-functional, not just a placeholder.
  */
 
-import { Alert, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, ScrollView, Text, View } from 'react-native';
 
-import { Button } from '@/components/ui/button';
+import { GlobeIcon, LiveIcon, PointsIcon } from '@/components/brand/icons';
+import { Card } from '@/components/ui/card';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useLogout } from '@/hooks/use-auth';
 import { useAuthStore } from '@/stores/auth-store';
+
+/** Single setting row inside a Card. */
+function SettingRow({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress?: () => void;
+}) {
+  return (
+    <Card onPress={onPress} className="mb-3">
+      <View className="flex-row items-center">
+        <View className="mr-3">{icon}</View>
+        <Text className="flex-1 text-base text-text-primary">{label}</Text>
+        <Text className="text-lg text-gray-400">›</Text>
+      </View>
+    </Card>
+  );
+}
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -32,55 +54,68 @@ export default function ProfileScreen() {
     );
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 px-6 pt-8">
-        {/* Header */}
-        <Text className="text-2xl font-bold text-text-primary">Perfil</Text>
+  const displayName = user?.displayName ?? 'Usuario';
+  const initial = displayName.charAt(0).toUpperCase();
 
-        {/* User info card */}
-        <View className="mt-6 rounded-xl bg-surface p-6">
-          <View className="items-center">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-primary-light">
-              <Text className="text-3xl">👤</Text>
-            </View>
-            <Text className="mt-4 text-xl font-bold text-text-primary">
-              {user?.displayName ?? 'Usuario'}
-            </Text>
-            <Text className="mt-1 text-sm text-text-secondary">
-              {user?.email ?? 'Sin email'}
-            </Text>
+  return (
+    <View className="flex-1 bg-background">
+      {/* Compact header with avatar embedded */}
+      <ScreenHeader title="Perfil" gradient>
+        <View className="mt-3 flex-row items-center">
+          {/* Avatar circle */}
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-white/20">
+            <Text className="text-xl font-bold text-white">{initial}</Text>
           </View>
 
-          {user?.username ? (
-            <View className="mt-4 items-center rounded-lg bg-background px-4 py-2">
-              <Text className="text-sm text-text-muted">
-                @{user.username}
+          {/* Name & email */}
+          <View className="ml-3 flex-1">
+            <Text className="text-base font-bold text-white">
+              {displayName}
+            </Text>
+            <Text className="mt-0.5 text-sm text-white/70">
+              {user?.email ?? ''}
+            </Text>
+          </View>
+        </View>
+      </ScreenHeader>
+
+      {/* Scrollable content below header */}
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pt-6 pb-8"
+      >
+        {/* Settings section */}
+        <Text className="mb-3 text-lg font-bold text-text-primary">
+          Configuración
+        </Text>
+
+        <SettingRow
+          icon={<GlobeIcon size={22} color="#0B6E4F" />}
+          label="Mi cuenta"
+          onPress={() => {}}
+        />
+        <SettingRow
+          icon={<LiveIcon size={22} color="#0B6E4F" />}
+          label="Notificaciones"
+          onPress={() => {}}
+        />
+        <SettingRow
+          icon={<PointsIcon size={22} color="#0B6E4F" />}
+          label="Acerca de Pichichi"
+          onPress={() => {}}
+        />
+
+        {/* Logout card */}
+        <View className="mt-6">
+          <Card onPress={handleLogout}>
+            <View className="flex-row items-center justify-center">
+              <Text className="text-base font-semibold" style={{ color: '#E63946' }}>
+                {logoutMutation.isPending ? 'Cerrando sesión...' : 'Cerrar sesión'}
               </Text>
             </View>
-          ) : null}
+          </Card>
         </View>
-
-        {/* Placeholder for future settings */}
-        <View className="mt-6 rounded-xl bg-surface p-6">
-          <Text className="text-base font-semibold text-text-primary">
-            Configuración
-          </Text>
-          <Text className="mt-2 text-sm text-text-muted">
-            Las opciones de configuración van a aparecer acá
-          </Text>
-        </View>
-
-        {/* Logout button at bottom */}
-        <View className="mt-auto pb-6">
-          <Button
-            title="Cerrar sesión"
-            variant="outline"
-            loading={logoutMutation.isPending}
-            onPress={handleLogout}
-          />
-        </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 }

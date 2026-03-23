@@ -1,32 +1,54 @@
 /**
- * Group detail placeholder screen (dynamic route).
+ * Group detail screen — branded header + placeholder Cards.
  *
  * Will eventually show: group predictions, leaderboard, members.
  */
 
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { GroupIcon, TrophyIcon } from '@/components/brand/icons';
+import { Card } from '@/components/ui/card';
+import { ScreenHeader } from '@/components/ui/screen-header';
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 items-center justify-center px-8">
-        <Text className="text-5xl">🏟️</Text>
-        <Text className="mt-4 text-2xl font-bold text-text-primary">
-          Detalle del Grupo
-        </Text>
-        <Text className="mt-2 text-center text-base text-text-secondary">
-          Grupo: {id}
-        </Text>
-        <View className="mt-6 rounded-xl bg-surface px-6 py-4">
-          <Text className="text-center text-sm text-text-muted">
-            Predicciones, ranking y miembros del grupo van a aparecer acá
-          </Text>
-        </View>
-      </View>
-    </SafeAreaView>
+    <View className="flex-1 bg-background">
+      <ScreenHeader title="Grupo" gradient={true} />
+
+      <ScrollView className="flex-1 px-5 pt-4" contentContainerClassName="pb-8 gap-4">
+        {/* Members card */}
+        <Card accent>
+          <View className="flex-row items-center gap-3">
+            <GroupIcon size={24} color="#0B6E4F" />
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-text-primary">
+                Miembros
+              </Text>
+              <Text className="mt-1 text-sm text-text-secondary">
+                Cargando miembros...
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Tournaments card */}
+        <Card accent>
+          <View className="flex-row items-center gap-3">
+            <TrophyIcon size={24} color="#0B6E4F" />
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-text-primary">
+                Torneos
+              </Text>
+              <Text className="mt-1 text-sm text-text-secondary">
+                Cargando torneos...
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </ScrollView>
+    </View>
   );
 }
