@@ -193,6 +193,7 @@ export default function LoginScreen() {
           },
           onSuccess: () => {
             setIsGoogleLoading(false);
+            router.replace('/(tabs)');
           },
         });
       }
@@ -237,6 +238,7 @@ export default function LoginScreen() {
             },
             onSuccess: () => {
               setIsAppleLoading(false);
+              router.replace('/(tabs)');
             },
           },
         );
