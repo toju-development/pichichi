@@ -124,14 +124,18 @@ try {
 const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const GOOGLE_ANDROID_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
 /**
  * Check if Google OAuth is configured for the current platform.
  * Without valid client IDs, expo-auth-session throws immediately.
+ * The webClientId is also required so that the issued idToken uses the
+ * Web Client ID as its `aud` claim, matching the backend's GOOGLE_CLIENT_ID.
  */
 const isGoogleConfigured =
-  (Platform.OS === 'ios' && !!GOOGLE_IOS_CLIENT_ID) ||
-  (Platform.OS === 'android' && !!GOOGLE_ANDROID_CLIENT_ID);
+  !!GOOGLE_WEB_CLIENT_ID &&
+  ((Platform.OS === 'ios' && !!GOOGLE_IOS_CLIENT_ID) ||
+    (Platform.OS === 'android' && !!GOOGLE_ANDROID_CLIENT_ID));
 
 /**
  * Wrapper around Google.useAuthRequest that returns null-safe defaults
@@ -151,6 +155,7 @@ function useGoogleAuthSafe() {
   return Google.useAuthRequest({
     iosClientId: GOOGLE_IOS_CLIENT_ID,
     androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID,
   });
 }
 

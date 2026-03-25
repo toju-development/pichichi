@@ -2,7 +2,6 @@
 
 export const AUTH_PROVIDER = {
   GOOGLE: 'GOOGLE',
-  INSTAGRAM: 'INSTAGRAM',
   APPLE: 'APPLE',
 } as const;
 
