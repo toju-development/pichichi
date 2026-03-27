@@ -184,6 +184,34 @@ export class AuthService {
     };
   }
 
+  async devLogin(email: string, displayName?: string): Promise<AuthResponseDto> {
+    const name = displayName ?? email.split('@')[0] ?? 'Dev User';
+    const syntheticProviderId = `dev-${email}`;
+
+    const user = await this.findOrCreateUser(
+      AuthProvider.GOOGLE,
+      syntheticProviderId,
+      email,
+      name,
+    );
+
+    const tokens = await this.generateTokens(user.id);
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
+      },
+    };
+  }
+
   async logout(userId: string): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },
