@@ -16,6 +16,7 @@
 
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { Platform } from 'react-native';
 
 // Lazy getter — breaks circular dependency at module evaluation time.
 // The store module is only resolved when an interceptor actually runs,
@@ -31,10 +32,15 @@ function getAuthStore(): AuthStoreApi {
 }
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:3000/api/v1';
+  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+
+const resolvedURL =
+  Platform.OS === 'android'
+    ? BASE_URL.replace('localhost', '10.0.2.2')
+    : BASE_URL;
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: resolvedURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -122,7 +128,7 @@ api.interceptors.response.use(
       const { data } = await axios.post<{
         accessToken: string;
         refreshToken: string;
-      }>(`${BASE_URL}/auth/refresh`, { refreshToken });
+      }>(`${resolvedURL}/auth/refresh`, { refreshToken });
 
       await setTokens(data.accessToken, data.refreshToken);
 
