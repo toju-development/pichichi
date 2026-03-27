@@ -125,10 +125,15 @@ export default function LoginScreen() {
   //  Configure Google Sign-In on mount (native SDK — no redirect URIs needed)
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    GoogleSignin.configure({
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+    console.log('[login] GoogleSignin.configure()', {
+      webClientId: webClientId ? `${webClientId.substring(0, 20)}...` : '⚠️ MISSING',
+      iosClientId: iosClientId ? `${iosClientId.substring(0, 20)}...` : '⚠️ MISSING',
     });
+
+    GoogleSignin.configure({ iosClientId, webClientId });
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -140,15 +145,25 @@ export default function LoginScreen() {
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
 
+      console.log('[login] GoogleSignin.signIn() response:', JSON.stringify(response, null, 2));
+
       if (isSuccessResponse(response)) {
         const idToken = response.data.idToken;
 
+        console.log('[login] idToken present:', !!idToken);
+
         if (idToken) {
+          console.log('[login] Calling loginWithGoogle.mutate with idToken:', `${idToken.substring(0, 30)}...`);
           loginWithGoogle.mutate(idToken, {
-            onError: () => {
+            onError: (mutationError) => {
+              console.error('[login] loginWithGoogle mutation error:', {
+                message: mutationError?.message,
+                name: mutationError?.name,
+                full: JSON.stringify(mutationError, null, 2),
+              });
               Alert.alert(
                 'Error',
-                'No se pudo iniciar sesión con Google. Intentá de nuevo.',
+                `Error del servidor: ${mutationError?.message || 'No se pudo iniciar sesión con Google'}`,
               );
               setIsGoogleLoading(false);
             },
@@ -158,23 +173,35 @@ export default function LoginScreen() {
             },
           });
         } else {
+          console.error('[login] idToken is null! This usually means webClientId is missing or incorrect in GoogleSignin.configure()');
+          console.error('[login] Full response.data:', JSON.stringify(response.data, null, 2));
           Alert.alert(
             'Error',
-            'No se pudo obtener el token de Google. Intentá de nuevo.',
+            'No se obtuvo idToken de Google. Verificá la configuración de webClientId.',
           );
           setIsGoogleLoading(false);
         }
       } else {
         // User cancelled sign-in
+        console.log('[login] Google Sign-In: user cancelled or non-success response:', JSON.stringify(response, null, 2));
         setIsGoogleLoading(false);
       }
     } catch (error: unknown) {
       setIsGoogleLoading(false);
 
+      console.error('[login] Google Sign-In catch block:', {
+        errorType: typeof error,
+        isErrorWithCode: isErrorWithCode(error),
+        code: isErrorWithCode(error) ? (error as { code: string }).code : 'N/A',
+        message: error instanceof Error ? error.message : 'N/A',
+        full: JSON.stringify(error, Object.getOwnPropertyNames(error instanceof Error ? error : {}), 2),
+      });
+
       if (isErrorWithCode(error)) {
         switch (error.code) {
           case statusCodes.IN_PROGRESS:
             // Sign-in already in progress — ignore
+            console.log('[login] Google Sign-In already in progress, ignoring');
             break;
           case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
             Alert.alert(
@@ -183,16 +210,18 @@ export default function LoginScreen() {
             );
             break;
           default:
+            console.error(`[login] Google Sign-In error code: ${error.code}`);
             Alert.alert(
               'Error',
-              'No se pudo iniciar sesión con Google. Intentá de nuevo.',
+              `Google Sign-In falló (code: ${error.code}): ${error.message || 'Error desconocido'}`,
             );
         }
       } else {
-        console.error('[login] Google Sign-In unexpected error:', error);
+        const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+        console.error('[login] Google Sign-In unexpected error:', errMsg);
         Alert.alert(
           'Error',
-          'No se pudo iniciar sesión con Google. Intentá de nuevo.',
+          `Google Sign-In falló: ${errMsg}`,
         );
       }
     }
