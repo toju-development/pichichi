@@ -2,13 +2,9 @@
  * Login screen — Google + Apple OAuth.
  *
  * Design: Selva Mundialista branded, full-screen deep green gradient.
- * Google OAuth via expo-auth-session.
+ * Google OAuth via @react-native-google-signin/google-signin (native).
  * Apple Sign In via expo-apple-authentication (iOS only).
  * All text in Spanish (app targets Argentine users).
- *
- * Google OAuth gracefully degrades when client IDs are not configured:
- * the button is rendered as disabled with a console warning instead of
- * crashing the entire screen.
  *
  * SAFETY: All critical layout styles (flex, backgroundColor) are duplicated
  * as inline `style` props so the screen is always visible, even if NativeWind
@@ -22,17 +18,18 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import type { AuthSessionResult } from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useLoginWithApple, useLoginWithGoogle } from '@/hooks/use-auth';
 import { SafeLogo } from '@/components/brand/safe-logo';
 import { useAuthStore } from '@/stores/auth-store';
-
-WebBrowser.maybeCompleteAuthSession();
 
 // ---------------------------------------------------------------------------
 //  Styles — using StyleSheet so NativeWind cannot interfere
@@ -118,97 +115,87 @@ try {
   console.warn('[login] GradientBackground unavailable:', e);
 }
 
-// ---------------------------------------------------------------------------
-//  Google OAuth configuration
-// ---------------------------------------------------------------------------
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const GOOGLE_ANDROID_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
-/**
- * Check if Google OAuth is configured for the current platform.
- * Without valid client IDs, expo-auth-session throws immediately.
- * The webClientId is also required so that the issued idToken uses the
- * Web Client ID as its `aud` claim, matching the backend's GOOGLE_CLIENT_ID.
- */
-const isGoogleConfigured =
-  !!GOOGLE_WEB_CLIENT_ID &&
-  ((Platform.OS === 'ios' && !!GOOGLE_IOS_CLIENT_ID) ||
-    (Platform.OS === 'android' && !!GOOGLE_ANDROID_CLIENT_ID));
-
-/**
- * Wrapper around Google.useAuthRequest that returns null-safe defaults
- * when Google OAuth is not configured, preventing the crash:
- * "Client Id property 'iosClientId' must be defined to use Google auth."
- *
- * Hooks can't be called conditionally, so we isolate the real hook in a
- * component that only mounts when Google IS configured. This component
- * uses a null-returning fallback hook otherwise.
- */
-function useGoogleAuthSafe() {
-  if (!isGoogleConfigured) {
-    return [null, null, async () => ({}) as AuthSessionResult] as const;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- guarded by constant
-  return Google.useAuthRequest({
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-  });
-}
-
 export default function LoginScreen() {
   const loginWithGoogle = useLoginWithGoogle();
   const loginWithApple = useLoginWithApple();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
 
-  const [request, response, promptAsync] = useGoogleAuthSafe();
-
+  // ---------------------------------------------------------------------------
+  //  Configure Google Sign-In on mount (native SDK — no redirect URIs needed)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isGoogleConfigured) {
-      console.warn(
-        '[login] Google OAuth is not configured. Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID and/or EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID in your .env file.',
-      );
-    }
+    GoogleSignin.configure({
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
   }, []);
 
-  useEffect(() => {
-    if (!isGoogleConfigured || !response) return;
+  // ---------------------------------------------------------------------------
+  //  Google Sign-In handler — native flow via Google Play Services / iOS SDK
+  // ---------------------------------------------------------------------------
+  async function handleGoogleLogin() {
+    try {
+      setIsGoogleLoading(true);
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
 
-    if (response.type === 'success') {
-      const idToken = response.authentication?.idToken;
+      if (isSuccessResponse(response)) {
+        const idToken = response.data.idToken;
 
-      if (idToken) {
-        setIsGoogleLoading(true);
-        loginWithGoogle.mutate(idToken, {
-          onError: () => {
+        if (idToken) {
+          loginWithGoogle.mutate(idToken, {
+            onError: () => {
+              Alert.alert(
+                'Error',
+                'No se pudo iniciar sesión con Google. Intentá de nuevo.',
+              );
+              setIsGoogleLoading(false);
+            },
+            onSuccess: () => {
+              setIsGoogleLoading(false);
+              router.replace('/(tabs)');
+            },
+          });
+        } else {
+          Alert.alert(
+            'Error',
+            'No se pudo obtener el token de Google. Intentá de nuevo.',
+          );
+          setIsGoogleLoading(false);
+        }
+      } else {
+        // User cancelled sign-in
+        setIsGoogleLoading(false);
+      }
+    } catch (error: unknown) {
+      setIsGoogleLoading(false);
+
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.IN_PROGRESS:
+            // Sign-in already in progress — ignore
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            Alert.alert(
+              'Error',
+              'Google Play Services no está disponible. Actualizá tu dispositivo.',
+            );
+            break;
+          default:
             Alert.alert(
               'Error',
               'No se pudo iniciar sesión con Google. Intentá de nuevo.',
             );
-            setIsGoogleLoading(false);
-          },
-          onSuccess: () => {
-            setIsGoogleLoading(false);
-            router.replace('/(tabs)');
-          },
-        });
+        }
+      } else {
+        console.error('[login] Google Sign-In unexpected error:', error);
+        Alert.alert(
+          'Error',
+          'No se pudo iniciar sesión con Google. Intentá de nuevo.',
+        );
       }
     }
-
-    if (response.type === 'error') {
-      Alert.alert(
-        'Error',
-        'No se pudo iniciar sesión con Google. Intentá de nuevo.',
-      );
-    }
-  }, [response]);
-
-  async function handleGoogleLogin() {
-    await promptAsync();
   }
 
   async function handleAppleLogin() {
@@ -338,10 +325,10 @@ export default function LoginScreen() {
           {/* Bottom section — OAuth buttons pinned to bottom */}
           <View style={{ paddingBottom: 24 }}>
             {/* Google Sign-In */}
-            <View style={[s.googleBtn, !isGoogleConfigured && { opacity: 0.5 }]}>
+            <View style={s.googleBtn}>
               <Pressable
                 onPress={handleGoogleLogin}
-                disabled={isGoogleLoading || !isGoogleConfigured}
+                disabled={isGoogleLoading}
                 className="flex-1 active:opacity-70"
               >
                 <View style={s.btnInner}>
