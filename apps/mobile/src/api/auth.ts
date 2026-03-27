@@ -29,6 +29,17 @@ export async function refreshTokens(
   return data;
 }
 
+export async function devLogin(
+  email: string,
+  displayName?: string,
+): Promise<AuthResponseDto> {
+  const { data } = await api.post<AuthResponseDto>('/auth/dev-login', {
+    email,
+    displayName,
+  });
+  return data;
+}
+
 export async function logout(refreshToken: string): Promise<void> {
   await api.post('/auth/logout', { refreshToken });
 }

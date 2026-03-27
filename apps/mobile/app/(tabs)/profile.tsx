@@ -7,6 +7,7 @@
  */
 
 import { Alert, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { GlobeIcon, LiveIcon, PointsIcon } from '@/components/brand/icons';
 import { Card } from '@/components/ui/card';
@@ -48,7 +49,15 @@ export default function ProfileScreen() {
         {
           text: 'Cerrar sesión',
           style: 'destructive',
-          onPress: () => logoutMutation.mutate(),
+          onPress: () =>
+            logoutMutation.mutate(undefined, {
+              onSettled: () => {
+                // Navigate AFTER clearing state — even if the server-side
+                // revocation failed, local state is already cleared by onSettled.
+                // Using replace prevents the user from navigating back.
+                router.replace('/(auth)/login');
+              },
+            }),
         },
       ],
     );

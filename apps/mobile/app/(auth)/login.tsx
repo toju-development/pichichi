@@ -15,21 +15,14 @@
  * to plain green bg and text-based branding — still fully functional.
  */
 
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useLoginWithApple, useLoginWithGoogle } from '@/hooks/use-auth';
+import { useLoginWithApple, useLoginWithGoogle, useDevLogin } from '@/hooks/use-auth';
 import { SafeLogo } from '@/components/brand/safe-logo';
-import { useAuthStore } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
 //  Styles — using StyleSheet so NativeWind cannot interfere
@@ -80,8 +73,34 @@ const s = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#FFFFFF',
   },
-  devBtn: {
+  devSection: {
     marginTop: 24,
+    borderWidth: 1,
+    borderStyle: 'dashed' as const,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 10,
+    padding: 14,
+  },
+  devHeader: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: 'rgba(255,255,255,0.4)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+    marginBottom: 10,
+    textAlign: 'center' as const,
+  },
+  devInput: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  devBtn: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
     height: 40,
     borderRadius: 8,
     overflow: 'hidden' as const,
@@ -92,8 +111,9 @@ const s = StyleSheet.create({
     justifyContent: 'center' as const,
   },
   devLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center' as const,
   },
 });
@@ -118,30 +138,37 @@ try {
 export default function LoginScreen() {
   const loginWithGoogle = useLoginWithGoogle();
   const loginWithApple = useLoginWithApple();
+  const devLogin = useDevLogin();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  //  Configure Google Sign-In on mount (native SDK — no redirect URIs needed)
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-
-    console.log('[login] GoogleSignin.configure()', {
-      webClientId: webClientId ? `${webClientId.substring(0, 20)}...` : '⚠️ MISSING',
-      iosClientId: iosClientId ? `${iosClientId.substring(0, 20)}...` : '⚠️ MISSING',
-    });
-
-    GoogleSignin.configure({ iosClientId, webClientId });
-  }, []);
+  const [devEmail, setDevEmail] = useState('pablomartinez555@gmail.com');
 
   // ---------------------------------------------------------------------------
   //  Google Sign-In handler — native flow via Google Play Services / iOS SDK
+  //  Uses dynamic import so the app can boot in Expo Go (no native modules).
+  //  GoogleSignin.configure() is called right before signIn — safe to repeat.
   // ---------------------------------------------------------------------------
   async function handleGoogleLogin() {
+    setIsGoogleLoading(true);
     try {
-      setIsGoogleLoading(true);
+      const {
+        GoogleSignin,
+        isSuccessResponse,
+        isErrorWithCode,
+        statusCodes,
+      } = await import('@react-native-google-signin/google-signin');
+
+      // Configure (safe to call multiple times)
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+      console.log('[login] GoogleSignin.configure()', {
+        webClientId: webClientId ? `${webClientId.substring(0, 20)}...` : '⚠️ MISSING',
+        iosClientId: iosClientId ? `${iosClientId.substring(0, 20)}...` : '⚠️ MISSING',
+      });
+
+      GoogleSignin.configure({ iosClientId, webClientId });
+
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
 
@@ -189,41 +216,59 @@ export default function LoginScreen() {
     } catch (error: unknown) {
       setIsGoogleLoading(false);
 
+      // Native module not available — user is in Expo Go without native build
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes('RNGoogleSignin') || errMsg.includes('TurboModuleRegistry')) {
+        console.warn('[login] Google Sign-In native module not available (Expo Go?):', errMsg);
+        Alert.alert(
+          'Google Sign-In no disponible',
+          'Google Sign-In requiere un build nativo. Usá Dev Login en Expo Go.',
+        );
+        return;
+      }
+
       console.error('[login] Google Sign-In catch block:', {
         errorType: typeof error,
-        isErrorWithCode: isErrorWithCode(error),
-        code: isErrorWithCode(error) ? (error as { code: string }).code : 'N/A',
-        message: error instanceof Error ? error.message : 'N/A',
+        message: errMsg,
         full: JSON.stringify(error, Object.getOwnPropertyNames(error instanceof Error ? error : {}), 2),
       });
 
-      if (isErrorWithCode(error)) {
-        switch (error.code) {
-          case statusCodes.IN_PROGRESS:
-            // Sign-in already in progress — ignore
-            console.log('[login] Google Sign-In already in progress, ignoring');
-            break;
-          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            Alert.alert(
-              'Error',
-              'Google Play Services no está disponible. Actualizá tu dispositivo.',
-            );
-            break;
-          default:
-            console.error(`[login] Google Sign-In error code: ${error.code}`);
-            Alert.alert(
-              'Error',
-              `Google Sign-In falló (code: ${error.code}): ${error.message || 'Error desconocido'}`,
-            );
+      // Try to use isErrorWithCode/statusCodes — they may be available if
+      // the dynamic import succeeded but signIn itself threw
+      try {
+        const { isErrorWithCode, statusCodes } =
+          await import('@react-native-google-signin/google-signin');
+
+        if (isErrorWithCode(error)) {
+          switch (error.code) {
+            case statusCodes.IN_PROGRESS:
+              // Sign-in already in progress — ignore
+              console.log('[login] Google Sign-In already in progress, ignoring');
+              break;
+            case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+              Alert.alert(
+                'Error',
+                'Google Play Services no está disponible. Actualizá tu dispositivo.',
+              );
+              break;
+            default:
+              console.error(`[login] Google Sign-In error code: ${error.code}`);
+              Alert.alert(
+                'Error',
+                `Google Sign-In falló (code: ${error.code}): ${error.message || 'Error desconocido'}`,
+              );
+          }
+          return;
         }
-      } else {
-        const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
-        console.error('[login] Google Sign-In unexpected error:', errMsg);
-        Alert.alert(
-          'Error',
-          `Google Sign-In falló: ${errMsg}`,
-        );
+      } catch {
+        // Dynamic import itself failed — already handled by native module check above
       }
+
+      console.error('[login] Google Sign-In unexpected error:', errMsg);
+      Alert.alert(
+        'Error',
+        `Google Sign-In falló: ${errMsg}`,
+      );
     }
   }
 
@@ -276,27 +321,32 @@ export default function LoginScreen() {
     isGoogleLoading ||
     isAppleLoading ||
     loginWithGoogle.isPending ||
-    loginWithApple.isPending;
+    loginWithApple.isPending ||
+    devLogin.isPending;
 
   // ---------------------------------------------------------------------------
-  //  DEV ONLY — bypass OAuth to test tab screens
+  //  DEV ONLY — hit /auth/dev-login for quick local testing
   // ---------------------------------------------------------------------------
-  async function handleDevBypass() {
-    await useAuthStore.getState().login({
-      accessToken: 'dev-fake-access-token',
-      refreshToken: 'dev-fake-refresh-token',
-      user: {
-        id: 'dev-user-001',
-        email: 'dev@pichichi.test',
-        displayName: 'Dev User',
-        username: 'devuser',
-        avatarUrl: null,
-        createdAt: new Date().toISOString(),
+  function handleDevLogin() {
+    if (!devEmail.trim()) {
+      Alert.alert('Error', 'Ingresá un email para dev login.');
+      return;
+    }
+
+    devLogin.mutate(
+      { email: devEmail.trim() },
+      {
+        onError: (error) => {
+          Alert.alert(
+            'Dev Login Error',
+            error?.message || 'No se pudo hacer dev login.',
+          );
+        },
+        onSuccess: () => {
+          router.replace('/(tabs)');
+        },
       },
-    });
-    // Navigate explicitly — index.tsx only redirects on mount, so changing
-    // isAuthenticated while already on (auth)/login won't trigger a re-redirect.
-    router.replace('/(tabs)');
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -407,17 +457,35 @@ export default function LoginScreen() {
               Al continuar, aceptás los Términos y la Política de Privacidad
             </Text>
 
-            {/* DEV ONLY — bypass OAuth for local testing */}
+            {/* DEV ONLY — real dev-login endpoint for local testing */}
             {__DEV__ && (
-              <View style={s.devBtn}>
-                <Pressable
-                  onPress={handleDevBypass}
-                  className="flex-1 active:opacity-70"
-                >
-                  <View style={s.devInner}>
-                    <Text style={s.devLabel}>⚙ Dev Mode — Skip Login</Text>
-                  </View>
-                </Pressable>
+              <View style={s.devSection}>
+                <Text style={s.devHeader}>⚙ Dev Login</Text>
+                <TextInput
+                  style={s.devInput}
+                  value={devEmail}
+                  onChangeText={setDevEmail}
+                  placeholder="Email"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View style={s.devBtn}>
+                  <Pressable
+                    onPress={handleDevLogin}
+                    disabled={devLogin.isPending}
+                    className="flex-1 active:opacity-70"
+                  >
+                    <View style={s.devInner}>
+                      {devLogin.isPending ? (
+                        <ActivityIndicator color="rgba(255,255,255,0.5)" />
+                      ) : (
+                        <Text style={s.devLabel}>Dev Login</Text>
+                      )}
+                    </View>
+                  </Pressable>
+                </View>
               </View>
             )}
           </View>

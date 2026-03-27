@@ -31,6 +31,21 @@ export function useLoginWithApple() {
   });
 }
 
+export function useDevLogin() {
+  const login = useAuthStore((s) => s.login);
+
+  return useMutation({
+    mutationFn: ({
+      email,
+      displayName,
+    }: {
+      email: string;
+      displayName?: string;
+    }) => authApi.devLogin(email, displayName),
+    onSuccess: (data: AuthResponseDto) => login(data),
+  });
+}
+
 /**
  * Logout hook — calls the API to revoke the refresh token on the server,
  * then clears local auth state. The API call is best-effort: even if it
