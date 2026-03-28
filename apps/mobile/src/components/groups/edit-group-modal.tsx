@@ -20,6 +20,7 @@ import {
 import type { GroupDto } from '@pichichi/shared';
 
 import { Button } from '@/components/ui/button';
+import { Stepper } from '@/components/ui/stepper';
 import { useUpdateGroup } from '@/hooks/use-groups';
 import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
@@ -33,7 +34,7 @@ interface EditGroupModalProps {
 export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? '');
-  const [maxMembers, setMaxMembers] = useState(String(group.maxMembers));
+  const [maxMembers, setMaxMembers] = useState(group.maxMembers);
 
   const updateGroup = useUpdateGroup();
   const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
@@ -44,25 +45,9 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
     if (visible) {
       setName(group.name);
       setDescription(group.description ?? '');
-      setMaxMembers(String(group.maxMembers));
+      setMaxMembers(group.maxMembers);
     }
   }, [visible, group.name, group.description, group.maxMembers]);
-
-  function handleMaxMembersChange(text: string) {
-    // Allow empty so user can clear and retype
-    const digits = text.replace(/[^0-9]/g, '');
-    if (digits === '') {
-      setMaxMembers('');
-      return;
-    }
-
-    const num = parseInt(digits, 10);
-    if (num > planLimit) {
-      setMaxMembers(String(planLimit));
-    } else {
-      setMaxMembers(digits);
-    }
-  }
 
   function handleClose() {
     onClose();
@@ -81,11 +66,6 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
       return;
     }
 
-    const parsedMax = parseInt(maxMembers, 10);
-    const finalMax = isNaN(parsedMax)
-      ? group.maxMembers
-      : Math.max(minMembers, Math.min(parsedMax, planLimit));
-
     // Only send changed fields
     const data: { name?: string; description?: string; maxMembers?: number } = {};
 
@@ -98,8 +78,8 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
       data.description = trimmedDesc;
     }
 
-    if (finalMax !== group.maxMembers) {
-      data.maxMembers = finalMax;
+    if (maxMembers !== group.maxMembers) {
+      data.maxMembers = maxMembers;
     }
 
     // Nothing changed
@@ -188,20 +168,16 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
           </Text>
 
           {/* Max members */}
-          <Text className="mb-2 text-sm font-semibold text-text-primary">
+          <Text className="mb-3 text-sm font-semibold text-text-primary">
             Máximo de miembros
           </Text>
-          <TextInput
+          <Stepper
             value={maxMembers}
-            onChangeText={handleMaxMembersChange}
-            placeholder={String(group.maxMembers)}
-            placeholderTextColor={COLORS.text.muted}
-            keyboardType="number-pad"
-            maxLength={3}
-            className="mb-1 rounded-xl border border-border bg-white px-4 py-3 text-base text-text-primary"
-            style={{ width: 100 }}
+            min={minMembers}
+            max={planLimit}
+            onChange={setMaxMembers}
           />
-          <Text className="mb-6 text-xs text-text-muted">
+          <Text className="mt-2 mb-6 text-xs text-text-muted">
             Mínimo {minMembers}, máximo {planLimit} (según tu plan).
           </Text>
         </View>

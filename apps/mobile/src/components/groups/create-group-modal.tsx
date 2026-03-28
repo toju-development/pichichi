@@ -19,6 +19,7 @@ import {
 import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
+import { Stepper } from '@/components/ui/stepper';
 import { useCreateGroup } from '@/hooks/use-groups';
 import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
@@ -33,29 +34,14 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [maxMembers, setMaxMembers] = useState(String(planLimit));
+  const [maxMembers, setMaxMembers] = useState(planLimit);
 
   const createGroup = useCreateGroup();
-
-  function handleMaxMembersChange(text: string) {
-    const digits = text.replace(/[^0-9]/g, '');
-    if (digits === '') {
-      setMaxMembers('');
-      return;
-    }
-
-    const num = parseInt(digits, 10);
-    if (num > planLimit) {
-      setMaxMembers(String(planLimit));
-    } else {
-      setMaxMembers(digits);
-    }
-  }
 
   function resetForm() {
     setName('');
     setDescription('');
-    setMaxMembers(String(planLimit));
+    setMaxMembers(planLimit);
   }
 
   function handleClose() {
@@ -76,16 +62,11 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
       return;
     }
 
-    const parsedMax = parseInt(maxMembers, 10);
-    const finalMax = isNaN(parsedMax)
-      ? planLimit
-      : Math.max(2, Math.min(parsedMax, planLimit));
-
     createGroup.mutate(
       {
         name: trimmedName,
         description: description.trim() || undefined,
-        maxMembers: finalMax,
+        maxMembers,
       },
       {
         onSuccess: (data) => {
@@ -169,20 +150,16 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
           </Text>
 
           {/* Max members */}
-          <Text className="mb-2 text-sm font-semibold text-text-primary">
+          <Text className="mb-3 text-sm font-semibold text-text-primary">
             Máximo de miembros
           </Text>
-          <TextInput
+          <Stepper
             value={maxMembers}
-            onChangeText={handleMaxMembersChange}
-            placeholder={String(planLimit)}
-            placeholderTextColor={COLORS.text.muted}
-            keyboardType="number-pad"
-            maxLength={3}
-            className="mb-1 rounded-xl border border-border bg-white px-4 py-3 text-base text-text-primary"
-            style={{ width: 100 }}
+            min={2}
+            max={planLimit}
+            onChange={setMaxMembers}
           />
-          <Text className="mb-6 text-xs text-text-muted">
+          <Text className="mt-2 mb-6 text-xs text-text-muted">
             Mínimo 2, máximo {planLimit} (según tu plan)
           </Text>
         </View>
