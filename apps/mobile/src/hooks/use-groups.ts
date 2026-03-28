@@ -47,7 +47,6 @@ export function useCreateGroup() {
       qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
         old ? [newGroup, ...old] : [newGroup],
       );
-      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
 }
@@ -62,7 +61,6 @@ export function useJoinGroup() {
       qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
         old ? [joinedGroup, ...old] : [joinedGroup],
       );
-      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
 }

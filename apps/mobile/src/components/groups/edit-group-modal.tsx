@@ -98,11 +98,11 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
           const axiosErr = err as {
             response?: { data?: { message?: string }; status?: number };
           };
-          const message =
+          Alert.alert(
+            'Error',
             axiosErr?.response?.data?.message ??
-            'No se pudo actualizar el grupo. Intentá de nuevo.';
-          const status = axiosErr?.response?.status;
-          Alert.alert('Error', status ? `(${status}) ${message}` : message);
+              'No se pudo actualizar el grupo. Intentá de nuevo.',
+          );
         },
       },
     );

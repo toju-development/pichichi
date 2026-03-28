@@ -5,8 +5,8 @@
  * Each card navigates to the group detail screen on press.
  */
 
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import type { GroupDto } from '@pichichi/shared';
 
@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useMyGroups } from '@/hooks/use-groups';
+import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
 /** Role badge shown next to member count. */
@@ -75,9 +76,29 @@ export default function GroupsScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
 
+  const user = useAuthStore((s) => s.user);
+  const maxGroupsCreated = user?.plan.maxGroupsCreated ?? 3;
+
   const { data: groups, isLoading, error, refetch, isRefetching } = useMyGroups();
 
   const hasGroups = groups && groups.length > 0;
+
+  const groupsCreatedCount = useMemo(
+    () => (groups ?? []).filter((g) => g.createdBy === user?.id).length,
+    [groups, user?.id],
+  );
+  const canCreateGroup = groupsCreatedCount < maxGroupsCreated;
+
+  function handleCreatePress() {
+    if (!canCreateGroup) {
+      Alert.alert(
+        'Límite alcanzado',
+        `Tu plan permite crear hasta ${maxGroupsCreated} grupos y ya tenés ${groupsCreatedCount}. Podés unirte a grupos de otros usuarios con un código de invitación.`,
+      );
+      return;
+    }
+    setShowCreateModal(true);
+  }
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -92,10 +113,16 @@ export default function GroupsScreen() {
           <View className="flex-row items-center gap-3">
             {/* Create group */}
             <Pressable
-              onPress={() => setShowCreateModal(true)}
-              className="h-9 w-9 items-center justify-center rounded-full bg-white/20 active:opacity-70"
+              onPress={handleCreatePress}
+              className={`h-9 w-9 items-center justify-center rounded-full active:opacity-70 ${
+                canCreateGroup ? 'bg-white/20' : 'bg-white/10'
+              }`}
             >
-              <Text className="text-lg font-bold text-white">+</Text>
+              <Text
+                className={`text-lg font-bold ${canCreateGroup ? 'text-white' : 'text-white/40'}`}
+              >
+                +
+              </Text>
             </Pressable>
 
             {/* Join group */}
@@ -176,7 +203,7 @@ export default function GroupsScreen() {
             description="Creá un grupo para jugar con amigos o unite con un código de invitación"
             action={{
               label: 'Crear grupo',
-              onPress: () => setShowCreateModal(true),
+              onPress: handleCreatePress,
             }}
           />
 

@@ -176,9 +176,9 @@ The user's plan data is included in **every auth response** and the `/users/me` 
 - **Login (Google/Apple/Dev)**: `AuthService.findOrCreateUser` returns `UserWithPlan` → `buildAuthResponse` maps it via `AuthService.toUserDto()`
 - **Token refresh**: `refreshTokens` queries user with `include: { plan: true }`
 - **GET /users/me**: `UsersService.findById` includes plan → `UsersController` maps via `AuthService.toUserDto()`
-- **Mobile**: `auth-store.ts` stores `UserDto` (which includes `plan: PlanDto`). Modals read `plan.maxMembersPerGroup` from the store to cap the maxMembers input.
+- **Mobile**: `auth-store.ts` stores `UserDto` (which includes `plan: PlanDto`). The groups list screen counts groups where `createdBy === userId` from cache and disables the create button when `maxGroupsCreated` is reached (shows an alert explaining the limit). Modals read `plan.maxMembersPerGroup` from the store to cap the maxMembers stepper.
 
-Backend still validates as defense-in-depth (PlansService enforcement), but the UI prevents bad inputs before they reach the API.
+Backend still validates as defense-in-depth (PlansService enforcement), but the UI prevents bad inputs before they reach the API. Error messages from the backend are shown without HTTP status codes for a user-friendly experience.
 
 ### PlansService Methods
 

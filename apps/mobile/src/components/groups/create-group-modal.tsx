@@ -76,12 +76,22 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
         onError: (err: unknown) => {
           console.error('[CreateGroup] Error:', JSON.stringify(err, null, 2));
           const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
-          const message = axiosErr?.response?.data?.message
-            ?? 'No se pudo crear el grupo. Intentá de nuevo.';
           const status = axiosErr?.response?.status;
+
+          // Plan limit → friendly message (backend sends 403)
+          if (status === 403) {
+            Alert.alert(
+              'Límite alcanzado',
+              axiosErr?.response?.data?.message
+                ?? 'Alcanzaste el límite de grupos de tu plan.',
+            );
+            return;
+          }
+
           Alert.alert(
             'Error',
-            status ? `(${status}) ${message}` : message,
+            axiosErr?.response?.data?.message
+              ?? 'No se pudo crear el grupo. Intentá de nuevo.',
           );
         },
       },

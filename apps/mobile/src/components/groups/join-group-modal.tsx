@@ -80,9 +80,10 @@ export function JoinGroupModal({ visible, onClose }: JoinGroupModalProps) {
             'Este grupo ya alcanzó el máximo de miembros.',
           );
         } else {
-          const fallback = 'No se pudo unir al grupo. Intentá de nuevo.';
-          const message = axiosErr?.response?.data?.message ?? fallback;
-          Alert.alert('Error', status ? `(${status}) ${message}` : message);
+          Alert.alert(
+            'Error',
+            axiosErr?.response?.data?.message ?? 'No se pudo unir al grupo. Intentá de nuevo.',
+          );
         }
       },
     });
