@@ -8,6 +8,8 @@ export function useMatches(params?: {
   tournamentId?: string;
   phase?: string;
   status?: string;
+  date?: string;
+  groupLetter?: string;
 }) {
   return useQuery({
     queryKey: queryKeys.matches.all(params),

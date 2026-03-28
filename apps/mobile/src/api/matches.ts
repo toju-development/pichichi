@@ -6,6 +6,8 @@ interface GetMatchesParams {
   tournamentId?: string;
   phase?: string;
   status?: string;
+  date?: string;
+  groupLetter?: string;
 }
 
 export async function getMatches(

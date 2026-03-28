@@ -16,6 +16,7 @@ import type { AxiosError } from 'axios';
 import type { GroupMemberRole } from '@pichichi/shared';
 
 import { TrophyIcon } from '@/components/brand/icons';
+import { AddTournamentModal } from '@/components/groups/add-tournament-modal';
 import { EditGroupModal } from '@/components/groups/edit-group-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -89,6 +90,7 @@ export default function GroupDetailScreen() {
   const isAdmin = group?.userRole === 'ADMIN';
 
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [addTournamentVisible, setAddTournamentVisible] = useState(false);
 
   const isAnyRefreshing = isRefetching || isRefetchingMembers || isRefetchingTournaments;
 
@@ -419,7 +421,11 @@ export default function GroupDetailScreen() {
             </Card>
           ) : (
             tournaments.map((tournament) => (
-              <Card key={tournament.id} className="mb-3">
+              <Card
+                key={tournament.id}
+                className="mb-3"
+                onPress={() => router.push(`/(tabs)/tournaments/${tournament.slug}`)}
+              >
                 <View style={detailStyles.tournamentRow}>
                   <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
                   <View style={detailStyles.tournamentInfo}>
@@ -447,6 +453,16 @@ export default function GroupDetailScreen() {
               </Card>
             ))
           )}
+
+          {isAdmin ? (
+            <View style={detailStyles.addTournamentWrapper}>
+              <Button
+                title="Agregar torneo"
+                variant="outline"
+                onPress={() => setAddTournamentVisible(true)}
+              />
+            </View>
+          ) : null}
         </View>
 
         {/* ── Actions Section ──────────────────────────────────────────── */}
@@ -494,6 +510,16 @@ export default function GroupDetailScreen() {
           visible={editModalVisible}
           group={group}
           onClose={() => setEditModalVisible(false)}
+        />
+      ) : null}
+
+      {/* ── Add Tournament Modal ───────────────────────────────────────── */}
+      {isAdmin ? (
+        <AddTournamentModal
+          visible={addTournamentVisible}
+          groupId={id!}
+          currentTournamentIds={tournaments?.map(t => t.id) ?? []}
+          onClose={() => setAddTournamentVisible(false)}
         />
       ) : null}
     </View>
@@ -699,6 +725,11 @@ const detailStyles = StyleSheet.create({
   tournamentStatus: {
     fontSize: 12,
     color: COLORS.text.muted,
+  },
+
+  // Add tournament
+  addTournamentWrapper: {
+    marginTop: 8,
   },
 
   // Actions

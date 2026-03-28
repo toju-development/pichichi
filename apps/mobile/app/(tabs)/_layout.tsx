@@ -1,7 +1,7 @@
 /**
  * Tab navigator layout — bottom navigation for authenticated users.
  *
- * 4 tabs: Inicio, Grupos, Ranking, Perfil.
+ * 5 tabs: Inicio, Torneos, Grupos, Ranking, Perfil.
  * Uses branded SVG icons from @/components/brand/icons.
  * Active indicator: small green dot below focused icon.
  */
@@ -61,6 +61,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="tournaments"
+        options={{
+          title: 'Torneos',
+          tabBarIcon: ({ color, focused }) => (
+            <View className="items-center">
+              <TrophyIcon size={24} color={color} />
+              {focused && <ActiveDot />}
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="groups"
         options={{
           title: 'Grupos',
@@ -78,7 +90,11 @@ export default function TabLayout() {
           title: 'Ranking',
           tabBarIcon: ({ color, focused }) => (
             <View className="items-center">
-              <TrophyIcon size={24} color={color} />
+              <Ionicons
+                name={focused ? 'stats-chart' : 'stats-chart-outline'}
+                size={24}
+                color={color}
+              />
               {focused && <ActiveDot />}
             </View>
           ),
