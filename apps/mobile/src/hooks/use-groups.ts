@@ -78,8 +78,13 @@ export function useLeaveGroup() {
     mutationFn: (groupId: string) => groupsApi.leaveGroup(groupId),
     retry: false,
     onSuccess: (_data, groupId) => {
+      // Remove this group's queries to prevent 404 refetches
+      // (the detail screen may still be mounted in the Stack)
+      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+      // Refresh the list to reflect the change
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
-      qc.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) });
     },
   });
 }
@@ -129,7 +134,12 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.deleteGroup(groupId),
     retry: false,
-    onSuccess: () => {
+    onSuccess: (_data, groupId) => {
+      // Remove this group's queries to prevent 404 refetches
+      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+      // Refresh the list to reflect the change
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });

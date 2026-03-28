@@ -27,12 +27,13 @@
   - API: GET /plans, GET /plans/me
 - [x] **Groups module polish** — Functional review + fixes
   - Editable maxMembers (admin only, capped by plan, floor at current member count)
-  - Conditional delete: soft-delete if no data, archive if group has predictions
+  - Conditional delete: hard-delete if no predictions, archive (soft-delete) if group has data
+  - Last member leaving: same logic — hard-delete empty groups, archive groups with predictions
   - joinByCode race condition fixed with Serializable transaction
   - Edit group modal (name, description, maxMembers)
   - Delete/archive group action with user feedback
   - Dead code cleanup (UpdateMemberRoleDto, updateMemberRole)
-  - Cache invalidation on leave/update/delete
+  - Cache cleanup: removeQueries on delete/leave to prevent 404 refetches
   - retry: false on all mutations
 
 ### In Progress

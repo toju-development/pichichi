@@ -230,7 +230,7 @@ export class GroupsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Delete group (conditional: soft-delete or archive, admin only)
+  // Delete group (conditional: hard-delete or archive, admin only)
   // ---------------------------------------------------------------------------
 
   async delete(
@@ -247,18 +247,24 @@ export class GroupsService {
 
     const hasData = predictionCount > 0 || bonusPredictionCount > 0;
 
-    await this.prisma.$transaction([
-      this.prisma.groupMember.updateMany({
-        where: { groupId, isActive: true },
-        data: { isActive: false },
-      }),
-      this.prisma.group.update({
-        where: { id: groupId, isActive: true },
-        data: { isActive: false },
-      }),
-    ]);
+    if (hasData) {
+      // Archive: soft-delete to preserve historical prediction data
+      await this.prisma.$transaction([
+        this.prisma.groupMember.updateMany({
+          where: { groupId, isActive: true },
+          data: { isActive: false },
+        }),
+        this.prisma.group.update({
+          where: { id: groupId, isActive: true },
+          data: { isActive: false },
+        }),
+      ]);
+      return { action: 'archived' };
+    }
 
-    return { action: hasData ? 'archived' : 'deleted' };
+    // No data: hard-delete (cascade removes members + tournaments)
+    await this.prisma.group.delete({ where: { id: groupId } });
+    return { action: 'deleted' };
   }
 
   // ---------------------------------------------------------------------------
@@ -429,18 +435,31 @@ export class GroupsService {
       where: { groupId, isActive: true },
     });
 
-    // Case 1: Last member leaving → deactivate membership AND group
+    // Case 1: Last member leaving → delete or archive the group
     if (activeMemberCount <= 1) {
-      await this.prisma.$transaction([
-        this.prisma.groupMember.update({
-          where: { id: membership.id },
-          data: { isActive: false },
-        }),
-        this.prisma.group.update({
-          where: { id: groupId },
-          data: { isActive: false },
-        }),
+      const [predictionCount, bonusPredictionCount] = await Promise.all([
+        this.prisma.prediction.count({ where: { groupId } }),
+        this.prisma.bonusPrediction.count({ where: { groupId } }),
       ]);
+
+      const hasData = predictionCount > 0 || bonusPredictionCount > 0;
+
+      if (hasData) {
+        // Archive: soft-delete to preserve historical prediction data
+        await this.prisma.$transaction([
+          this.prisma.groupMember.update({
+            where: { id: membership.id },
+            data: { isActive: false },
+          }),
+          this.prisma.group.update({
+            where: { id: groupId },
+            data: { isActive: false },
+          }),
+        ]);
+      } else {
+        // No data: hard-delete (cascade removes members + tournaments)
+        await this.prisma.group.delete({ where: { id: groupId } });
+      }
       return;
     }
 

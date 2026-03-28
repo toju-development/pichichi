@@ -106,7 +106,7 @@ export default function GroupDetailScreen() {
     let message: string;
     if (isLastMember) {
       message =
-        'Sos el último miembro del grupo. Si te vas, el grupo se desactivará. ¿Estás seguro?';
+        'Sos el último miembro del grupo. Si te vas, el grupo se eliminará. ¿Estás seguro?';
     } else if (isAdmin) {
       message =
         'Sos administrador de este grupo. Si te vas, se asignará otro admin automáticamente. ¿Estás seguro?';
@@ -132,10 +132,17 @@ export default function GroupDetailScreen() {
   function handleDeleteGroup() {
     if (!group || deleteGroupMutation.isPending) return;
 
+    const otherMemberCount = (members?.length ?? group.memberCount) - 1;
+    const hasOtherMembers = otherMemberCount > 0;
+
+    const message = hasOtherMembers
+      ? `Este grupo tiene ${otherMemberCount} ${otherMemberCount === 1 ? 'miembro más' : 'miembros más'}. ` +
+        'Si lo eliminás, todos los miembros serán removidos. ¿Estás seguro?'
+      : 'Si el grupo tiene predicciones será archivado, si no será eliminado permanentemente. ¿Estás seguro?';
+
     Alert.alert(
       'Eliminar grupo',
-      '¿Estás seguro de que querés eliminar este grupo? ' +
-        'Si el grupo tiene predicciones, será archivado en lugar de eliminado.',
+      message,
       [
         { text: 'Cancelar', style: 'cancel' },
         {

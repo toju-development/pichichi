@@ -227,7 +227,9 @@ When Stripe is added, the Plan model will gain a `stripePriceId` column. A webho
 
 **joinByCode race condition**: The entire `joinByCode` flow (capacity check + member insert) is wrapped in a Prisma interactive transaction with `Serializable` isolation level. This prevents two concurrent join requests from exceeding the group's member capacity.
 
-**Conditional delete**: When an admin deletes a group, the system checks for existing predictions or bonus predictions. If the group has data, it is archived (soft-deleted) rather than destroyed. The API returns `{ action: 'deleted' | 'archived' }` so the client can display the appropriate message.
+**Conditional delete**: When an admin deletes a group, the system checks for existing predictions or bonus predictions. Groups **without data are hard-deleted** (physically removed from the database — cascade removes members and tournaments). Groups **with prediction data are archived** (soft-deleted via `isActive: false`) to preserve historical records. The API returns `{ action: 'deleted' | 'archived' }` so the client can display the appropriate message. The same logic applies when the last member leaves a group.
+
+**Cache cleanup on delete/leave**: When a group is deleted or a user leaves, the mobile app uses `removeQueries` (not `invalidateQueries`) for the deleted group's detail, members, and tournaments queries. This prevents 404 refetch errors from Expo Router's Stack keeping the detail screen mounted after navigation.
 
 **maxMembers update**: Admins can change a group's `maxMembers` via the update endpoint. The value is validated against (1) the creator's plan limit and (2) the current active member count — it cannot be set below the number of existing members.
 
