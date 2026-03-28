@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
+  IsString,
   IsUUID,
 } from 'class-validator';
 import { MatchPhase, MatchStatus } from '@prisma/client';
@@ -34,6 +35,14 @@ export class MatchFiltersDto {
   @IsEnum(MatchStatus)
   @IsOptional()
   status?: MatchStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filter by group letter (e.g. A, B, C)',
+    example: 'A',
+  })
+  @IsString()
+  @IsOptional()
+  groupLetter?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by date (ISO 8601 date, e.g. 2026-06-11)',

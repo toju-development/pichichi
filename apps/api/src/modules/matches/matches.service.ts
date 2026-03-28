@@ -49,6 +49,7 @@ export class MatchesService {
         tournamentId: filters.tournamentId,
         ...(filters.phase ? { phase: filters.phase } : {}),
         ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.groupLetter ? { groupLetter: filters.groupLetter } : {}),
         ...dateFilter,
       },
       include: MATCH_INCLUDE,
