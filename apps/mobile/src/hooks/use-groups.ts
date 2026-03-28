@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import type { GroupDto } from '@pichichi/shared';
+
 import * as groupsApi from '@/api/groups';
 
 import { queryKeys } from './query-keys';
@@ -41,7 +43,10 @@ export function useCreateGroup() {
   return useMutation({
     mutationFn: groupsApi.createGroup,
     retry: false,
-    onSuccess: () => {
+    onSuccess: (newGroup) => {
+      qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
+        old ? [newGroup, ...old] : [newGroup],
+      );
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
@@ -53,7 +58,10 @@ export function useJoinGroup() {
   return useMutation({
     mutationFn: (inviteCode: string) => groupsApi.joinGroup(inviteCode),
     retry: false,
-    onSuccess: () => {
+    onSuccess: (joinedGroup) => {
+      qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
+        old ? [joinedGroup, ...old] : [joinedGroup],
+      );
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
