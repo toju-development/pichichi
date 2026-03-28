@@ -37,6 +37,21 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
 
   const createGroup = useCreateGroup();
 
+  function handleMaxMembersChange(text: string) {
+    const digits = text.replace(/[^0-9]/g, '');
+    if (digits === '') {
+      setMaxMembers('');
+      return;
+    }
+
+    const num = parseInt(digits, 10);
+    if (num > planLimit) {
+      setMaxMembers(String(planLimit));
+    } else {
+      setMaxMembers(digits);
+    }
+  }
+
   function resetForm() {
     setName('');
     setDescription('');
@@ -159,7 +174,7 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
           </Text>
           <TextInput
             value={maxMembers}
-            onChangeText={setMaxMembers}
+            onChangeText={handleMaxMembersChange}
             placeholder={String(planLimit)}
             placeholderTextColor={COLORS.text.muted}
             keyboardType="number-pad"

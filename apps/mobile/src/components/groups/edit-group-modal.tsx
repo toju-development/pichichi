@@ -37,6 +37,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
 
   const updateGroup = useUpdateGroup();
   const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
+  const minMembers = Math.max(2, group.memberCount);
 
   // Sync form state when group data changes (e.g. after refetch)
   useEffect(() => {
@@ -46,6 +47,22 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
       setMaxMembers(String(group.maxMembers));
     }
   }, [visible, group.name, group.description, group.maxMembers]);
+
+  function handleMaxMembersChange(text: string) {
+    // Allow empty so user can clear and retype
+    const digits = text.replace(/[^0-9]/g, '');
+    if (digits === '') {
+      setMaxMembers('');
+      return;
+    }
+
+    const num = parseInt(digits, 10);
+    if (num > planLimit) {
+      setMaxMembers(String(planLimit));
+    } else {
+      setMaxMembers(digits);
+    }
+  }
 
   function handleClose() {
     onClose();
@@ -67,7 +84,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
     const parsedMax = parseInt(maxMembers, 10);
     const finalMax = isNaN(parsedMax)
       ? group.maxMembers
-      : Math.max(2, Math.min(parsedMax, planLimit));
+      : Math.max(minMembers, Math.min(parsedMax, planLimit));
 
     // Only send changed fields
     const data: { name?: string; description?: string; maxMembers?: number } = {};
@@ -176,7 +193,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
           </Text>
           <TextInput
             value={maxMembers}
-            onChangeText={setMaxMembers}
+            onChangeText={handleMaxMembersChange}
             placeholder={String(group.maxMembers)}
             placeholderTextColor={COLORS.text.muted}
             keyboardType="number-pad"
@@ -185,7 +202,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
             style={{ width: 100 }}
           />
           <Text className="mb-6 text-xs text-text-muted">
-            Mínimo 2, máximo {planLimit} (según tu plan). No puede ser menor a los miembros actuales ({group.memberCount}).
+            Mínimo {minMembers}, máximo {planLimit} (según tu plan).
           </Text>
         </View>
 
