@@ -8,12 +8,11 @@ import {
 } from '@nestjs/common';
 import { GroupMemberRole } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
+import { PlansService } from '../plans/plans.service.js';
 import type { CreateGroupDto } from './dto/create-group.dto.js';
 import type { UpdateGroupDto } from './dto/update-group.dto.js';
 import type { GroupResponseDto } from './dto/group-response.dto.js';
 import type { GroupMemberResponseDto } from './dto/group-member-response.dto.js';
-
-const MAX_GROUP_MEMBERS = 50;
 
 // Characters that avoid ambiguity: no 0/O, 1/I/L
 const INVITE_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -23,7 +22,10 @@ const INVITE_CODE_LENGTH = 8;
 export class GroupsService {
   private readonly logger = new Logger(GroupsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly plansService: PlansService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // Create group
@@ -33,6 +35,15 @@ export class GroupsService {
     userId: string,
     dto: CreateGroupDto,
   ): Promise<GroupResponseDto> {
+    // Plan limit checks
+    await this.plansService.enforceCanCreateGroup(userId);
+
+    // Cap maxMembers to the plan's limit
+    const planMaxMembers = await this.plansService.getMaxMembersPerGroup(userId);
+    const effectiveMaxMembers = dto.maxMembers !== undefined
+      ? Math.min(dto.maxMembers, planMaxMembers)
+      : planMaxMembers;
+
     const inviteCode = await this.generateUniqueInviteCode();
 
     const group = await this.prisma.group.create({
@@ -41,6 +52,7 @@ export class GroupsService {
         description: dto.description ?? null,
         inviteCode,
         createdBy: userId,
+        maxMembers: effectiveMaxMembers,
         members: {
           create: {
             userId,
@@ -97,7 +109,8 @@ export class GroupsService {
         id: m.group.id,
         name: m.group.name,
         description: m.group.description,
-        inviteCode: m.group.inviteCode,
+        inviteCode:
+          m.role === GroupMemberRole.ADMIN ? m.group.inviteCode : null,
         createdBy: m.group.createdBy,
         maxMembers: m.group.maxMembers,
         memberCount: m.group._count.members,
@@ -133,7 +146,8 @@ export class GroupsService {
       id: group.id,
       name: group.name,
       description: group.description,
-      inviteCode: group.inviteCode,
+      inviteCode:
+        membership.role === GroupMemberRole.ADMIN ? group.inviteCode : null,
       createdBy: group.createdBy,
       maxMembers: group.maxMembers,
       memberCount: group._count.members,
@@ -188,10 +202,16 @@ export class GroupsService {
   async delete(groupId: string, userId: string): Promise<void> {
     await this.requireAdmin(groupId, userId);
 
-    await this.prisma.group.update({
-      where: { id: groupId },
-      data: { isActive: false },
-    });
+    await this.prisma.$transaction([
+      this.prisma.groupMember.updateMany({
+        where: { groupId, isActive: true },
+        data: { isActive: false },
+      }),
+      this.prisma.group.update({
+        where: { id: groupId, isActive: true },
+        data: { isActive: false },
+      }),
+    ]);
   }
 
   // ---------------------------------------------------------------------------
@@ -202,6 +222,9 @@ export class GroupsService {
     userId: string,
     inviteCode: string,
   ): Promise<GroupResponseDto> {
+    // Check user's membership limit before anything else
+    await this.plansService.enforceCanJoinGroup(userId);
+
     const group = await this.prisma.group.findUnique({
       where: { inviteCode, isActive: true },
       include: {
@@ -222,11 +245,8 @@ export class GroupsService {
       throw new ConflictException('You are already a member of this group');
     }
 
-    if (group._count.members >= group.maxMembers) {
-      throw new BadRequestException(
-        `Group has reached the maximum of ${group.maxMembers} members`,
-      );
-    }
+    // Check group capacity against creator's plan limit
+    await this.plansService.enforceGroupMemberCapacity(group.id, group.createdBy);
 
     // Re-activate or create membership
     if (existing && !existing.isActive) {
@@ -253,7 +273,7 @@ export class GroupsService {
       id: group.id,
       name: group.name,
       description: group.description,
-      inviteCode: group.inviteCode,
+      inviteCode: null,
       createdBy: group.createdBy,
       maxMembers: group.maxMembers,
       memberCount,
@@ -323,66 +343,6 @@ export class GroupsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Update member role (admin only)
-  // ---------------------------------------------------------------------------
-
-  async updateMemberRole(
-    groupId: string,
-    adminId: string,
-    targetUserId: string,
-    role: GroupMemberRole,
-  ): Promise<GroupMemberResponseDto> {
-    await this.requireAdmin(groupId, adminId);
-
-    const targetMembership = await this.findActiveMembership(
-      groupId,
-      targetUserId,
-    );
-
-    if (!targetMembership) {
-      throw new NotFoundException('Member not found in this group');
-    }
-
-    // When promoting to ADMIN, transfer: demote the current admin
-    if (role === GroupMemberRole.ADMIN && adminId !== targetUserId) {
-      await this.prisma.$transaction([
-        this.prisma.groupMember.updateMany({
-          where: { groupId, userId: adminId, isActive: true },
-          data: { role: GroupMemberRole.MEMBER },
-        }),
-        this.prisma.groupMember.update({
-          where: { id: targetMembership.id },
-          data: { role: GroupMemberRole.ADMIN },
-        }),
-      ]);
-    } else {
-      await this.prisma.groupMember.update({
-        where: { id: targetMembership.id },
-        data: { role },
-      });
-    }
-
-    const updated = await this.prisma.groupMember.findUnique({
-      where: { id: targetMembership.id },
-      include: { user: true },
-    });
-
-    if (!updated) {
-      throw new NotFoundException('Member not found');
-    }
-
-    return {
-      id: updated.id,
-      userId: updated.user.id,
-      displayName: updated.user.displayName,
-      username: updated.user.username,
-      avatarUrl: updated.user.avatarUrl,
-      role: updated.role,
-      joinedAt: updated.joinedAt,
-    };
-  }
-
-  // ---------------------------------------------------------------------------
   // Leave group
   // ---------------------------------------------------------------------------
 
@@ -393,7 +353,27 @@ export class GroupsService {
       throw new NotFoundException('You are not a member of this group');
     }
 
-    // If user is admin, check they're not the only admin
+    // Count all active members (not just admins)
+    const activeMemberCount = await this.prisma.groupMember.count({
+      where: { groupId, isActive: true },
+    });
+
+    // Case 1: Last member leaving → deactivate membership AND group
+    if (activeMemberCount <= 1) {
+      await this.prisma.$transaction([
+        this.prisma.groupMember.update({
+          where: { id: membership.id },
+          data: { isActive: false },
+        }),
+        this.prisma.group.update({
+          where: { id: groupId },
+          data: { isActive: false },
+        }),
+      ]);
+      return;
+    }
+
+    // Case 2: Sole admin but other members exist → auto-promote oldest member
     if (membership.role === GroupMemberRole.ADMIN) {
       const adminCount = await this.prisma.groupMember.count({
         where: {
@@ -404,12 +384,34 @@ export class GroupsService {
       });
 
       if (adminCount <= 1) {
-        throw new BadRequestException(
-          'Cannot leave the group as the sole admin. Transfer admin role first',
-        );
+        // Find the oldest active non-admin member to promote
+        const nextAdmin = await this.prisma.groupMember.findFirst({
+          where: {
+            groupId,
+            isActive: true,
+            userId: { not: userId },
+            role: GroupMemberRole.MEMBER,
+          },
+          orderBy: { joinedAt: 'asc' },
+        });
+
+        if (nextAdmin) {
+          await this.prisma.$transaction([
+            this.prisma.groupMember.update({
+              where: { id: nextAdmin.id },
+              data: { role: GroupMemberRole.ADMIN },
+            }),
+            this.prisma.groupMember.update({
+              where: { id: membership.id },
+              data: { isActive: false },
+            }),
+          ]);
+          return;
+        }
       }
     }
 
+    // Case 3: Not sole admin, or not admin at all → just leave
     await this.prisma.groupMember.update({
       where: { id: membership.id },
       data: { isActive: false },
@@ -426,6 +428,17 @@ export class GroupsService {
     tournamentId: string,
   ): Promise<{ groupId: string; tournamentId: string }> {
     await this.requireAdmin(groupId, userId);
+
+    // Get group creator to check their plan limits
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId, isActive: true },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    await this.plansService.enforceCanAddTournament(groupId, group.createdBy);
 
     const tournament = await this.prisma.tournament.findUnique({
       where: { id: tournamentId, isActive: true },

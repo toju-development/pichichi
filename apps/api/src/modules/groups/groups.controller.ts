@@ -24,7 +24,6 @@ import { GroupsService } from './groups.service.js';
 import { CreateGroupDto } from './dto/create-group.dto.js';
 import { UpdateGroupDto } from './dto/update-group.dto.js';
 import { JoinGroupDto } from './dto/join-group.dto.js';
-import { UpdateMemberRoleDto } from './dto/update-member-role.dto.js';
 import { AddTournamentDto } from './dto/add-tournament.dto.js';
 import { GroupResponseDto } from './dto/group-response.dto.js';
 import { GroupMemberResponseDto } from './dto/group-member-response.dto.js';
@@ -147,23 +146,6 @@ export class GroupsController {
     @Param('userId', ParseUUIDPipe) targetUserId: string,
   ): Promise<void> {
     return this.groupsService.removeMember(id, user.sub, targetUserId);
-  }
-
-  @Patch(':id/members/:userId/role')
-  @ApiOperation({ summary: 'Update a member role (admin only)' })
-  @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
-  @ApiParam({ name: 'userId', description: 'User ID to update (UUID)' })
-  @ApiResponse({ status: 200, description: 'Role updated', type: GroupMemberResponseDto })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Only admins can change roles' })
-  @ApiResponse({ status: 404, description: 'Group or member not found' })
-  async updateMemberRole(
-    @CurrentUser() user: JwtUserPayload,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('userId', ParseUUIDPipe) targetUserId: string,
-    @Body() dto: UpdateMemberRoleDto,
-  ): Promise<GroupMemberResponseDto> {
-    return this.groupsService.updateMemberRole(id, user.sub, targetUserId, dto.role);
   }
 
   @Post(':id/leave')

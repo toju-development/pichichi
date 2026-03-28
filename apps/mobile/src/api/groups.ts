@@ -1,6 +1,7 @@
 import type {
   GroupDto,
   GroupMemberDto,
+  GroupMemberRole,
   TournamentDto,
 } from '@pichichi/shared';
 
@@ -64,6 +65,43 @@ export async function getGroupTournaments(
 ): Promise<TournamentDto[]> {
   const { data } = await api.get<TournamentDto[]>(
     `/groups/${groupId}/tournaments`,
+  );
+  return data;
+}
+
+export async function updateGroup(
+  id: string,
+  dto: { name?: string; description?: string },
+): Promise<GroupDto> {
+  const { data } = await api.patch<GroupDto>(`/groups/${id}`, dto);
+  return data;
+}
+
+export async function deleteGroup(
+  id: string,
+): Promise<{ message: string }> {
+  const { data } = await api.delete<{ message: string }>(`/groups/${id}`);
+  return data;
+}
+
+export async function removeMember(
+  groupId: string,
+  userId: string,
+): Promise<{ message: string }> {
+  const { data } = await api.delete<{ message: string }>(
+    `/groups/${groupId}/members/${userId}`,
+  );
+  return data;
+}
+
+export async function updateMemberRole(
+  groupId: string,
+  userId: string,
+  role: GroupMemberRole,
+): Promise<GroupMemberDto> {
+  const { data } = await api.patch<GroupMemberDto>(
+    `/groups/${groupId}/members/${userId}/role`,
+    { role },
   );
   return data;
 }

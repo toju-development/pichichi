@@ -19,6 +19,17 @@ import type {
   NotificationType,
 } from './index.js';
 
+// ─── Plan ────────────────────────────────────────────────────────────────────
+
+export interface PlanDto {
+  id: string;
+  name: string;
+  maxGroupsCreated: number;
+  maxMemberships: number;
+  maxMembersPerGroup: number;
+  maxTournamentsPerGroup: number;
+}
+
 // ─── User ────────────────────────────────────────────────────────────────────
 
 export interface UserDto {
@@ -27,6 +38,7 @@ export interface UserDto {
   displayName: string;
   username: string;
   avatarUrl: string | null;
+  plan: PlanDto;
   createdAt: string;
 }
 
@@ -53,7 +65,7 @@ export interface GroupDto {
   id: string;
   name: string;
   description: string | null;
-  inviteCode: string;
+  inviteCode: string | null;
   createdBy: string;
   maxMembers: number;
   memberCount: number;

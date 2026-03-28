@@ -11,8 +11,8 @@ export class GroupResponseDto {
   @ApiPropertyOptional({ description: 'Group description', example: 'Grupo de amigos para el Mundial 2026' })
   description?: string | null;
 
-  @ApiProperty({ description: '8-character invite code', example: 'AB3D5FG7' })
-  inviteCode!: string;
+  @ApiPropertyOptional({ description: '8-character invite code (only visible to admins)', example: 'AB3D5FG7' })
+  inviteCode!: string | null;
 
   @ApiProperty({ description: 'ID of the user who created the group', example: '550e8400-e29b-41d4-a716-446655440000' })
   createdBy!: string;

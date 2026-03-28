@@ -1,3 +1,4 @@
+import type { GroupMemberRole } from '@pichichi/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import * as groupsApi from '@/api/groups';
@@ -83,6 +84,76 @@ export function useAddTournament() {
       qc.invalidateQueries({
         queryKey: queryKeys.groups.tournaments(groupId),
       });
+    },
+  });
+}
+
+export function useUpdateGroup() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { name?: string; description?: string };
+    }) => groupsApi.updateGroup(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+    },
+  });
+}
+
+export function useDeleteGroup() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (groupId: string) => groupsApi.deleteGroup(groupId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      userId,
+    }: {
+      groupId: string;
+      userId: string;
+    }) => groupsApi.removeMember(groupId, userId),
+    onSuccess: (_data, { groupId }) => {
+      qc.invalidateQueries({
+        queryKey: queryKeys.groups.members(groupId),
+      });
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+    },
+  });
+}
+
+export function useUpdateMemberRole() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      userId,
+      role,
+    }: {
+      groupId: string;
+      userId: string;
+      role: GroupMemberRole;
+    }) => groupsApi.updateMemberRole(groupId, userId, role),
+    onSuccess: (_data, { groupId }) => {
+      qc.invalidateQueries({
+        queryKey: queryKeys.groups.members(groupId),
+      });
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
 }

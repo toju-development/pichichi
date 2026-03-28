@@ -53,6 +53,7 @@ pichichi/
 |--------|--------|-------------|
 | `auth` | DONE | Google/Apple OAuth + JWT (access + refresh tokens) + dev-login bypass |
 | `users` | DONE | User profiles and management |
+| `plans` | DONE | Subscription plans with typed limit columns + enforcement service |
 | `tournaments` | SCAFFOLDED | Tournament CRUD (multi-tournament ready) |
 | `groups` | SCAFFOLDED | Groups with invite codes and member management |
 | `matches` | SCAFFOLDED | Match schedules, results, API-Football sync |
@@ -109,6 +110,107 @@ User ──< Prediction >── Match ──────────────
 - **Bonus predictions are per tournament**: Each tournament defines its own bonus types (champion, top scorer, etc.)
 - **Teams are shared**: A team entity is reused across tournaments via TournamentTeam join table
 - **Match placeholders**: Knockout matches can have `homeTeamPlaceholder: "Winner Group A"` before teams are determined
+- **Plan limits are per user**: The `Plan` model defines limits; the `User.planId` FK references the active plan
+
+## Plan System
+
+### Architecture Decision
+
+Plan limits are stored as **typed columns** in the `Plan` table (not JSON, not key-value). This gives:
+
+- **Type-safety end-to-end**: Prisma generates typed fields → PlanService exposes them → TypeScript validates at compile time
+- **Single query**: `include: { plan: true }` on user gives all limits — zero extra queries
+- **DB-level validation**: Each column has a type (`Int`) and a `DEFAULT` — impossible to store invalid data
+- **Easy to extend**: Adding a new limit = one Prisma migration with `ALTER TABLE ADD COLUMN ... DEFAULT value`
+
+### Database Schema
+
+```
+Plan (plans)
+├── id (UUID PK)
+├── name (VARCHAR 50, UNIQUE) — "FREE", "PREMIUM"
+├── maxGroupsCreated (INT, default 3)
+├── maxMemberships (INT, default 5)
+├── maxMembersPerGroup (INT, default 10)
+├── maxTournamentsPerGroup (INT, default 1)
+├── isActive (BOOL, default true)
+├── createdAt, updatedAt
+│
+User.planId (UUID FK → Plan.id, NOT NULL, default FREE plan UUID)
+```
+
+### Seeded Plans
+
+| Plan | maxGroupsCreated | maxMemberships | maxMembersPerGroup | maxTournamentsPerGroup |
+|------|:---:|:---:|:---:|:---:|
+| FREE | 3 | 5 | 10 | 2 |
+| PREMIUM | 999999 | 999999 | 50 | 999999 |
+
+Plan UUIDs are deterministic (hardcoded in migration) so they can be referenced safely:
+- FREE: `00000000-0000-4000-a000-000000000001`
+- PREMIUM: `00000000-0000-4000-a000-000000000002`
+
+### Enforcement Flow
+
+```
+User action (create group, join, add tournament)
+    │
+    ▼
+GroupsService calls PlansService.enforce*()
+    │
+    ▼
+PlansService loads user.plan (single query)
+    │
+    ▼
+Counts current usage (e.g., groups created)
+    │
+    ▼
+usage >= plan.limit? → ForbiddenException with descriptive message
+                      → Otherwise: proceed
+```
+
+### PlansService Methods
+
+| Method | Used by | What it checks |
+|--------|---------|----------------|
+| `enforceCanCreateGroup(userId)` | `GroupsService.create` | Groups created < plan.maxGroupsCreated |
+| `enforceCanJoinGroup(userId)` | `GroupsService.joinByCode` | Active memberships < plan.maxMemberships |
+| `enforceGroupMemberCapacity(groupId, creatorId)` | `GroupsService.joinByCode` | Active members < min(group.maxMembers, plan.maxMembersPerGroup) |
+| `getMaxMembersPerGroup(userId)` | `GroupsService.create` | Caps maxMembers at plan limit |
+| `enforceCanAddTournament(groupId, creatorId)` | `GroupsService.addTournament` | Tournaments in group < plan.maxTournamentsPerGroup |
+| `getUserPlan(userId)` | `PlansController.getMyPlan` | Returns full plan object |
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/plans` | List all available plans (authenticated) |
+| GET | `/plans/me` | Get current user's plan with all limits |
+
+### Adding a New Limit (Recipe)
+
+1. **Prisma schema**: Add a column to `Plan` model with `@default(value)`
+2. **Migration**: `npx prisma migrate dev --name add_max_xyz_limit`
+3. **PlanService**: Add an `enforceCanXyz()` method
+4. **Consumer service**: Call `this.plansService.enforceCanXyz(userId)` before the action
+5. **Shared types**: Add the field to `PlanDto` in `packages/shared/src/types/dto.ts`
+6. **Update seeded values**: SQL `UPDATE plans SET max_xyz = ... WHERE name = 'FREE'`
+
+### Changing Limits (No Deploy Required)
+
+Since limits live in the database, you can change them with a simple SQL update:
+
+```sql
+-- Give FREE users 5 groups instead of 3
+UPDATE plans SET max_groups_created = 5 WHERE name = 'FREE';
+
+-- Upgrade a specific user to PREMIUM
+UPDATE users SET plan_id = '00000000-0000-4000-a000-000000000002' WHERE email = 'user@example.com';
+```
+
+### Future: Stripe Integration
+
+When Stripe is added, the Plan model will gain a `stripePriceId` column. A webhook handler will update `user.planId` when a subscription is created/cancelled. The enforcement logic doesn't change — it only cares about `user.plan.*` values.
 
 ## Development Workflow
 

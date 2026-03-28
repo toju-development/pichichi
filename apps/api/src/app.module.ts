@@ -15,6 +15,7 @@ import { PredictionsModule } from './modules/predictions/predictions.module.js';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module.js';
 import { BonusPredictionsModule } from './modules/bonus-predictions/bonus-predictions.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { PlansModule } from './modules/plans/plans.module.js';
 import { EventsModule } from './gateways/events.module.js';
 
 @Module({
@@ -35,6 +36,7 @@ import { EventsModule } from './gateways/events.module.js';
     LeaderboardModule,
     BonusPredictionsModule,
     NotificationsModule,
+    PlansModule,
   ],
   controllers: [AppController],
   providers: [

@@ -98,6 +98,7 @@ export type NotificationType =
 // ─── DTO Interfaces ─────────────────────────────────────────────────────────
 
 export type {
+  PlanDto,
   UserDto,
   UpdateProfileDto,
   AuthResponseDto,

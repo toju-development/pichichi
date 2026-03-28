@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateGroupDto {
   @ApiProperty({
@@ -21,6 +21,19 @@ export class CreateGroupDto {
   @IsOptional()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Maximum number of members allowed in the group',
+    example: 50,
+    minimum: 2,
+    maximum: 100,
+    default: 50,
+  })
+  @IsInt()
+  @Min(2)
+  @Max(100)
+  @IsOptional()
+  maxMembers?: number;
 
   @ApiPropertyOptional({
     description: 'Tournament ID to associate with the group on creation',

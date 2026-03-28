@@ -67,6 +67,39 @@ enum NotificationType {
   BONUS_REMINDER
 }
 
+// ---------------------------------------------------------------------------
+// Plan — subscription tier with typed limit columns.
+//
+// Each limit is a column with a sensible default. Adding a new limit =
+// one migration that adds a column with DEFAULT. Type-safe end-to-end:
+// Prisma generates the field, PlanService exposes it, TypeScript checks it.
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique @db.VarChar(50) // FREE, PREMIUM
+
+  // ── Group limits ──────────────────────────────────────────────────────────
+  maxGroupsCreated       Int @default(3) @map("max_groups_created")
+  maxMemberships         Int @default(5) @map("max_memberships")
+  maxMembersPerGroup     Int @default(10) @map("max_members_per_group")
+  maxTournamentsPerGroup Int @default(1) @map("max_tournaments_per_group")
+
+  // ── Future limit columns go here ──────────────────────────────────────────
+  // maxBonusPredictions Int @default(3) @map("max_bonus_predictions")
+
+  // ── Stripe integration (future) ───────────────────────────────────────────
+  // stripePriceId String? @unique @map("stripe_price_id") @db.VarChar(255)
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("plans")
+}
+
 model User {
   id             String       @id @default(uuid()) @db.Uuid
   email          String       @unique @db.VarChar(255)
@@ -77,10 +110,12 @@ model User {
   authProviderId String       @map("auth_provider_id") @db.VarChar(255)
   refreshToken   String?      @map("refresh_token") @db.VarChar(500)
   fcmToken       String?      @map("fcm_token") @db.VarChar(500)
+  planId         String       @default("00000000-0000-4000-a000-000000000001") @map("plan_id") @db.Uuid
   isActive       Boolean      @default(true) @map("is_active")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
+  plan             Plan             @relation(fields: [planId], references: [id])
   groupMemberships GroupMember[]
   predictions      Prediction[]
   bonusPredictions BonusPrediction[]

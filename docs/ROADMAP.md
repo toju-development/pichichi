@@ -15,22 +15,19 @@
 - [x] **Dev tooling** — Dev-login endpoint, HTTP request logging, Expo Go support with conditional plugins
 - [x] **Landing page** — Next.js web with "Selva Mundialista" visual identity
 - [x] **Mobile app shell** — Expo Router with 4 tabs (Inicio, Grupos, Ranking, Perfil), login screen
+- [x] **Groups module** — Full-stack: backend + mobile + API client + TanStack hooks
+  - Backend: CRUD, invite codes, member management, tournament association
+  - Mobile: Groups list screen with create/join modals, group detail screen with members, tournaments, invite code sharing, admin actions
+  - API client: All 12 group endpoints wired
+  - TanStack hooks: All queries and mutations implemented
 
 ### In Progress
 
-- [ ] **Groups module** — CRUD, invite codes, member management
-  - Create group (name, optional description)
-  - Join group via invite code
-  - List user's groups
-  - Group detail with members list
-  - Admin can remove members
-  - Associate group with tournament(s)
-
-### Pending
-
-- [ ] **Tournaments module** — CRUD + API-Football integration
+- [ ] **Tournaments module** — CRUD + API-Football integration *(next up)*
   - Seed World Cup 2026 fixture (all matches, teams, phases)
   - Tournament detail screen (groups, schedule, standings)
+
+### Pending
 
 - [ ] **Matches module** — Schedule display + result sync
   - Match list by date / phase
