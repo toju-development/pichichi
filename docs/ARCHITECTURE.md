@@ -169,6 +169,17 @@ usage >= plan.limit? → ForbiddenException with descriptive message
                       → Otherwise: proceed
 ```
 
+### Plan in Auth Flow
+
+The user's plan data is included in **every auth response** and the `/users/me` endpoint. This allows the mobile app to know plan limits upfront (e.g., `maxMembersPerGroup`) and enforce them in the UI without waiting for backend validation errors.
+
+- **Login (Google/Apple/Dev)**: `AuthService.findOrCreateUser` returns `UserWithPlan` → `buildAuthResponse` maps it via `AuthService.toUserDto()`
+- **Token refresh**: `refreshTokens` queries user with `include: { plan: true }`
+- **GET /users/me**: `UsersService.findById` includes plan → `UsersController` maps via `AuthService.toUserDto()`
+- **Mobile**: `auth-store.ts` stores `UserDto` (which includes `plan: PlanDto`). Modals read `plan.maxMembersPerGroup` from the store to cap the maxMembers input.
+
+Backend still validates as defense-in-depth (PlansService enforcement), but the UI prevents bad inputs before they reach the API.
+
 ### PlansService Methods
 
 | Method | Used by | What it checks |

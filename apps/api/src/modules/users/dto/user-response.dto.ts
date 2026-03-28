@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PlanResponseDto } from '../../plans/dto/plan-response.dto.js';
 
 export class UserResponseDto {
   @ApiProperty({ description: 'User unique ID', example: '550e8400-e29b-41d4-a716-446655440000' })
@@ -15,6 +16,9 @@ export class UserResponseDto {
 
   @ApiPropertyOptional({ description: 'Avatar URL', example: 'https://lh3.googleusercontent.com/...' })
   avatarUrl?: string | null;
+
+  @ApiProperty({ description: 'User plan with limits', type: PlanResponseDto })
+  plan!: PlanResponseDto;
 
   @ApiProperty({ description: 'Account creation date' })
   createdAt!: Date;

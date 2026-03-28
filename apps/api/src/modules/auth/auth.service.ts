@@ -11,7 +11,7 @@ import { createPublicKey, type JsonWebKeyInput } from 'node:crypto';
 import { OAuth2Client } from 'google-auth-library';
 import * as jsonwebtoken from 'jsonwebtoken';
 import { PrismaService } from '../../config/prisma.service.js';
-import { UsersService } from '../users/users.service.js';
+import { UsersService, type UserWithPlan } from '../users/users.service.js';
 import type { AuthResponseDto } from './dto/auth-response.dto.js';
 
 interface AppleJwtPayload {
@@ -76,18 +76,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        createdAt: user.createdAt,
-      },
-    };
+    return this.buildAuthResponse(tokens, user);
   }
 
   async loginWithApple(
@@ -115,18 +104,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        createdAt: user.createdAt,
-      },
-    };
+    return this.buildAuthResponse(tokens, user);
   }
 
   async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
@@ -142,6 +120,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      include: { plan: true },
     });
 
     if (!user?.refreshToken) {
@@ -170,18 +149,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        createdAt: user.createdAt,
-      },
-    };
+    return this.buildAuthResponse(tokens, user);
   }
 
   async devLogin(email: string, displayName?: string): Promise<AuthResponseDto> {
@@ -198,18 +166,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
 
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        createdAt: user.createdAt,
-      },
-    };
+    return this.buildAuthResponse(tokens, user);
   }
 
   async logout(userId: string): Promise<void> {
@@ -247,7 +204,7 @@ export class AuthService {
     email: string,
     displayName: string,
     avatarUrl?: string,
-  ) {
+  ): Promise<UserWithPlan> {
     // First try to find by provider + providerId (unique constraint)
     const existingByProvider = await this.usersService.findByProviderAndId(
       provider,
@@ -270,6 +227,7 @@ export class AuthService {
           authProviderId: providerId,
           avatarUrl: avatarUrl ?? existingByEmail.avatarUrl,
         },
+        include: { plan: true },
       });
     }
 
@@ -285,6 +243,7 @@ export class AuthService {
         authProvider: provider,
         authProviderId: providerId,
       },
+      include: { plan: true },
     });
   }
 
@@ -385,6 +344,44 @@ export class AuthService {
       this.logger.error('Apple token verification failed', error);
       throw new UnauthorizedException('Invalid Apple token');
     }
+  }
+
+  /**
+   * Build the standard auth response from tokens + user entity.
+   * Single source of truth — avoids inline user-object duplication.
+   */
+  private buildAuthResponse(
+    tokens: TokenPair,
+    user: UserWithPlan,
+  ): AuthResponseDto {
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: AuthService.toUserDto(user),
+    };
+  }
+
+  /**
+   * Map a Prisma User+Plan entity to the shared UserDto shape.
+   * Static so it can be reused from other modules if needed.
+   */
+  static toUserDto(user: UserWithPlan) {
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      plan: {
+        id: user.plan.id,
+        name: user.plan.name,
+        maxGroupsCreated: user.plan.maxGroupsCreated,
+        maxMemberships: user.plan.maxMemberships,
+        maxMembersPerGroup: user.plan.maxMembersPerGroup,
+        maxTournamentsPerGroup: user.plan.maxTournamentsPerGroup,
+      },
+      createdAt: user.createdAt,
+    };
   }
 
 }

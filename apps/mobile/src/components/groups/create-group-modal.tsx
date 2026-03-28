@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { useCreateGroup } from '@/hooks/use-groups';
+import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
 interface CreateGroupModalProps {
@@ -28,16 +29,18 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
+  const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [maxMembers, setMaxMembers] = useState('50');
+  const [maxMembers, setMaxMembers] = useState(String(planLimit));
 
   const createGroup = useCreateGroup();
 
   function resetForm() {
     setName('');
     setDescription('');
-    setMaxMembers('50');
+    setMaxMembers(String(planLimit));
   }
 
   function handleClose() {
@@ -59,7 +62,9 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
     }
 
     const parsedMax = parseInt(maxMembers, 10);
-    const finalMax = isNaN(parsedMax) ? 50 : Math.min(100, Math.max(2, parsedMax));
+    const finalMax = isNaN(parsedMax)
+      ? planLimit
+      : Math.max(2, Math.min(parsedMax, planLimit));
 
     createGroup.mutate(
       {
@@ -155,7 +160,7 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
           <TextInput
             value={maxMembers}
             onChangeText={setMaxMembers}
-            placeholder="50"
+            placeholder={String(planLimit)}
             placeholderTextColor={COLORS.text.muted}
             keyboardType="number-pad"
             maxLength={3}
@@ -163,7 +168,7 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
             style={{ width: 100 }}
           />
           <Text className="mb-6 text-xs text-text-muted">
-            Mínimo 2, máximo 100
+            Mínimo 2, máximo {planLimit} (según tu plan)
           </Text>
         </View>
 

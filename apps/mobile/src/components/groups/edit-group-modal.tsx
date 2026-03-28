@@ -21,6 +21,7 @@ import type { GroupDto } from '@pichichi/shared';
 
 import { Button } from '@/components/ui/button';
 import { useUpdateGroup } from '@/hooks/use-groups';
+import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
 interface EditGroupModalProps {
@@ -35,6 +36,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
   const [maxMembers, setMaxMembers] = useState(String(group.maxMembers));
 
   const updateGroup = useUpdateGroup();
+  const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
 
   // Sync form state when group data changes (e.g. after refetch)
   useEffect(() => {
@@ -63,7 +65,9 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
     }
 
     const parsedMax = parseInt(maxMembers, 10);
-    const finalMax = isNaN(parsedMax) ? group.maxMembers : Math.max(2, parsedMax);
+    const finalMax = isNaN(parsedMax)
+      ? group.maxMembers
+      : Math.max(2, Math.min(parsedMax, planLimit));
 
     // Only send changed fields
     const data: { name?: string; description?: string; maxMembers?: number } = {};
@@ -181,7 +185,7 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
             style={{ width: 100 }}
           />
           <Text className="mb-6 text-xs text-text-muted">
-            Mínimo 2. No puede ser menor a los miembros actuales ({group.memberCount}).
+            Mínimo 2, máximo {planLimit} (según tu plan). No puede ser menor a los miembros actuales ({group.memberCount}).
           </Text>
         </View>
 

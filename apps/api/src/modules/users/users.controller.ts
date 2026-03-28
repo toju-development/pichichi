@@ -13,6 +13,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
+import { AuthService } from '../auth/auth.service.js';
 import { UsersService } from './users.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UserResponseDto } from './dto/user-response.dto.js';
@@ -30,8 +31,9 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMe(
     @CurrentUser() user: JwtUserPayload,
-  ): Promise<UserResponseDto> {
-    return this.usersService.findById(user.sub);
+  ) {
+    const found = await this.usersService.findById(user.sub);
+    return AuthService.toUserDto(found);
   }
 
   @Patch('me')
@@ -41,7 +43,8 @@ export class UsersController {
   async updateMe(
     @CurrentUser() user: JwtUserPayload,
     @Body() dto: UpdateProfileDto,
-  ): Promise<UserResponseDto> {
-    return this.usersService.updateProfile(user.sub, dto);
+  ) {
+    const updated = await this.usersService.updateProfile(user.sub, dto);
+    return AuthService.toUserDto(updated);
   }
 }
