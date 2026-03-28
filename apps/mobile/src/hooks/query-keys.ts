@@ -15,11 +15,11 @@ export const queryKeys = {
 
   // ─── Groups ────────────────────────────────────────────────────────────────
   groups: {
-    all: ['groups'] as const,
-    detail: (id: string) => ['groups', id] as const,
-    members: (groupId: string) => ['groups', groupId, 'members'] as const,
+    all: ['groups', 'list'] as const,
+    detail: (id: string) => ['groups', 'detail', id] as const,
+    members: (groupId: string) => ['groups', 'members', groupId] as const,
     tournaments: (groupId: string) =>
-      ['groups', groupId, 'tournaments'] as const,
+      ['groups', 'tournaments', groupId] as const,
   },
 
   // ─── Tournaments ───────────────────────────────────────────────────────────

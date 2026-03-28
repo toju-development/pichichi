@@ -3,10 +3,17 @@
  *
  * States: loading, empty (with CTA), populated list with group cards.
  * Each card navigates to the group detail screen on press.
+ *
+ * IMPORTANT — NativeWind v4 ghost-card fix:
+ * GroupCard and RoleBadge use StyleSheet for ALL visual properties
+ * (color, font, padding, bg) to guarantee first-frame rendering.
+ * NativeWind className is only used for screen-level layout wrappers
+ * (flex-1, bg-background) that are safe because they affect the outer
+ * container, not the visible card content.
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import type { GroupDto } from '@pichichi/shared';
 
@@ -25,16 +32,46 @@ function RoleBadge({ role }: { role: string }) {
 
   return (
     <View
-      className={`rounded-full px-2.5 py-0.5 ${isAdmin ? 'bg-primary/15' : 'bg-gray-100'}`}
+      style={[
+        badgeStyles.badge,
+        isAdmin ? badgeStyles.badgeAdmin : badgeStyles.badgeMember,
+      ]}
     >
       <Text
-        className={`text-xs font-semibold ${isAdmin ? 'text-primary' : 'text-text-muted'}`}
+        style={[
+          badgeStyles.badgeText,
+          isAdmin ? badgeStyles.badgeTextAdmin : badgeStyles.badgeTextMember,
+        ]}
       >
         {isAdmin ? 'ADMIN' : 'MIEMBRO'}
       </Text>
     </View>
   );
 }
+
+const badgeStyles = StyleSheet.create({
+  badge: {
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  badgeAdmin: {
+    backgroundColor: 'rgba(11, 110, 79, 0.15)',
+  },
+  badgeMember: {
+    backgroundColor: '#F3F4F6',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  badgeTextAdmin: {
+    color: COLORS.primary.DEFAULT,
+  },
+  badgeTextMember: {
+    color: COLORS.text.muted,
+  },
+});
 
 /** Single group card with name, description, members, and role. */
 function GroupCard({ group }: { group: GroupDto }) {
@@ -44,25 +81,22 @@ function GroupCard({ group }: { group: GroupDto }) {
       onPress={() => router.push(`/(tabs)/groups/${group.id}`)}
       className="mb-3"
     >
-      <View className="pl-3">
+      <View style={cardStyles.content}>
         {/* Group name */}
-        <Text className="text-base font-bold text-text-primary">
+        <Text style={cardStyles.name}>
           {group.name}
         </Text>
 
         {/* Description (truncated to 1 line) */}
         {group.description ? (
-          <Text
-            className="mt-1 text-sm text-text-secondary"
-            numberOfLines={1}
-          >
+          <Text style={cardStyles.description} numberOfLines={1}>
             {group.description}
           </Text>
         ) : null}
 
         {/* Bottom row: member count + role badge */}
-        <View className="mt-2 flex-row items-center justify-between">
-          <Text className="text-xs text-text-muted">
+        <View style={cardStyles.bottomRow}>
+          <Text style={cardStyles.memberCount}>
             {group.memberCount} {group.memberCount === 1 ? 'miembro' : 'miembros'}
           </Text>
           <RoleBadge role={group.userRole} />
@@ -71,6 +105,32 @@ function GroupCard({ group }: { group: GroupDto }) {
     </Card>
   );
 }
+
+const cardStyles = StyleSheet.create({
+  content: {
+    paddingLeft: 12,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+  description: {
+    marginTop: 4,
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  bottomRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  memberCount: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+  },
+});
 
 export default function GroupsScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -105,21 +165,29 @@ export default function GroupsScreen() {
   }, [refetch]);
 
   return (
-    <View className="flex-1 bg-background">
+    <View style={screenStyles.root}>
       <ScreenHeader
         title="Mis Grupos"
         gradient
         rightAction={
-          <View className="flex-row items-center gap-3">
+          <View style={headerActionStyles.row}>
             {/* Create group */}
             <Pressable
               onPress={handleCreatePress}
-              className={`h-9 w-9 items-center justify-center rounded-full active:opacity-70 ${
-                canCreateGroup ? 'bg-white/20' : 'bg-white/10'
-              }`}
+              style={[
+                headerActionStyles.button,
+                canCreateGroup
+                  ? headerActionStyles.buttonEnabled
+                  : headerActionStyles.buttonDisabled,
+              ]}
             >
               <Text
-                className={`text-lg font-bold ${canCreateGroup ? 'text-white' : 'text-white/40'}`}
+                style={[
+                  headerActionStyles.buttonText,
+                  canCreateGroup
+                    ? headerActionStyles.textEnabled
+                    : headerActionStyles.textDisabled,
+                ]}
               >
                 +
               </Text>
@@ -128,9 +196,11 @@ export default function GroupsScreen() {
             {/* Join group */}
             <Pressable
               onPress={() => setShowJoinModal(true)}
-              className="h-9 w-9 items-center justify-center rounded-full bg-white/20 active:opacity-70"
+              style={[headerActionStyles.button, headerActionStyles.buttonEnabled]}
             >
-              <Text className="text-base font-bold text-white">#</Text>
+              <Text style={[headerActionStyles.hashText, headerActionStyles.textEnabled]}>
+                #
+              </Text>
             </Pressable>
           </View>
         }
@@ -138,14 +208,14 @@ export default function GroupsScreen() {
 
       {/* Loading */}
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
+        <View style={screenStyles.centered}>
           <ActivityIndicator size="large" color={COLORS.primary.DEFAULT} />
         </View>
       ) : error ? (
         /* Error state */
         <ScrollView
-          className="flex-1"
-          contentContainerClassName="flex-1"
+          style={screenStyles.fill}
+          contentContainerStyle={screenStyles.fill}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -156,7 +226,7 @@ export default function GroupsScreen() {
           }
         >
           <EmptyState
-            icon={<Text className="text-4xl">⚠</Text>}
+            icon={<Text style={screenStyles.errorIcon}>⚠</Text>}
             title="Error al cargar grupos"
             description="No se pudieron cargar tus grupos. Deslizá hacia abajo para reintentar."
             action={{
@@ -168,8 +238,8 @@ export default function GroupsScreen() {
       ) : hasGroups ? (
         /* Group list */
         <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-5 pt-5 pb-8"
+          style={screenStyles.fill}
+          contentContainerStyle={screenStyles.listContent}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -186,8 +256,8 @@ export default function GroupsScreen() {
       ) : (
         /* Empty state */
         <ScrollView
-          className="flex-1"
-          contentContainerClassName="flex-1"
+          style={screenStyles.fill}
+          contentContainerStyle={screenStyles.fill}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -208,14 +278,11 @@ export default function GroupsScreen() {
           />
 
           {/* Secondary action */}
-          <View className="items-center pb-10">
-            <Pressable
-              onPress={() => setShowJoinModal(true)}
-              className="active:opacity-70"
-            >
-              <Text className="text-sm text-text-secondary">
+          <View style={screenStyles.secondaryAction}>
+            <Pressable onPress={() => setShowJoinModal(true)}>
+              <Text style={screenStyles.secondaryText}>
                 ¿Tenés un código?{' '}
-                <Text className="font-semibold text-primary">Unirme</Text>
+                <Text style={screenStyles.secondaryLink}>Unirme</Text>
               </Text>
             </Pressable>
           </View>
@@ -234,3 +301,73 @@ export default function GroupsScreen() {
     </View>
   );
 }
+
+const screenStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  fill: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
+  },
+  errorIcon: {
+    fontSize: 32,
+  },
+  secondaryAction: {
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  secondaryText: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  secondaryLink: {
+    fontWeight: '600',
+    color: COLORS.primary.DEFAULT,
+  },
+});
+
+const headerActionStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  button: {
+    height: 36,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9999,
+  },
+  buttonEnabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  buttonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  hashText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  textEnabled: {
+    color: '#FFFFFF',
+  },
+  textDisabled: {
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+});

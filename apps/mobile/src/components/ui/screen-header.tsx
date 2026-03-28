@@ -4,11 +4,17 @@
  * Rendered at the top of a screen. Handles safe-area insets automatically
  * so content is never hidden behind the status bar.
  *
- * Total height ≈ safe-area-top + 60–80 px content area.
+ * Total height ≈ safe-area-top + 16px padding + 60–80 px content area.
+ *
+ * IMPORTANT — NativeWind v4 first-frame fix:
+ * ALL visual properties use StyleSheet to guarantee rendering on the first
+ * frame. The gradient variant uses white text; the plain variant uses dark text.
  */
 
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { COLORS } from '@/theme/colors';
 
 import { GradientBackground } from './gradient-bg';
 
@@ -33,20 +39,21 @@ export function ScreenHeader({
   const insets = useSafeAreaInsets();
 
   const content = (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       {/* Title row */}
       <View style={styles.titleRow}>
         {/* Text group */}
-        <View className="flex-1">
-          <Text
-            className={`text-[22px] font-bold ${gradient ? 'text-white' : 'text-text-primary'}`}
-          >
+        <View style={styles.titleGroup}>
+          <Text style={[styles.title, gradient ? styles.titleLight : styles.titleDark]}>
             {title}
           </Text>
 
           {subtitle ? (
             <Text
-              className={`mt-0.5 text-sm ${gradient ? 'text-white/70' : 'text-text-secondary'}`}
+              style={[
+                styles.subtitle,
+                gradient ? styles.subtitleLight : styles.subtitleDark,
+              ]}
             >
               {subtitle}
             </Text>
@@ -64,22 +71,16 @@ export function ScreenHeader({
 
   if (gradient) {
     return (
-      <GradientBackground
-        colors={['#084a36', '#0B6E4F'] as const}
-        style={styles.gradientWrapper}
-      >
+      <GradientBackground colors={['#084a36', '#0B6E4F'] as const}>
         {content}
       </GradientBackground>
     );
   }
 
-  return <View className="bg-white">{content}</View>;
+  return <View style={styles.plainBg}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
-  gradientWrapper: {
-    // No flex: 1 — height is determined solely by content
-  },
   container: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -87,5 +88,31 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  titleGroup: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  titleLight: {
+    color: '#FFFFFF',
+  },
+  titleDark: {
+    color: COLORS.text.primary,
+  },
+  subtitle: {
+    marginTop: 2,
+    fontSize: 14,
+  },
+  subtitleLight: {
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  subtitleDark: {
+    color: COLORS.text.secondary,
+  },
+  plainBg: {
+    backgroundColor: '#FFFFFF',
   },
 });

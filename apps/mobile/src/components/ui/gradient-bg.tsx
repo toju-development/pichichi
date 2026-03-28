@@ -9,11 +9,11 @@
  * or if the native module is not linked). This prevents the entire app from
  * white-screening when the gradient module is unavailable.
  *
- * IMPORTANT — NativeWind v4 rules applied here:
  * LinearGradient is registered with cssInterop (see nativewind-interop.ts),
- * so `className` maps to `style`. To avoid mixing style+className on the same
- * element, we wrap with an outer View for any inline styles and keep
- * LinearGradient with className-only.
+ * which converts className → style. Since cssInterop merges className-derived
+ * styles with the native `style` prop (same as regular RN merging), it's safe
+ * to pass both here — cssInterop does a simple StyleSheet merge, unlike
+ * NativeWind's built-in component hooks that use async useReducer.
  */
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
@@ -39,7 +39,7 @@ interface GradientBackgroundProps {
   children: React.ReactNode;
   /** NativeWind classes forwarded to LinearGradient. */
   className?: string;
-  /** Additional inline styles applied to an outer wrapper View. */
+  /** Additional inline styles merged with className-derived styles. */
   style?: ViewStyle;
 }
 
@@ -71,8 +71,6 @@ class GradientErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      // SAFETY: fallback uses ONLY inline styles — no className/NativeWind
-      // which could also fail and cause a cascading crash.
       return (
         <View
           style={[
@@ -101,24 +99,20 @@ export function GradientBackground({
   className,
   style,
 }: GradientBackgroundProps) {
-  // Use the first color as fallback background when LinearGradient fails
   const fallbackColor = String(colors[0]);
-
-  const gradient = (
-    <LinearGradient
-      colors={colors}
-      locations={locations}
-      start={start}
-      end={end}
-      className={className}
-    >
-      {children}
-    </LinearGradient>
-  );
 
   return (
     <GradientErrorBoundary fallbackColor={fallbackColor} style={style}>
-      {style ? <View style={style}>{gradient}</View> : gradient}
+      <LinearGradient
+        colors={colors}
+        locations={locations}
+        start={start}
+        end={end}
+        className={className}
+        style={style}
+      >
+        {children}
+      </LinearGradient>
     </GradientErrorBoundary>
   );
 }

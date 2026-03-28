@@ -44,9 +44,12 @@ export function useCreateGroup() {
     mutationFn: groupsApi.createGroup,
     retry: false,
     onSuccess: (newGroup) => {
+      // Optimistic: add to cache immediately for instant UI feedback
       qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
         old ? [newGroup, ...old] : [newGroup],
       );
+      // Background: sync with server to ensure data consistency
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
 }
@@ -58,9 +61,12 @@ export function useJoinGroup() {
     mutationFn: (inviteCode: string) => groupsApi.joinGroup(inviteCode),
     retry: false,
     onSuccess: (joinedGroup) => {
+      // Optimistic: add to cache immediately for instant UI feedback
       qc.setQueryData<GroupDto[]>(queryKeys.groups.all, (old) =>
         old ? [joinedGroup, ...old] : [joinedGroup],
       );
+      // Background: sync with server to ensure data consistency
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
 }

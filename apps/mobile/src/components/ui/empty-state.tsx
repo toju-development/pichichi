@@ -3,9 +3,15 @@
  *
  * Renders an icon inside a soft circle, a title, an optional description,
  * and an optional call-to-action button.
+ *
+ * IMPORTANT — NativeWind v4 first-frame fix:
+ * Uses StyleSheet for all visual properties to guarantee rendering
+ * on the first frame without ghost/invisible content.
  */
 
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { COLORS } from '@/theme/colors';
 
 import { Button } from './button';
 
@@ -28,24 +34,24 @@ export function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <View className="flex-1 items-center justify-center px-6">
+    <View style={styles.container}>
       {/* Icon circle */}
-      <View className="h-20 w-20 items-center justify-center rounded-full bg-background">
+      <View style={styles.iconCircle}>
         {icon}
       </View>
 
-      <Text className="mt-4 text-center text-lg font-bold text-text-primary">
+      <Text style={styles.title}>
         {title}
       </Text>
 
       {description ? (
-        <Text className="mt-2 max-w-[250px] text-center text-sm text-text-secondary">
+        <Text style={styles.description}>
           {description}
         </Text>
       ) : null}
 
       {action ? (
-        <View className="mt-6">
+        <View style={styles.actionWrapper}>
           <Button
             title={action.label}
             variant="primary"
@@ -56,3 +62,37 @@ export function EmptyState({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  iconCircle: {
+    height: 80,
+    width: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9999,
+    backgroundColor: COLORS.background,
+  },
+  title: {
+    marginTop: 16,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+  description: {
+    marginTop: 8,
+    maxWidth: 250,
+    textAlign: 'center',
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  actionWrapper: {
+    marginTop: 24,
+  },
+});

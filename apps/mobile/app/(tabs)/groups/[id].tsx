@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { GroupMemberRole } from '@pichichi/shared';
@@ -35,10 +35,16 @@ function RoleBadge({ role }: { role: GroupMemberRole }) {
 
   return (
     <View
-      className={`rounded-full px-2.5 py-0.5 ${isAdmin ? 'bg-primary/15' : 'bg-gray-100'}`}
+      style={[
+        detailStyles.badge,
+        isAdmin ? detailStyles.badgeAdmin : detailStyles.badgeMember,
+      ]}
     >
       <Text
-        className={`text-xs font-semibold ${isAdmin ? 'text-primary' : 'text-text-muted'}`}
+        style={[
+          detailStyles.badgeText,
+          isAdmin ? detailStyles.badgeTextAdmin : detailStyles.badgeTextMember,
+        ]}
       >
         {isAdmin ? 'Admin' : 'Miembro'}
       </Text>
@@ -51,9 +57,9 @@ function BackButton() {
   return (
     <Pressable
       onPress={() => router.back()}
-      className="mt-2 flex-row items-center self-start active:opacity-70"
+      style={detailStyles.backButton}
     >
-      <Text className="text-sm font-semibold text-white/80">{'\u2190'} Volver</Text>
+      <Text style={detailStyles.backText}>{'\u2190'} Volver</Text>
     </Pressable>
   );
 }
@@ -200,25 +206,25 @@ export default function GroupDetailScreen() {
 
   if (error || !group) {
     return (
-      <View className="flex-1 bg-background">
+      <View style={detailStyles.screen}>
         <ScreenHeader title="Grupo" gradient>
           <BackButton />
         </ScreenHeader>
 
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="mb-4 text-center text-base text-text-secondary">
+        <View style={detailStyles.errorContainer}>
+          <Text style={detailStyles.errorText}>
             No se pudo cargar el grupo.
           </Text>
           <Button title="Volver" variant="outline" onPress={() => router.back()} />
         </View>
-      </View>
-    );
-  }
+    </View>
+  );
+}
 
   // ── Loaded state ──────────────────────────────────────────────────────────
 
   return (
-    <View className="flex-1 bg-background">
+    <View style={detailStyles.screen}>
       <ScreenHeader
         title={group.name}
         subtitle={group.description || 'Grupo de predicciones'}
@@ -228,8 +234,8 @@ export default function GroupDetailScreen() {
       </ScreenHeader>
 
       <ScrollView
-        className="flex-1 px-5 pt-4"
-        contentContainerClassName="pb-8"
+        style={detailStyles.scrollView}
+        contentContainerStyle={detailStyles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={isAnyRefreshing}
@@ -239,16 +245,14 @@ export default function GroupDetailScreen() {
           />
         }
       >
-       <View className="gap-4">
+       <View style={detailStyles.sections}>
         {/* ── Invite Code Card (admin only) ───────────────────────────── */}
         {isAdmin && group.inviteCode ? (
           <Card accent>
-            <Text className="mb-2 text-sm font-semibold text-text-secondary">
+            <Text style={detailStyles.sectionLabel}>
               Código de invitación
             </Text>
-            <Text
-              className="mb-3 text-center font-mono text-2xl font-bold tracking-widest text-primary"
-            >
+            <Text style={detailStyles.inviteCode}>
               {group.inviteCode}
             </Text>
             <Button title="Compartir" variant="outline" onPress={handleShareInviteCode} />
@@ -257,16 +261,16 @@ export default function GroupDetailScreen() {
 
         {/* ── Group Info Card ──────────────────────────────────────────── */}
         <Card>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-text-muted">
+          <View style={detailStyles.infoRow}>
+            <Text style={detailStyles.infoText}>
               Miembros: {members?.length ?? group.memberCount} / {group.maxMembers}
             </Text>
             {isAdmin ? (
               <Pressable
                 onPress={() => setEditModalVisible(true)}
-                className="rounded-lg bg-primary/10 px-3 py-1.5 active:opacity-70"
+                style={detailStyles.editButton}
               >
-                <Text className="text-sm font-semibold text-primary">Editar</Text>
+                <Text style={detailStyles.editButtonText}>Editar</Text>
               </Pressable>
             ) : null}
           </View>
@@ -274,7 +278,7 @@ export default function GroupDetailScreen() {
 
         {/* ── Members Section ──────────────────────────────────────────── */}
         <View>
-          <Text className="mb-3 text-lg font-bold text-text-primary">
+          <Text style={detailStyles.sectionTitle}>
             Miembros ({members?.length ?? group.memberCount})
           </Text>
 
@@ -289,19 +293,19 @@ export default function GroupDetailScreen() {
                 className="mb-3"
                 onPress={canManage ? () => handleMemberAction(member) : undefined}
               >
-                <View className="flex-row items-center">
+                <View style={detailStyles.memberRow}>
                   {/* Avatar circle */}
-                  <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-primary/15">
-                    <Text className="text-sm font-bold text-primary">{initial}</Text>
+                  <View style={detailStyles.avatar}>
+                    <Text style={detailStyles.avatarText}>{initial}</Text>
                   </View>
 
                   {/* Name */}
-                  <View className="flex-1">
-                    <Text className="text-base font-semibold text-text-primary">
+                  <View style={detailStyles.memberInfo}>
+                    <Text style={detailStyles.memberName}>
                       {member.displayName}
                       {isCurrentUser ? ' (Vos)' : ''}
                     </Text>
-                    <Text className="mt-0.5 text-xs text-text-muted">
+                    <Text style={detailStyles.memberUsername}>
                       @{member.username}
                     </Text>
                   </View>
@@ -316,13 +320,13 @@ export default function GroupDetailScreen() {
 
         {/* ── Tournaments Section ──────────────────────────────────────── */}
         <View>
-          <Text className="mb-3 text-lg font-bold text-text-primary">Torneos</Text>
+          <Text style={detailStyles.sectionTitle}>Torneos</Text>
 
           {!tournaments || tournaments.length === 0 ? (
             <Card>
-              <View className="flex-row items-center gap-3">
+              <View style={detailStyles.tournamentRow}>
                 <TrophyIcon size={20} color={COLORS.text.muted} />
-                <Text className="text-sm text-text-muted">
+                <Text style={detailStyles.tournamentEmpty}>
                   No hay torneos asociados
                 </Text>
               </View>
@@ -330,19 +334,19 @@ export default function GroupDetailScreen() {
           ) : (
             tournaments.map((tournament) => (
               <Card key={tournament.id} className="mb-3">
-                <View className="flex-row items-center gap-3">
+                <View style={detailStyles.tournamentRow}>
                   <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
-                  <View className="flex-1">
-                    <Text className="text-base font-semibold text-text-primary">
+                  <View style={detailStyles.tournamentInfo}>
+                    <Text style={detailStyles.tournamentName}>
                       {tournament.name}
                     </Text>
-                    <View className="mt-1 flex-row items-center gap-2">
-                      <View className="rounded-full bg-primary/15 px-2 py-0.5">
-                        <Text className="text-xs font-medium text-primary">
+                    <View style={detailStyles.tournamentMeta}>
+                      <View style={detailStyles.tournamentTypeBadge}>
+                        <Text style={detailStyles.tournamentTypeText}>
                           {tournament.type.replace(/_/g, ' ')}
                         </Text>
                       </View>
-                      <Text className="text-xs text-text-muted">
+                      <Text style={detailStyles.tournamentStatus}>
                         {tournament.status === 'IN_PROGRESS'
                           ? 'En curso'
                           : tournament.status === 'UPCOMING'
@@ -360,12 +364,17 @@ export default function GroupDetailScreen() {
         </View>
 
         {/* ── Actions Section ──────────────────────────────────────────── */}
-        <View className="mt-4 gap-3">
+        <View style={detailStyles.actionsSection}>
           {/* Leave group */}
           <Card onPress={leaveGroupMutation.isPending ? undefined : handleLeaveGroup}>
-            <View className="flex-row items-center justify-center">
+            <View style={detailStyles.actionRow}>
               <Text
-                className={`text-base font-semibold ${leaveGroupMutation.isPending ? 'text-text-muted' : 'text-error'}`}
+                style={[
+                  detailStyles.actionText,
+                  leaveGroupMutation.isPending
+                    ? detailStyles.actionTextDisabled
+                    : detailStyles.actionTextDanger,
+                ]}
               >
                 {leaveGroupMutation.isPending ? 'Saliendo...' : 'Salir del grupo'}
               </Text>
@@ -375,9 +384,14 @@ export default function GroupDetailScreen() {
           {/* Delete group (admin only) */}
           {isAdmin ? (
             <Card onPress={deleteGroupMutation.isPending ? undefined : handleDeleteGroup}>
-              <View className="flex-row items-center justify-center">
+              <View style={detailStyles.actionRow}>
               <Text
-                className={`text-base font-semibold ${deleteGroupMutation.isPending ? 'text-text-muted' : 'text-error'}`}
+                style={[
+                  detailStyles.actionText,
+                  deleteGroupMutation.isPending
+                    ? detailStyles.actionTextDisabled
+                    : detailStyles.actionTextDanger,
+                ]}
               >
                 {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
               </Text>
@@ -399,3 +413,210 @@ export default function GroupDetailScreen() {
     </View>
   );
 }
+
+const detailStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  scrollContent: {
+    paddingBottom: 32,
+  },
+  sections: {
+    gap: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    marginBottom: 16,
+    textAlign: 'center',
+    fontSize: 16,
+    color: COLORS.text.secondary,
+  },
+
+  // Badge
+  badge: {
+    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  badgeAdmin: {
+    backgroundColor: 'rgba(11, 110, 79, 0.15)',
+  },
+  badgeMember: {
+    backgroundColor: '#F3F4F6',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  badgeTextAdmin: {
+    color: COLORS.primary.DEFAULT,
+  },
+  badgeTextMember: {
+    color: COLORS.text.muted,
+  },
+
+  // Back button
+  backButton: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+
+  // Invite code card
+  sectionLabel: {
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+  },
+  inviteCode: {
+    marginBottom: 12,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: 4,
+    color: COLORS.primary.DEFAULT,
+  },
+
+  // Group info card
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  infoText: {
+    fontSize: 14,
+    color: COLORS.text.muted,
+  },
+  editButton: {
+    borderRadius: 8,
+    backgroundColor: 'rgba(11, 110, 79, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary.DEFAULT,
+  },
+
+  // Section titles
+  sectionTitle: {
+    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+
+  // Members
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    marginRight: 12,
+    height: 40,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9999,
+    backgroundColor: 'rgba(11, 110, 79, 0.15)',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary.DEFAULT,
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  memberUsername: {
+    marginTop: 2,
+    fontSize: 12,
+    color: COLORS.text.muted,
+  },
+
+  // Tournaments
+  tournamentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tournamentEmpty: {
+    fontSize: 14,
+    color: COLORS.text.muted,
+  },
+  tournamentInfo: {
+    flex: 1,
+  },
+  tournamentName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  tournamentMeta: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tournamentTypeBadge: {
+    borderRadius: 9999,
+    backgroundColor: 'rgba(11, 110, 79, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  tournamentTypeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.primary.DEFAULT,
+  },
+  tournamentStatus: {
+    fontSize: 12,
+    color: COLORS.text.muted,
+  },
+
+  // Actions
+  actionsSection: {
+    marginTop: 16,
+    gap: 12,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  actionTextDanger: {
+    color: COLORS.error,
+  },
+  actionTextDisabled: {
+    color: COLORS.text.muted,
+  },
+});
