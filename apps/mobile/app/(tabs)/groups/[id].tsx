@@ -2,21 +2,24 @@
  * Group detail screen — full group view with members, tournaments, and actions.
  *
  * Shows group info (invite code for admin, members list, tournaments) with admin
- * actions for member management. Handles loading, error, and empty states.
+ * actions for member management, editing, and deletion. Handles loading, error,
+ * and empty states.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Share, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { GroupMemberRole } from '@pichichi/shared';
 
 import { TrophyIcon } from '@/components/brand/icons';
+import { EditGroupModal } from '@/components/groups/edit-group-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import {
+  useDeleteGroup,
   useGroup,
   useGroupMembers,
   useGroupTournaments,
@@ -50,7 +53,7 @@ function BackButton() {
       onPress={() => router.back()}
       className="mt-2 flex-row items-center self-start active:opacity-70"
     >
-      <Text className="text-sm font-semibold text-white/80">← Volver</Text>
+      <Text className="text-sm font-semibold text-white/80">{'\u2190'} Volver</Text>
     </Pressable>
   );
 }
@@ -62,10 +65,13 @@ export default function GroupDetailScreen() {
   const { data: tournaments, refetch: refetchTournaments, isRefetching: isRefetchingTournaments } = useGroupTournaments(id!);
   const leaveGroupMutation = useLeaveGroup();
   const removeMemberMutation = useRemoveMember();
+  const deleteGroupMutation = useDeleteGroup();
 
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const isAdmin = group?.userRole === 'ADMIN';
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const isAnyRefreshing = isRefetching || isRefetchingMembers || isRefetchingTournaments;
 
@@ -115,6 +121,40 @@ export default function GroupDetailScreen() {
           }),
       },
     ]);
+  }
+
+  function handleDeleteGroup() {
+    if (!group || deleteGroupMutation.isPending) return;
+
+    Alert.alert(
+      'Eliminar grupo',
+      '¿Estás seguro de que querés eliminar este grupo? ' +
+        'Si el grupo tiene predicciones, será archivado en lugar de eliminado.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () =>
+            deleteGroupMutation.mutate(group.id, {
+              onSuccess: (result) => {
+                const msg =
+                  result.action === 'archived'
+                    ? 'El grupo fue archivado porque contiene predicciones.'
+                    : 'El grupo fue eliminado.';
+                Alert.alert('Listo', msg, [
+                  { text: 'OK', onPress: () => router.replace('/(tabs)/groups') },
+                ]);
+              },
+              onError: () =>
+                Alert.alert(
+                  'Error',
+                  'No se pudo eliminar el grupo. Intentá de nuevo.',
+                ),
+            }),
+        },
+      ],
+    );
   }
 
   function handleMemberAction(member: {
@@ -215,6 +255,23 @@ export default function GroupDetailScreen() {
           </Card>
         ) : null}
 
+        {/* ── Group Info Card ──────────────────────────────────────────── */}
+        <Card>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm text-text-muted">
+              Miembros: {members?.length ?? group.memberCount} / {group.maxMembers}
+            </Text>
+            {isAdmin ? (
+              <Pressable
+                onPress={() => setEditModalVisible(true)}
+                className="rounded-lg bg-primary/10 px-3 py-1.5 active:opacity-70"
+              >
+                <Text className="text-sm font-semibold text-primary">Editar</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </Card>
+
         {/* ── Members Section ──────────────────────────────────────────── */}
         <View>
           <Text className="mb-3 text-lg font-bold text-text-primary">
@@ -303,7 +360,8 @@ export default function GroupDetailScreen() {
         </View>
 
         {/* ── Actions Section ──────────────────────────────────────────── */}
-        <View className="mt-4">
+        <View className="mt-4 gap-3">
+          {/* Leave group */}
           <Card onPress={leaveGroupMutation.isPending ? undefined : handleLeaveGroup}>
             <View className="flex-row items-center justify-center">
               <Text
@@ -314,8 +372,31 @@ export default function GroupDetailScreen() {
               </Text>
             </View>
           </Card>
+
+          {/* Delete group (admin only) */}
+          {isAdmin ? (
+            <Card onPress={deleteGroupMutation.isPending ? undefined : handleDeleteGroup}>
+              <View className="flex-row items-center justify-center">
+                <Text
+                  className="text-base font-semibold"
+                  style={{ color: deleteGroupMutation.isPending ? COLORS.text.muted : COLORS.error }}
+                >
+                  {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
+                </Text>
+              </View>
+            </Card>
+          ) : null}
         </View>
       </ScrollView>
+
+      {/* ── Edit Group Modal ───────────────────────────────────────────── */}
+      {isAdmin ? (
+        <EditGroupModal
+          visible={editModalVisible}
+          group={group}
+          onClose={() => setEditModalVisible(false)}
+        />
+      ) : null}
     </View>
   );
 }

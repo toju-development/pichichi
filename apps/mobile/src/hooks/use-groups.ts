@@ -1,4 +1,3 @@
-import type { GroupMemberRole } from '@pichichi/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import * as groupsApi from '@/api/groups';
@@ -41,6 +40,7 @@ export function useCreateGroup() {
 
   return useMutation({
     mutationFn: groupsApi.createGroup,
+    retry: false,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
@@ -52,6 +52,7 @@ export function useJoinGroup() {
 
   return useMutation({
     mutationFn: (inviteCode: string) => groupsApi.joinGroup(inviteCode),
+    retry: false,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
@@ -63,8 +64,10 @@ export function useLeaveGroup() {
 
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.leaveGroup(groupId),
-    onSuccess: () => {
+    retry: false,
+    onSuccess: (_data, groupId) => {
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+      qc.invalidateQueries({ queryKey: queryKeys.groups.detail(groupId) });
     },
   });
 }
@@ -80,6 +83,7 @@ export function useAddTournament() {
       groupId: string;
       tournamentId: string;
     }) => groupsApi.addTournament(groupId, tournamentId),
+    retry: false,
     onSuccess: (_data, { groupId }) => {
       qc.invalidateQueries({
         queryKey: queryKeys.groups.tournaments(groupId),
@@ -97,10 +101,12 @@ export function useUpdateGroup() {
       data,
     }: {
       id: string;
-      data: { name?: string; description?: string };
+      data: { name?: string; description?: string; maxMembers?: number };
     }) => groupsApi.updateGroup(id, data),
-    onSuccess: () => {
+    retry: false,
+    onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+      qc.invalidateQueries({ queryKey: queryKeys.groups.detail(id) });
     },
   });
 }
@@ -110,6 +116,7 @@ export function useDeleteGroup() {
 
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.deleteGroup(groupId),
+    retry: false,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
@@ -127,28 +134,7 @@ export function useRemoveMember() {
       groupId: string;
       userId: string;
     }) => groupsApi.removeMember(groupId, userId),
-    onSuccess: (_data, { groupId }) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.groups.members(groupId),
-      });
-      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
-    },
-  });
-}
-
-export function useUpdateMemberRole() {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      groupId,
-      userId,
-      role,
-    }: {
-      groupId: string;
-      userId: string;
-      role: GroupMemberRole;
-    }) => groupsApi.updateMemberRole(groupId, userId, role),
+    retry: false,
     onSuccess: (_data, { groupId }) => {
       qc.invalidateQueries({
         queryKey: queryKeys.groups.members(groupId),

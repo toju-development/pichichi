@@ -2,7 +2,7 @@
 
 > This document is auto-maintained. Updated as features are implemented.
 >
-> Last updated: 2026-03-27
+> Last updated: 2026-03-28
 
 ## V1 - World Cup 2026
 
@@ -20,6 +20,20 @@
   - Mobile: Groups list screen with create/join modals, group detail screen with members, tournaments, invite code sharing, admin actions
   - API client: All 12 group endpoints wired
   - TanStack hooks: All queries and mutations implemented
+- [x] **Plan system** — Per-user plan limits (FREE/PREMIUM)
+  - Plan model with typed limit columns (maxGroupsCreated, maxMemberships, maxMembersPerGroup, maxTournamentsPerGroup)
+  - Centralized enforcement via PlansService
+  - Plan limits enforced on group create, join, member capacity, tournament add, group update
+  - API: GET /plans, GET /plans/me
+- [x] **Groups module polish** — Functional review + fixes
+  - Editable maxMembers (admin only, capped by plan, floor at current member count)
+  - Conditional delete: soft-delete if no data, archive if group has predictions
+  - joinByCode race condition fixed with Serializable transaction
+  - Edit group modal (name, description, maxMembers)
+  - Delete/archive group action with user feedback
+  - Dead code cleanup (UpdateMemberRoleDto, updateMemberRole)
+  - Cache invalidation on leave/update/delete
+  - retry: false on all mutations
 
 ### In Progress
 
@@ -70,7 +84,11 @@
 - [ ] Production deployment (API + database + Redis)
 - [ ] Google OAuth consent screen: "Publish App"
 - [ ] App Store / Play Store submission
-- [ ] Payment/premium features (V2)
+- [ ] **Stripe payments** — Premium plan billing
+  - Stripe Checkout for subscription
+  - Webhook to upgrade/downgrade user plan
+  - Architecture ready: planId FK on User, Plan model seeded with limits
+- [ ] Social features (group chat, activity feed)
 
 ## Known Issues
 

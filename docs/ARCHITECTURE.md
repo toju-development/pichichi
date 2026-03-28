@@ -176,7 +176,7 @@ usage >= plan.limit? → ForbiddenException with descriptive message
 | `enforceCanCreateGroup(userId)` | `GroupsService.create` | Groups created < plan.maxGroupsCreated |
 | `enforceCanJoinGroup(userId)` | `GroupsService.joinByCode` | Active memberships < plan.maxMemberships |
 | `enforceGroupMemberCapacity(groupId, creatorId)` | `GroupsService.joinByCode` | Active members < min(group.maxMembers, plan.maxMembersPerGroup) |
-| `getMaxMembersPerGroup(userId)` | `GroupsService.create` | Caps maxMembers at plan limit |
+| `getMaxMembersPerGroup(userId)` | `GroupsService.create`, `GroupsService.update` | Caps maxMembers at plan limit |
 | `enforceCanAddTournament(groupId, creatorId)` | `GroupsService.addTournament` | Tournaments in group < plan.maxTournamentsPerGroup |
 | `getUserPlan(userId)` | `PlansController.getMyPlan` | Returns full plan object |
 
@@ -211,6 +211,14 @@ UPDATE users SET plan_id = '00000000-0000-4000-a000-000000000002' WHERE email = 
 ### Future: Stripe Integration
 
 When Stripe is added, the Plan model will gain a `stripePriceId` column. A webhook handler will update `user.planId` when a subscription is created/cancelled. The enforcement logic doesn't change — it only cares about `user.plan.*` values.
+
+### Groups Module: Concurrency & Data Safety
+
+**joinByCode race condition**: The entire `joinByCode` flow (capacity check + member insert) is wrapped in a Prisma interactive transaction with `Serializable` isolation level. This prevents two concurrent join requests from exceeding the group's member capacity.
+
+**Conditional delete**: When an admin deletes a group, the system checks for existing predictions or bonus predictions. If the group has data, it is archived (soft-deleted) rather than destroyed. The API returns `{ action: 'deleted' | 'archived' }` so the client can display the appropriate message.
+
+**maxMembers update**: Admins can change a group's `maxMembers` via the update endpoint. The value is validated against (1) the creator's plan limit and (2) the current active member count — it cannot be set below the number of existing members.
 
 ## Development Workflow
 

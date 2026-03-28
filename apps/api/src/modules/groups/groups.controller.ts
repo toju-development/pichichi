@@ -87,17 +87,25 @@ export class GroupsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Soft delete a group (admin only)' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete or archive a group (admin only)' })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 204, description: 'Group deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group deleted or archived',
+    schema: {
+      properties: {
+        action: { type: 'string', enum: ['deleted', 'archived'] },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Only admins can delete the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
   async delete(
     @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<void> {
+  ): Promise<{ action: 'deleted' | 'archived' }> {
     return this.groupsService.delete(id, user.sub);
   }
 

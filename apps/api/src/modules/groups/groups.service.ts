@@ -168,12 +168,46 @@ export class GroupsService {
   ): Promise<GroupResponseDto> {
     await this.requireAdmin(groupId, userId);
 
+    // Validate maxMembers if provided
+    let effectiveMaxMembers: number | undefined;
+
+    if (dto.maxMembers !== undefined) {
+      // Cannot set below current active member count
+      const currentMembers = await this.prisma.groupMember.count({
+        where: { groupId, isActive: true },
+      });
+
+      if (dto.maxMembers < currentMembers) {
+        throw new BadRequestException(
+          `No podés establecer el máximo en ${dto.maxMembers} porque el grupo ` +
+          `ya tiene ${currentMembers} miembros activos.`,
+        );
+      }
+
+      // Cap to plan limit
+      const group = await this.prisma.group.findUnique({
+        where: { id: groupId, isActive: true },
+      });
+
+      if (!group) {
+        throw new NotFoundException('Group not found');
+      }
+
+      const planMaxMembers = await this.plansService.getMaxMembersPerGroup(
+        group.createdBy,
+      );
+      effectiveMaxMembers = Math.min(dto.maxMembers, planMaxMembers);
+    }
+
     const group = await this.prisma.group.update({
       where: { id: groupId, isActive: true },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.description !== undefined
           ? { description: dto.description }
+          : {}),
+        ...(effectiveMaxMembers !== undefined
+          ? { maxMembers: effectiveMaxMembers }
           : {}),
       },
       include: {
@@ -196,11 +230,22 @@ export class GroupsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Delete group (soft delete, admin only)
+  // Delete group (conditional: soft-delete or archive, admin only)
   // ---------------------------------------------------------------------------
 
-  async delete(groupId: string, userId: string): Promise<void> {
+  async delete(
+    groupId: string,
+    userId: string,
+  ): Promise<{ action: 'deleted' | 'archived' }> {
     await this.requireAdmin(groupId, userId);
+
+    // Check if the group has any predictions or bonus predictions
+    const [predictionCount, bonusPredictionCount] = await Promise.all([
+      this.prisma.prediction.count({ where: { groupId } }),
+      this.prisma.bonusPrediction.count({ where: { groupId } }),
+    ]);
+
+    const hasData = predictionCount > 0 || bonusPredictionCount > 0;
 
     await this.prisma.$transaction([
       this.prisma.groupMember.updateMany({
@@ -212,6 +257,8 @@ export class GroupsService {
         data: { isActive: false },
       }),
     ]);
+
+    return { action: hasData ? 'archived' : 'deleted' };
   }
 
   // ---------------------------------------------------------------------------
@@ -222,65 +269,89 @@ export class GroupsService {
     userId: string,
     inviteCode: string,
   ): Promise<GroupResponseDto> {
-    // Check user's membership limit before anything else
+    // Check user's membership limit before anything else (outside tx is fine —
+    // worst case they get a slightly stale count and the tx catches the real limit)
     await this.plansService.enforceCanJoinGroup(userId);
 
-    const group = await this.prisma.group.findUnique({
-      where: { inviteCode, isActive: true },
-      include: {
-        _count: { select: { members: { where: { isActive: true } } } },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const group = await tx.group.findUnique({
+          where: { inviteCode, isActive: true },
+          include: {
+            _count: {
+              select: { members: { where: { isActive: true } } },
+            },
+          },
+        });
+
+        if (!group) {
+          throw new NotFoundException(
+            'Invalid invite code or group no longer active',
+          );
+        }
+
+        // Check if already a member (active or inactive)
+        const existing = await tx.groupMember.findUnique({
+          where: { groupId_userId: { groupId: group.id, userId } },
+        });
+
+        if (existing?.isActive) {
+          throw new ConflictException(
+            'You are already a member of this group',
+          );
+        }
+
+        // Check group capacity against creator's plan limit — inside tx
+        const creatorPlan = await this.plansService.getUserPlan(group.createdBy);
+        const effectiveLimit = Math.min(
+          group.maxMembers,
+          creatorPlan.maxMembersPerGroup,
+        );
+
+        if (group._count.members >= effectiveLimit) {
+          throw new ForbiddenException(
+            `El grupo alcanzó el máximo de ${effectiveLimit} miembros.`,
+          );
+        }
+
+        // Re-activate or create membership
+        if (existing && !existing.isActive) {
+          await tx.groupMember.update({
+            where: { id: existing.id },
+            data: { isActive: true, role: GroupMemberRole.MEMBER },
+          });
+        } else {
+          await tx.groupMember.create({
+            data: {
+              groupId: group.id,
+              userId,
+              role: GroupMemberRole.MEMBER,
+            },
+          });
+        }
+
+        // Re-count after join
+        const memberCount = await tx.groupMember.count({
+          where: { groupId: group.id, isActive: true },
+        });
+
+        return {
+          id: group.id,
+          name: group.name,
+          description: group.description,
+          inviteCode: null,
+          createdBy: group.createdBy,
+          maxMembers: group.maxMembers,
+          memberCount,
+          userRole: GroupMemberRole.MEMBER,
+          userPoints: 0,
+          createdAt: group.createdAt,
+        };
       },
-    });
-
-    if (!group) {
-      throw new NotFoundException('Invalid invite code or group no longer active');
-    }
-
-    // Check if already a member (active or inactive)
-    const existing = await this.prisma.groupMember.findUnique({
-      where: { groupId_userId: { groupId: group.id, userId } },
-    });
-
-    if (existing?.isActive) {
-      throw new ConflictException('You are already a member of this group');
-    }
-
-    // Check group capacity against creator's plan limit
-    await this.plansService.enforceGroupMemberCapacity(group.id, group.createdBy);
-
-    // Re-activate or create membership
-    if (existing && !existing.isActive) {
-      await this.prisma.groupMember.update({
-        where: { id: existing.id },
-        data: { isActive: true, role: GroupMemberRole.MEMBER },
-      });
-    } else {
-      await this.prisma.groupMember.create({
-        data: {
-          groupId: group.id,
-          userId,
-          role: GroupMemberRole.MEMBER,
-        },
-      });
-    }
-
-    // Re-count after join
-    const memberCount = await this.prisma.groupMember.count({
-      where: { groupId: group.id, isActive: true },
-    });
-
-    return {
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      inviteCode: null,
-      createdBy: group.createdBy,
-      maxMembers: group.maxMembers,
-      memberCount,
-      userRole: GroupMemberRole.MEMBER,
-      userPoints: 0,
-      createdAt: group.createdAt,
-    };
+      {
+        isolationLevel: 'Serializable',
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
