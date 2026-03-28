@@ -8,6 +8,12 @@
  * LinearGradient module fails to load (e.g. in Expo Go without dev build,
  * or if the native module is not linked). This prevents the entire app from
  * white-screening when the gradient module is unavailable.
+ *
+ * IMPORTANT — NativeWind v4 rules applied here:
+ * LinearGradient is registered with cssInterop (see nativewind-interop.ts),
+ * so `className` maps to `style`. To avoid mixing style+className on the same
+ * element, we wrap with an outer View for any inline styles and keep
+ * LinearGradient with className-only.
  */
 
 import { Component, type ErrorInfo, type ReactNode } from 'react';
@@ -33,7 +39,7 @@ interface GradientBackgroundProps {
   children: React.ReactNode;
   /** NativeWind classes forwarded to LinearGradient. */
   className?: string;
-  /** Additional inline styles. */
+  /** Additional inline styles applied to an outer wrapper View. */
   style?: ViewStyle;
 }
 
@@ -46,7 +52,7 @@ interface FallbackState {
 }
 
 class GradientErrorBoundary extends Component<
-  { fallbackColor: string; className?: string; style?: ViewStyle; children: ReactNode },
+  { fallbackColor: string; style?: ViewStyle; children: ReactNode },
   FallbackState
 > {
   state: FallbackState = { hasError: false };
@@ -98,22 +104,21 @@ export function GradientBackground({
   // Use the first color as fallback background when LinearGradient fails
   const fallbackColor = String(colors[0]);
 
-  return (
-    <GradientErrorBoundary
-      fallbackColor={fallbackColor}
+  const gradient = (
+    <LinearGradient
+      colors={colors}
+      locations={locations}
+      start={start}
+      end={end}
       className={className}
-      style={style}
     >
-      <LinearGradient
-        colors={colors}
-        locations={locations}
-        start={start}
-        end={end}
-        className={className}
-        style={style}
-      >
-        {children}
-      </LinearGradient>
+      {children}
+    </LinearGradient>
+  );
+
+  return (
+    <GradientErrorBoundary fallbackColor={fallbackColor} style={style}>
+      {style ? <View style={style}>{gradient}</View> : gradient}
     </GradientErrorBoundary>
   );
 }

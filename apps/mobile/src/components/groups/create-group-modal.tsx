@@ -152,8 +152,7 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
             multiline
             numberOfLines={3}
             textAlignVertical="top"
-            className="mb-1 rounded-xl border border-border bg-white px-4 py-3 text-base text-text-primary"
-            style={{ minHeight: 80 }}
+            className="mb-1 min-h-[80px] rounded-xl border border-border bg-white px-4 py-3 text-base text-text-primary"
           />
           <Text className="mb-5 text-xs text-text-muted">
             {description.length}/500

@@ -7,6 +7,9 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      fontFamily: {
+        mono: ['monospace'],
+      },
       colors: {
         primary: {
           DEFAULT: "#0B6E4F",

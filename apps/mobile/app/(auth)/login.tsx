@@ -6,9 +6,12 @@
  * Apple Sign In via expo-apple-authentication (iOS only).
  * All text in Spanish (app targets Argentine users).
  *
- * SAFETY: All critical layout styles (flex, backgroundColor) are duplicated
- * as inline `style` props so the screen is always visible, even if NativeWind
- * className processing fails. className is kept as progressive enhancement.
+ * SAFETY: All critical layout styles use ONLY StyleSheet — NO className on
+ * structural elements. NativeWind v4 resolves className asynchronously on iOS,
+ * so mixing style+className causes invisible content on first render. Since
+ * the login screen must ALWAYS render correctly (it's the first thing users
+ * see), we use style-only for layout. className is reserved for non-critical
+ * elements like Pressable active:opacity-70.
  *
  * PREMIUM COMPONENTS: GradientBackground and SafeLogo are lazy-loaded.
  * If expo-linear-gradient or react-native-svg fail, the screen degrades
@@ -359,12 +362,8 @@ export default function LoginScreen() {
 
   return (
     <BackgroundWrapper {...bgProps}>
-      <SafeAreaView
-        className="flex-1"
-        style={{ flex: 1 }}
-      >
+      <SafeAreaView style={{ flex: 1 }}>
         <View
-          className="flex-1 justify-between px-8 py-6"
           style={{
             flex: 1,
             justifyContent: 'space-between',
@@ -373,10 +372,7 @@ export default function LoginScreen() {
           }}
         >
           {/* Top section — branding with SafeLogo, centered in available space */}
-          <View
-            className="flex-1 items-center justify-center"
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-          >
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <SafeLogo size={80} variant="icon" />
             <Text
               style={{

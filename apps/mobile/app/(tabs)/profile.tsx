@@ -118,7 +118,7 @@ export default function ProfileScreen() {
         <View className="mt-6">
           <Card onPress={handleLogout}>
             <View className="flex-row items-center justify-center">
-              <Text className="text-base font-semibold" style={{ color: '#E63946' }}>
+              <Text className={`text-base font-semibold ${logoutMutation.isPending ? 'text-text-muted' : 'text-error'}`}>
                 {logoutMutation.isPending ? 'Cerrando sesión...' : 'Cerrar sesión'}
               </Text>
             </View>

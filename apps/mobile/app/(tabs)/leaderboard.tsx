@@ -21,8 +21,7 @@ function PodiumItem({
 }) {
   return (
     <View
-      className={`items-center ${isFirst ? 'mb-0' : 'mt-4'}`}
-      style={{ flex: 1 }}
+      className={`flex-1 items-center ${isFirst ? 'mb-0' : 'mt-4'}`}
     >
       {/* Avatar circle */}
       <View

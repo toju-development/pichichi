@@ -8,6 +8,7 @@
  */
 
 import '../global.css';
+import '@/nativewind-interop';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Slot } from 'expo-router';

@@ -43,7 +43,7 @@ export default function HomeScreen() {
           <Card className="flex-1 items-center py-4">
             <PredictionIcon size={16} color={COLORS.primary.DEFAULT} />
             <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
-            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+            <Text className="text-xs text-text-secondary">
               Predicciones
             </Text>
           </Card>
@@ -51,7 +51,7 @@ export default function HomeScreen() {
           <Card className="flex-1 items-center py-4">
             <PointsIcon size={16} color={COLORS.primary.DEFAULT} />
             <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
-            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+            <Text className="text-xs text-text-secondary">
               Puntos
             </Text>
           </Card>
@@ -59,7 +59,7 @@ export default function HomeScreen() {
           <Card className="flex-1 items-center py-4">
             <TrophyIcon size={16} color={COLORS.primary.DEFAULT} />
             <Text className="mt-1 text-2xl font-bold text-primary">0</Text>
-            <Text className="text-xs" style={{ color: 'rgba(26,26,46,0.6)' }}>
+            <Text className="text-xs text-text-secondary">
               Posición
             </Text>
           </Card>

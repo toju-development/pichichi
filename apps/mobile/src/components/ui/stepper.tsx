@@ -4,12 +4,13 @@
  * [ - ]  12  [ + ]
  *
  * Respects min/max boundaries. Buttons auto-disable at limits.
- * Uses the app's NativeWind + COLORS design system.
+ * Uses the app's NativeWind design system.
+ *
+ * NativeWind v4 rule: NEVER mix style + className on the same element.
+ * Dynamic states (disabled opacity, conditional colors) use className-only.
  */
 
 import { Pressable, Text, View } from 'react-native';
-
-import { COLORS } from '@/theme/colors';
 
 interface StepperProps {
   value: number;
@@ -36,12 +37,10 @@ export function Stepper({ value, min, max, step = 1, onChange }: StepperProps) {
       <Pressable
         onPress={decrement}
         disabled={atMin}
-        className="h-11 w-11 items-center justify-center rounded-xl border border-border bg-white active:bg-gray-100"
-        style={atMin ? { opacity: 0.35 } : undefined}
+        className={`h-11 w-11 items-center justify-center rounded-xl border border-border bg-white active:bg-gray-100 ${atMin ? 'opacity-35' : ''}`}
       >
         <Text
-          className="text-xl font-bold"
-          style={{ color: atMin ? COLORS.text.muted : COLORS.primary.DEFAULT }}
+          className={`text-xl font-bold ${atMin ? 'text-text-muted' : 'text-primary'}`}
         >
           −
         </Text>
@@ -54,12 +53,10 @@ export function Stepper({ value, min, max, step = 1, onChange }: StepperProps) {
       <Pressable
         onPress={increment}
         disabled={atMax}
-        className="h-11 w-11 items-center justify-center rounded-xl border border-border bg-white active:bg-gray-100"
-        style={atMax ? { opacity: 0.35 } : undefined}
+        className={`h-11 w-11 items-center justify-center rounded-xl border border-border bg-white active:bg-gray-100 ${atMax ? 'opacity-35' : ''}`}
       >
         <Text
-          className="text-xl font-bold"
-          style={{ color: atMax ? COLORS.text.muted : COLORS.primary.DEFAULT }}
+          className={`text-xl font-bold ${atMax ? 'text-text-muted' : 'text-primary'}`}
         >
           +
         </Text>

@@ -229,7 +229,7 @@ export default function GroupDetailScreen() {
 
       <ScrollView
         className="flex-1 px-5 pt-4"
-        contentContainerClassName="pb-8 gap-4"
+        contentContainerClassName="pb-8"
         refreshControl={
           <RefreshControl
             refreshing={isAnyRefreshing}
@@ -239,6 +239,7 @@ export default function GroupDetailScreen() {
           />
         }
       >
+       <View className="gap-4">
         {/* ── Invite Code Card (admin only) ───────────────────────────── */}
         {isAdmin && group.inviteCode ? (
           <Card accent>
@@ -246,8 +247,7 @@ export default function GroupDetailScreen() {
               Código de invitación
             </Text>
             <Text
-              className="mb-3 text-center text-2xl font-bold tracking-widest text-primary"
-              style={{ fontFamily: 'monospace' }}
+              className="mb-3 text-center font-mono text-2xl font-bold tracking-widest text-primary"
             >
               {group.inviteCode}
             </Text>
@@ -365,8 +365,7 @@ export default function GroupDetailScreen() {
           <Card onPress={leaveGroupMutation.isPending ? undefined : handleLeaveGroup}>
             <View className="flex-row items-center justify-center">
               <Text
-                className="text-base font-semibold"
-                style={{ color: leaveGroupMutation.isPending ? COLORS.text.muted : COLORS.error }}
+                className={`text-base font-semibold ${leaveGroupMutation.isPending ? 'text-text-muted' : 'text-error'}`}
               >
                 {leaveGroupMutation.isPending ? 'Saliendo...' : 'Salir del grupo'}
               </Text>
@@ -377,16 +376,16 @@ export default function GroupDetailScreen() {
           {isAdmin ? (
             <Card onPress={deleteGroupMutation.isPending ? undefined : handleDeleteGroup}>
               <View className="flex-row items-center justify-center">
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: deleteGroupMutation.isPending ? COLORS.text.muted : COLORS.error }}
-                >
-                  {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
-                </Text>
+              <Text
+                className={`text-base font-semibold ${deleteGroupMutation.isPending ? 'text-text-muted' : 'text-error'}`}
+              >
+                {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
+              </Text>
               </View>
             </Card>
           ) : null}
         </View>
+       </View>
       </ScrollView>
 
       {/* ── Edit Group Modal ───────────────────────────────────────────── */}

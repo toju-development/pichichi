@@ -127,10 +127,7 @@ export function Button({
             <ButtonContent variant={variant} loading={loading} title={title} />
           </Gradient>
         ) : (
-          <View
-            className="flex-row items-center justify-center px-6 py-4"
-            style={{ backgroundColor: '#0B6E4F' }}
-          >
+          <View className="flex-row items-center justify-center bg-primary px-6 py-4">
             <ButtonContent variant={variant} loading={loading} title={title} />
           </View>
         )}
