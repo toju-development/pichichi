@@ -6,9 +6,12 @@
  * and empty states.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import type { AxiosError } from 'axios';
 
 import type { GroupMemberRole } from '@pichichi/shared';
 
@@ -26,6 +29,7 @@ import {
   useLeaveGroup,
   useRemoveMember,
 } from '@/hooks/use-groups';
+import { queryKeys } from '@/hooks/query-keys';
 import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
@@ -66,10 +70,11 @@ function BackButton() {
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const qc = useQueryClient();
 
-  // Flag to disable all queries after leave/delete to prevent 404 refetches.
-  // Expo Router's Stack keeps this screen mounted even after router.replace,
-  // so active query observers would re-fetch a deleted group without this guard.
+  // Flag to disable all queries and show loading state during delete/leave.
+  // Set to true BEFORE calling mutate() so the next render disables observers
+  // and prevents 404 refetches. Reverted to false on mutation error.
   const [isGroupRemoved, setIsGroupRemoved] = useState(false);
 
   const { data: group, isLoading, error, refetch, isRefetching } = useGroup(id!, !isGroupRemoved);
@@ -87,6 +92,29 @@ export default function GroupDetailScreen() {
 
   const isAnyRefreshing = isRefetching || isRefetchingMembers || isRefetchingTournaments;
 
+  // ── Auto-navigate on 404 (group deleted/removed by someone else) ────────
+  // Uses a ref to prevent the Alert from firing more than once.
+  const hasNavigatedFor404 = useRef(false);
+
+  useEffect(() => {
+    if (isGroupRemoved || hasNavigatedFor404.current) return;
+
+    const status = (error as AxiosError)?.response?.status;
+    if (status === 404 || status === 403) {
+      hasNavigatedFor404.current = true;
+      setIsGroupRemoved(true);
+      // Refresh the groups list so it doesn't show the stale group
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+      const msg =
+        status === 404
+          ? 'Este grupo fue eliminado o ya no tenés acceso.'
+          : 'Ya no sos miembro de este grupo.';
+      Alert.alert('Grupo no disponible', msg, [
+        { text: 'OK', onPress: () => router.replace('/(tabs)/groups') },
+      ]);
+    }
+  }, [error, isGroupRemoved, qc]);
+
   const onRefresh = useCallback(() => {
     refetch();
     refetchMembers();
@@ -94,6 +122,35 @@ export default function GroupDetailScreen() {
   }, [refetch, refetchMembers, refetchTournaments]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+
+  /** Handle mutation errors — if the group no longer exists (404/403),
+   *  navigate to the list instead of showing a generic retry message. */
+  function handleMutationError(err: unknown, fallbackMsg: string) {
+    const status = (err as AxiosError)?.response?.status;
+    if (status === 404 || status === 403) {
+      qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+      const msg =
+        status === 404
+          ? 'Este grupo fue eliminado o ya no tenés acceso.'
+          : 'Ya no sos miembro de este grupo.';
+      Alert.alert('Grupo no disponible', msg, [
+        { text: 'OK', onPress: () => router.replace('/(tabs)/groups') },
+      ]);
+    } else {
+      setIsGroupRemoved(false);
+      Alert.alert('Error', fallbackMsg);
+    }
+  }
+
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  async function handleCopyInviteCode() {
+    if (!group?.inviteCode) return;
+
+    await Clipboard.setStringAsync(group.inviteCode);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  }
 
   function handleShareInviteCode() {
     if (!group?.inviteCode) return;
@@ -125,15 +182,20 @@ export default function GroupDetailScreen() {
       {
         text: 'Salir',
         style: 'destructive',
-        onPress: () =>
+        onPress: () => {
+          // Disable queries BEFORE the mutation fires to prevent 404 refetches.
+          // React batches setState, but the next render will have enabled=false
+          // before any mutation onSuccess/invalidation triggers observers.
+          setIsGroupRemoved(true);
           leaveGroupMutation.mutate(group.id, {
             onSuccess: () => {
-              setIsGroupRemoved(true);
               router.replace('/(tabs)/groups');
             },
-            onError: () =>
-              Alert.alert('Error', 'No se pudo salir del grupo. Intentá de nuevo.'),
-          }),
+            onError: (err) => {
+              handleMutationError(err, 'No se pudo salir del grupo. Intentá de nuevo.');
+            },
+          });
+        },
       },
     ]);
   }
@@ -157,24 +219,20 @@ export default function GroupDetailScreen() {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () =>
+          onPress: () => {
+            // Disable queries BEFORE the mutation fires to prevent 404 refetches.
+            setIsGroupRemoved(true);
             deleteGroupMutation.mutate(group.id, {
-              onSuccess: (result) => {
-                setIsGroupRemoved(true);
-                const msg =
-                  result.action === 'archived'
-                    ? 'El grupo fue archivado porque contiene predicciones.'
-                    : 'El grupo fue eliminado.';
-                Alert.alert('Listo', msg, [
-                  { text: 'OK', onPress: () => router.replace('/(tabs)/groups') },
-                ]);
+              onSuccess: () => {
+                // Navigate immediately — same pattern as leave.
+                // No intermediate Alert: the user already confirmed the action.
+                router.replace('/(tabs)/groups');
               },
-              onError: () =>
-                Alert.alert(
-                  'Error',
-                  'No se pudo eliminar el grupo. Intentá de nuevo.',
-                ),
-            }),
+              onError: (err) => {
+                handleMutationError(err, 'No se pudo eliminar el grupo. Intentá de nuevo.');
+              },
+            });
+          },
         },
       ],
     );
@@ -215,7 +273,10 @@ export default function GroupDetailScreen() {
 
   // ── Loading state ─────────────────────────────────────────────────────────
 
-  if (isLoading) {
+  // Show loading during initial fetch OR while navigating away after delete/leave.
+  // Without this, the error state flashes ("No se pudo cargar") before the
+  // navigation transition completes, because the queries receive 404s.
+  if (isLoading || isGroupRemoved) {
     return <LoadingScreen />;
   }
 
@@ -269,9 +330,17 @@ export default function GroupDetailScreen() {
             <Text style={detailStyles.sectionLabel}>
               Código de invitación
             </Text>
-            <Text style={detailStyles.inviteCode}>
-              {group.inviteCode}
-            </Text>
+            <Pressable onPress={handleCopyInviteCode} style={detailStyles.inviteCodeTouchable}>
+              <Text style={detailStyles.inviteCode}>
+                {group.inviteCode}
+              </Text>
+              <Text style={[
+                detailStyles.inviteCodeHint,
+                codeCopied && detailStyles.inviteCodeHintCopied,
+              ]}>
+                {codeCopied ? '¡Copiado!' : 'Tocá para copiar'}
+              </Text>
+            </Pressable>
             <Button title="Compartir" variant="outline" onPress={handleShareInviteCode} />
           </Card>
         ) : null}
@@ -504,13 +573,29 @@ const detailStyles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
   inviteCode: {
-    marginBottom: 12,
     textAlign: 'center',
     fontFamily: 'monospace',
     fontSize: 24,
     fontWeight: '700',
     letterSpacing: 4,
     color: COLORS.primary.DEFAULT,
+  },
+  inviteCodeTouchable: {
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary.light,
+  },
+  inviteCodeHint: {
+    marginTop: 4,
+    fontSize: 12,
+    color: COLORS.text.muted,
+  },
+  inviteCodeHintCopied: {
+    color: COLORS.success,
+    fontWeight: '600',
   },
 
   // Group info card

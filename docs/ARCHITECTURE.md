@@ -229,9 +229,171 @@ When Stripe is added, the Plan model will gain a `stripePriceId` column. A webho
 
 **Conditional delete**: When an admin deletes a group, the system checks for existing predictions or bonus predictions. Groups **without data are hard-deleted** (physically removed from the database — cascade removes members and tournaments). Groups **with prediction data are archived** (soft-deleted via `isActive: false`) to preserve historical records. The API returns `{ action: 'deleted' | 'archived' }` so the client can display the appropriate message. The same logic applies when the last member leaves a group.
 
-**Cache cleanup on delete/leave**: When a group is deleted or a user leaves, the mobile app uses `removeQueries` (not `invalidateQueries`) for the deleted group's detail, members, and tournaments queries. This prevents 404 refetch errors from Expo Router's Stack keeping the detail screen mounted after navigation.
+**Cache cleanup on delete/leave**: When a group is deleted or a user leaves, the mutation hooks (`useDeleteGroup`, `useLeaveGroup`) use `onMutate` to `cancelQueries` + `removeQueries` for the group's detail, members, and tournaments queries **before** the API call fires. This is synchronous and eliminates the race condition where Expo Router's Stack keeps the detail screen mounted during navigation transitions. As defense-in-depth, the detail screen also sets an `isGroupRemoved` flag that disables queries via the `enabled` parameter, and the global query client skips retries for 4xx errors (404, 403, etc.) since they indicate permanent failures.
+
+**Cross-device group removal**: When a member is viewing a group that was deleted by the admin from another device (or when the member was expelled), the detail screen detects the 404/403 error via a `useEffect`, shows an Alert explaining the situation, and auto-navigates to the groups list. A `useRef` flag prevents the Alert from firing multiple times.
 
 **maxMembers update**: Admins can change a group's `maxMembers` via the update endpoint. The value is validated against (1) the creator's plan limit and (2) the current active member count — it cannot be set below the number of existing members.
+
+## Critical Rules: NativeWind Styles
+
+### The Golden Rule: NEVER mix `style` and `className`
+
+On iOS with NativeWind v4, the `style` prop and `className` prop resolve at different times. If you put both on the same React Native element, iOS can render invisible content on the first paint. The content may appear after a hot-reload or navigation, but **the first render will be broken**.
+
+```tsx
+// BAD — content invisible on iOS first render
+<View style={{ flex: 1 }} className="bg-white p-4">
+  <Text>This may be invisible</Text>
+</View>
+
+// GOOD — separate into two elements
+<View style={{ flex: 1 }}>
+  <View className="bg-white p-4">
+    <Text>Always visible</Text>
+  </View>
+</View>
+```
+
+**Exception**: Components registered with `cssInterop` (like `LinearGradient`) can safely use both `style` and `className` because the interop layer unifies the resolution timing.
+
+### When to use `style` vs `className`
+
+| Use `style` (StyleSheet) | Use `className` (NativeWind) |
+|--------------------------|------------------------------|
+| Animated values | Static layout/spacing |
+| Dynamic values from JS (e.g., `{ height: scrollY }`) | Colors, backgrounds |
+| Platform-specific overrides | Typography |
+| Navigation bar tints, StatusBar | Responsive variants |
+
+### `StyleSheet.create` placement
+
+Always define `StyleSheet.create()` at **module scope** (outside the component function). If helper components outside the file reference the styles, and the StyleSheet is inside the component body, you get a `ReferenceError` because `const` doesn't hoist.
+
+```tsx
+// BAD — ReferenceError if RoleBadge is defined outside GroupDetailScreen
+function GroupDetailScreen() {
+  const styles = StyleSheet.create({ badge: { ... } });
+  // ...
+}
+
+// GOOD — always at module scope
+const styles = StyleSheet.create({ badge: { ... } });
+
+function GroupDetailScreen() {
+  // ...
+}
+```
+
+## Critical Rules: TanStack Query Mutations (Delete/Leave Pattern)
+
+### The 404 Refetch Problem
+
+When a mutation deletes a resource (group, member, etc.) and the detail screen is still mounted (Expo Router Stack keeps it alive during navigation transitions), TanStack Query will refetch the deleted resource and get a 404. This causes a brief error flash before navigation completes.
+
+### The Definitive Solution (Defense in Depth)
+
+These four layers work together. All four are required:
+
+#### Layer 1: Flag BEFORE mutate (same event handler tick)
+
+```tsx
+const [isGroupRemoved, setIsGroupRemoved] = useState(false);
+
+function handleDelete() {
+  setIsGroupRemoved(true);  // BEFORE mutate — same tick
+  deleteGroupMutation.mutate(groupId);
+}
+```
+
+**Why before**: React batches state updates. If you set the flag inside `onSuccess`, the query observers fire before the flag takes effect, causing a 404 refetch. Setting it before `mutate()` ensures React processes the flag in the same batch.
+
+**Revert on non-404 error**: In `onError`, check if the error is NOT a 404/403 and revert `setIsGroupRemoved(false)`.
+
+#### Layer 2: Disable queries with `enabled`
+
+```tsx
+const { data: group } = useGroup(id, !isGroupRemoved);
+const { data: members } = useGroupMembers(id, !isGroupRemoved);
+```
+
+When `isGroupRemoved` is true, all queries are disabled. Show `<LoadingScreen />` instead of the detail UI. This prevents the green error flash.
+
+#### Layer 3: Cancel and remove queries in mutation hooks
+
+```tsx
+// onMutate (synchronous, before API call)
+onMutate: async (groupId) => {
+  await qc.cancelQueries({ queryKey: queryKeys.groups.detail(groupId) });
+  await qc.cancelQueries({ queryKey: queryKeys.groups.members(groupId) });
+  await qc.cancelQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+},
+
+// onSuccess (after API returns)
+onSuccess: (_, groupId) => {
+  qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
+  qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
+  qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+  qc.invalidateQueries({ queryKey: queryKeys.groups.all });
+},
+```
+
+**Why `cancelQueries` in `onMutate` and `removeQueries` in `onSuccess`**: Using `removeQueries` in `onMutate` doesn't work when `useQuery` hooks are still mounted with `enabled=true` — TanStack Query re-creates the query immediately because the observer is still alive. Cancel first, remove after.
+
+#### Layer 4: Global smart retry (skip 4xx)
+
+```tsx
+// query-client.ts
+const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 409, 422]);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const status = (error as AxiosError)?.response?.status;
+        if (status && NON_RETRYABLE_STATUSES.has(status)) return false;
+        return failureCount < 3;
+      },
+    },
+  },
+});
+```
+
+4xx errors are permanent failures — the resource doesn't exist or the user doesn't have access. Retrying wastes requests and battery. Only 5xx and network errors are transient.
+
+### Navigate Immediately — No Intermediate Alerts
+
+After delete/leave, navigate to the groups list **immediately** in `onSuccess`. Do NOT show an intermediate `Alert.alert("Listo")` before navigation — this keeps the screen mounted longer and gives TanStack Query more time to refetch the deleted resource.
+
+```tsx
+// BAD — Alert keeps screen mounted, causes 404 refetches
+onSuccess: () => {
+  Alert.alert('Listo', 'Grupo eliminado', [
+    { text: 'OK', onPress: () => router.replace('/(tabs)/groups') }
+  ]);
+},
+
+// GOOD — navigate immediately
+onSuccess: () => {
+  router.replace('/(tabs)/groups');
+},
+```
+
+### Query Key Structure: Avoid Prefix Collisions
+
+```tsx
+// BAD — 'groups' is a prefix of ['groups', id]
+groups.all = ['groups'];
+groups.detail = (id) => ['groups', id];
+
+// GOOD — no prefix collisions
+groups.all = ['groups', 'list'];
+groups.detail = (id) => ['groups', 'detail', id];
+groups.members = (id) => ['groups', 'members', id];
+groups.tournaments = (id) => ['groups', 'tournaments', id];
+```
+
+`invalidateQueries({ queryKey: ['groups'] })` with prefix matching will cascade into ALL queries that start with `['groups']`. Adding a second segment (`'list'`, `'detail'`) prevents unintended invalidation.
 
 ## Development Workflow
 

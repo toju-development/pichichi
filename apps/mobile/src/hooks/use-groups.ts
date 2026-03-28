@@ -77,9 +77,19 @@ export function useLeaveGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.leaveGroup(groupId),
     retry: false,
-    onSuccess: () => {
-      // Only refresh the list. The detail screen disables its own queries
-      // via the enabled flag before navigating away, so no 404 refetches.
+    onMutate: (groupId) => {
+      // Cancel any in-flight requests for this group (safety net).
+      // The screen sets enabled=false BEFORE calling mutate, so by the time
+      // the API responds, observers are already detached.
+      qc.cancelQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.cancelQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.cancelQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+    },
+    onSuccess: (_data, groupId) => {
+      // Clean up cache for the removed group
+      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
@@ -130,9 +140,17 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.deleteGroup(groupId),
     retry: false,
-    onSuccess: () => {
-      // Only refresh the list. The detail screen disables its own queries
-      // via the enabled flag before navigating away, so no 404 refetches.
+    onMutate: (groupId) => {
+      // Cancel any in-flight requests for this group (safety net).
+      qc.cancelQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.cancelQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.cancelQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
+    },
+    onSuccess: (_data, groupId) => {
+      // Clean up cache for the deleted group
+      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
+      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
