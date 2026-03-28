@@ -66,9 +66,15 @@ function BackButton() {
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: group, isLoading, error, refetch, isRefetching } = useGroup(id!);
-  const { data: members, refetch: refetchMembers, isRefetching: isRefetchingMembers } = useGroupMembers(id!);
-  const { data: tournaments, refetch: refetchTournaments, isRefetching: isRefetchingTournaments } = useGroupTournaments(id!);
+
+  // Flag to disable all queries after leave/delete to prevent 404 refetches.
+  // Expo Router's Stack keeps this screen mounted even after router.replace,
+  // so active query observers would re-fetch a deleted group without this guard.
+  const [isGroupRemoved, setIsGroupRemoved] = useState(false);
+
+  const { data: group, isLoading, error, refetch, isRefetching } = useGroup(id!, !isGroupRemoved);
+  const { data: members, refetch: refetchMembers, isRefetching: isRefetchingMembers } = useGroupMembers(id!, !isGroupRemoved);
+  const { data: tournaments, refetch: refetchTournaments, isRefetching: isRefetchingTournaments } = useGroupTournaments(id!, !isGroupRemoved);
   const leaveGroupMutation = useLeaveGroup();
   const removeMemberMutation = useRemoveMember();
   const deleteGroupMutation = useDeleteGroup();
@@ -121,7 +127,10 @@ export default function GroupDetailScreen() {
         style: 'destructive',
         onPress: () =>
           leaveGroupMutation.mutate(group.id, {
-            onSuccess: () => router.replace('/(tabs)/groups'),
+            onSuccess: () => {
+              setIsGroupRemoved(true);
+              router.replace('/(tabs)/groups');
+            },
             onError: () =>
               Alert.alert('Error', 'No se pudo salir del grupo. Intentá de nuevo.'),
           }),
@@ -151,6 +160,7 @@ export default function GroupDetailScreen() {
           onPress: () =>
             deleteGroupMutation.mutate(group.id, {
               onSuccess: (result) => {
+                setIsGroupRemoved(true);
                 const msg =
                   result.action === 'archived'
                     ? 'El grupo fue archivado porque contiene predicciones.'

@@ -13,27 +13,27 @@ export function useMyGroups() {
   });
 }
 
-export function useGroup(id: string) {
+export function useGroup(id: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.groups.detail(id),
     queryFn: () => groupsApi.getGroup(id),
-    enabled: !!id,
+    enabled: !!id && enabled,
   });
 }
 
-export function useGroupMembers(groupId: string) {
+export function useGroupMembers(groupId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.groups.members(groupId),
     queryFn: () => groupsApi.getMembers(groupId),
-    enabled: !!groupId,
+    enabled: !!groupId && enabled,
   });
 }
 
-export function useGroupTournaments(groupId: string) {
+export function useGroupTournaments(groupId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.groups.tournaments(groupId),
     queryFn: () => groupsApi.getGroupTournaments(groupId),
-    enabled: !!groupId,
+    enabled: !!groupId && enabled,
   });
 }
 
@@ -77,13 +77,9 @@ export function useLeaveGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.leaveGroup(groupId),
     retry: false,
-    onSuccess: (_data, groupId) => {
-      // Remove this group's queries to prevent 404 refetches
-      // (the detail screen may still be mounted in the Stack)
-      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
-      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
-      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
-      // Refresh the list to reflect the change
+    onSuccess: () => {
+      // Only refresh the list. The detail screen disables its own queries
+      // via the enabled flag before navigating away, so no 404 refetches.
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
@@ -134,12 +130,9 @@ export function useDeleteGroup() {
   return useMutation({
     mutationFn: (groupId: string) => groupsApi.deleteGroup(groupId),
     retry: false,
-    onSuccess: (_data, groupId) => {
-      // Remove this group's queries to prevent 404 refetches
-      qc.removeQueries({ queryKey: queryKeys.groups.detail(groupId) });
-      qc.removeQueries({ queryKey: queryKeys.groups.members(groupId) });
-      qc.removeQueries({ queryKey: queryKeys.groups.tournaments(groupId) });
-      // Refresh the list to reflect the change
+    onSuccess: () => {
+      // Only refresh the list. The detail screen disables its own queries
+      // via the enabled flag before navigating away, so no 404 refetches.
       qc.invalidateQueries({ queryKey: queryKeys.groups.all });
     },
   });
