@@ -47,7 +47,7 @@ export function Stepper({ value, min, max, step = 1, onChange }: StepperProps) {
         </Text>
       </Pressable>
 
-      <View className="mx-4 min-w-[48px] items-center">
+      <View className="mx-2 min-w-[36px] items-center">
         <Text className="text-xl font-bold text-text-primary">{value}</Text>
       </View>
 
