@@ -9,6 +9,7 @@
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StackActions } from '@react-navigation/native';
 
 import { GlobeIcon, GroupIcon, TrophyIcon } from '@/components/brand/icons';
 import { COLORS } from '@/theme/colors';
@@ -25,6 +26,13 @@ function ActiveDot() {
 export default function TabLayout() {
   return (
     <Tabs
+      screenListeners={({ navigation }) => ({
+        tabPress: (e) => {
+          if (navigation.isFocused()) {
+            navigation.dispatch(StackActions.popToTop());
+          }
+        },
+      })}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary.DEFAULT,

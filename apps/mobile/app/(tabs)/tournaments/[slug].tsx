@@ -205,7 +205,7 @@ function MisGruposSection({ tournamentId }: { tournamentId: string }) {
           <Pressable
             key={group.id}
             style={styles.misGruposCard}
-            onPress={() => router.push(`/(tabs)/groups/${group.id}`)}
+            onPress={() => router.push(`/(tabs)/tournaments/group/${group.id}`)}
           >
             <View style={styles.misGruposCardIcon}>
               <Ionicons name="people" size={18} color={COLORS.primary.DEFAULT} />
