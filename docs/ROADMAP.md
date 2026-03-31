@@ -2,7 +2,7 @@
 
 > This document is auto-maintained. Updated as features are implemented.
 >
-> Last updated: 2026-03-28
+> Last updated: 2026-03-30
 
 ## V1 - World Cup 2026
 
@@ -10,7 +10,7 @@
 
 - [x] **Project scaffolding** — Monorepo with NestJS API, Next.js web, Expo mobile, shared packages
 - [x] **Database schema** — 13 models, multi-tournament ready (Prisma + PostgreSQL)
-- [x] **Authentication** — Google OAuth (native SDK) + Apple Sign In (pending Apple Developer Program)
+- [x] **Authentication** — Google OAuth (native SDK) + Apple Sign In (pending Apple Developer Program). Instagram removed (API deprecated for new apps)
 - [x] **JWT token management** — Access (15min) + refresh (30 days) with rotation, stored in SecureStore
 - [x] **Dev tooling** — Dev-login endpoint, HTTP request logging, Expo Go support with conditional plugins
 - [x] **Landing page** — Next.js web with "Selva Mundialista" visual identity
@@ -35,14 +35,20 @@
   - Dead code cleanup (UpdateMemberRoleDto, updateMemberRole)
   - Cache cleanup: removeQueries on delete/leave to prevent 404 refetches
   - retry: false on all mutations
-
-### In Progress
-
-- [ ] **Tournaments module** — CRUD + API-Football integration *(next up)*
-  - Seed World Cup 2026 fixture (all matches, teams, phases)
-  - Tournament detail screen (groups, schedule, standings)
+- [x] **Group creation limit fix** — enforceCanCreateGroup no longer counts groups where the creator has left
+- [x] **Tournaments module** — Backend + mobile screens for tournament browsing and group integration
+  - Backend: Tournament CRUD, match endpoints with groupLetter filter, seed scripts (World Cup 2026 + test tournaments)
+  - Mobile: Tournament list and detail screens, MatchCard component (5 visual states), match-helpers utilities
+  - Mobile: AddTournamentModal, CreateGroupModal tournament selection
+- [x] **Tournament navigation** — Dual-stack Expo Router pattern for correct back navigation from groups tab vs tournaments tab
 
 ### Pending
+
+- [ ] **Tournament removal from groups** — Admin-only action, blocked if tournament is in progress or finished, confirmation prompt if predictions exist
+
+- [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
+
+- [ ] **Apple Developer Program membership** — $99/year, required for iOS builds + Apple Sign In
 
 - [ ] **Matches module** — Schedule display + result sync
   - Match list by date / phase
@@ -81,7 +87,6 @@
 - [ ] Copa America support (add tournament, no code changes needed)
 - [ ] Champions League support
 - [ ] League format support (requires MATCHDAY phase enum)
-- [ ] Apple Developer Program ($99/year) — required for iOS builds + Apple Sign In
 - [ ] Production deployment (API + database + Redis)
 - [ ] Google OAuth consent screen: "Publish App"
 - [ ] App Store / Play Store submission

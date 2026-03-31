@@ -54,9 +54,9 @@ pichichi/
 | `auth` | DONE | Google/Apple OAuth + JWT (access + refresh tokens) + dev-login bypass |
 | `users` | DONE | User profiles and management |
 | `plans` | DONE | Subscription plans with typed limit columns + enforcement service |
-| `tournaments` | SCAFFOLDED | Tournament CRUD (multi-tournament ready) |
-| `groups` | SCAFFOLDED | Groups with invite codes and member management |
-| `matches` | SCAFFOLDED | Match schedules, results, API-Football sync |
+| `tournaments` | DONE | Tournament CRUD, team management, seed scripts, API-Football ready |
+| `groups` | DONE | Full CRUD, invite codes, member management, cross-device handling, conditional hard-delete |
+| `matches` | DONE | CRUD, filters (tournamentId, phase, status, date, groupLetter), score updates, real-time events |
 | `predictions` | SCAFFOLDED | User match predictions + auto-scoring |
 | `bonus-predictions` | SCAFFOLDED | Pre-tournament special predictions |
 | `leaderboard` | SCAFFOLDED | Scoring and rankings (Redis-cached) |
@@ -86,6 +86,8 @@ POST /auth/dev-login { email: "user@example.com" }
 ```
 
 Bypasses OAuth verification. Protected by DevOnlyGuard (NODE_ENV !== production). Returns same response as Google/Apple login. Allows rapid iteration in Expo Go without native builds.
+
+> **Note**: Instagram OAuth was evaluated and discarded (API deprecated late 2024 for new consumer apps). Only Google + Apple are supported.
 
 ## Data Model
 
@@ -184,7 +186,7 @@ Backend still validates as defense-in-depth (PlansService enforcement), but the 
 
 | Method | Used by | What it checks |
 |--------|---------|----------------|
-| `enforceCanCreateGroup(userId)` | `GroupsService.create` | Groups created < plan.maxGroupsCreated |
+| `enforceCanCreateGroup(userId)` | `GroupsService.create` | Active groups created (where user is still a member) < plan.maxGroupsCreated |
 | `enforceCanJoinGroup(userId)` | `GroupsService.joinByCode` | Active memberships < plan.maxMemberships |
 | `enforceGroupMemberCapacity(groupId, creatorId)` | `GroupsService.joinByCode` | Active members < min(group.maxMembers, plan.maxMembersPerGroup) |
 | `getMaxMembersPerGroup(userId)` | `GroupsService.create`, `GroupsService.update` | Caps maxMembers at plan limit |
@@ -234,6 +236,53 @@ When Stripe is added, the Plan model will gain a `stripePriceId` column. A webho
 **Cross-device group removal**: When a member is viewing a group that was deleted by the admin from another device (or when the member was expelled), the detail screen detects the 404/403 error via a `useEffect`, shows an Alert explaining the situation, and auto-navigates to the groups list. A `useRef` flag prevents the Alert from firing multiple times.
 
 **maxMembers update**: Admins can change a group's `maxMembers` via the update endpoint. The value is validated against (1) the creator's plan limit and (2) the current active member count — it cannot be set below the number of existing members.
+
+## Tournaments Module
+
+### Backend
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/tournaments` | No | List with optional `status`/`type` filters |
+| GET | `/tournaments/:slug` | No | Detail by slug (includes phases, bonus types, team count) |
+| POST/PATCH/DELETE | `/tournaments(/:id)` | Yes | CRUD (not exposed in mobile — tournaments come from seeds/automation) |
+| GET | `/tournaments/:id/teams` | No | Team list with group assignments |
+| GET | `/matches` | No | List with filters: `tournamentId`, `phase`, `status`, `date`, `groupLetter` |
+| GET | `/matches/upcoming` | No | Upcoming scheduled matches |
+| GET | `/matches/live` | No | Live matches (30s refetch on mobile) |
+| PATCH | `/matches/:id/score` | Yes | Score update with real-time Socket.IO events |
+
+### Mobile Screens
+
+- **Tournament list** (`tournaments/index.tsx`): All tournaments with status indicators, pull-to-refresh
+- **Tournament detail** (`tournaments/[slug].tsx`): Dynamic tabs by phase (Próximos, Grupos, R32, 8vos, 4tos, Semis, 3°/Final) + group letter sub-filter (A-L) for group stage
+
+### Components
+
+- **MatchCard** (`components/matches/match-card.tsx`): Displays match with teams, scores, date/time, venue, phase. Handles 5 states: `SCHEDULED`, `LIVE`, `FINISHED`, `POSTPONED`, `CANCELLED`
+- **match-helpers** (`utils/match-helpers.ts`): Spanish date formatting, label dictionaries (phases, types, statuses), `groupMatchesByDate()` for SectionList rendering
+
+### Group Integration
+
+- **CreateGroupModal**: Multi-select tournament picker during group creation
+- **AddTournamentModal**: Add tournaments to existing groups (respects plan limits)
+- **Product decision**: No UI for create/edit/delete tournaments — all comes from seeds or automation
+
+### Remove Tournament from Group
+
+- **Who**: Admin only
+- **Rules**: Blocked if tournament `IN_PROGRESS`/`LIVE`/`FINISHED`. Confirmation if predictions exist. Free removal if `UPCOMING` with no predictions.
+
+## Dual-Stack Navigation Pattern
+
+Tournament detail is accessible from two tab contexts (Groups and Tournaments). To ensure "back" returns to the correct origin:
+
+```
+Tournaments tab:  tournaments/index → tournaments/[slug] → back → tournaments/index ✓
+Groups tab:       groups/[id] → groups/tournament/[slug] → back → groups/[id] ✓
+```
+
+`groups/tournament/[slug].tsx` re-exports the component from `tournaments/[slug].tsx`. Navigation from group detail uses the groups-stack route (`/(tabs)/groups/tournament/${slug}`) to stay within the Groups stack. This is the standard Expo Router pattern for hub-and-spoke navigation where a detail screen is reachable from multiple parent contexts.
 
 ## Critical Rules: NativeWind Styles
 
