@@ -94,3 +94,26 @@ export async function removeMember(
   );
   return data;
 }
+
+export async function checkRemoveTournament(
+  groupId: string,
+  tournamentId: string,
+): Promise<{ canRemove: boolean; predictionsCount: number; reason: string | null }> {
+  const { data } = await api.get<{
+    canRemove: boolean;
+    predictionsCount: number;
+    reason: string | null;
+  }>(`/groups/${groupId}/tournaments/${tournamentId}/check-remove`);
+  return data;
+}
+
+export async function removeTournament(
+  groupId: string,
+  tournamentId: string,
+): Promise<{ action: string; predictionsDeleted: number }> {
+  const { data } = await api.delete<{
+    action: string;
+    predictionsDeleted: number;
+  }>(`/groups/${groupId}/tournaments/${tournamentId}`);
+  return data;
+}

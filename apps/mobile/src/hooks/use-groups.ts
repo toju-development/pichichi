@@ -176,3 +176,26 @@ export function useRemoveMember() {
     },
   });
 }
+
+export function useRemoveTournament() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      tournamentId,
+    }: {
+      groupId: string;
+      tournamentId: string;
+    }) => groupsApi.removeTournament(groupId, tournamentId),
+    retry: false,
+    onSuccess: (_data, { groupId }) => {
+      qc.invalidateQueries({
+        queryKey: queryKeys.groups.tournaments(groupId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.groups.detail(groupId),
+      });
+    },
+  });
+}

@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GroupMemberRole } from '@prisma/client';
+import { GroupMemberRole, TournamentStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { PlansService } from '../plans/plans.service.js';
 import type { CreateGroupDto } from './dto/create-group.dto.js';
@@ -579,6 +579,104 @@ export class GroupsService {
       endDate: gt.tournament.endDate,
       status: gt.tournament.status,
     }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check if tournament can be removed from group (pre-flight)
+  // ---------------------------------------------------------------------------
+
+  async checkRemoveTournament(
+    groupId: string,
+    tournamentId: string,
+    userId: string,
+  ): Promise<{
+    canRemove: boolean;
+    predictionsCount: number;
+    reason: string | null;
+  }> {
+    await this.requireAdmin(groupId, userId);
+
+    const gt = await this.prisma.groupTournament.findUnique({
+      where: { groupId_tournamentId: { groupId, tournamentId } },
+      include: { tournament: true },
+    });
+
+    if (!gt) {
+      throw new NotFoundException('Tournament not found in this group');
+    }
+
+    const blockedStatuses: TournamentStatus[] = [
+      TournamentStatus.IN_PROGRESS,
+      TournamentStatus.FINISHED,
+      TournamentStatus.CANCELLED,
+    ];
+
+    if (blockedStatuses.includes(gt.tournament.status)) {
+      const reasonMap: Record<string, string> = {
+        [TournamentStatus.IN_PROGRESS]: 'TOURNAMENT_IN_PROGRESS',
+        [TournamentStatus.FINISHED]: 'TOURNAMENT_FINISHED',
+        [TournamentStatus.CANCELLED]: 'TOURNAMENT_CANCELLED',
+      };
+
+      return {
+        canRemove: false,
+        predictionsCount: 0,
+        reason: reasonMap[gt.tournament.status],
+      };
+    }
+
+    const predictionsCount = await this.prisma.prediction.count({
+      where: { groupId, match: { tournamentId } },
+    });
+
+    return { canRemove: true, predictionsCount, reason: null };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Remove tournament from group
+  // ---------------------------------------------------------------------------
+
+  async removeTournament(
+    groupId: string,
+    tournamentId: string,
+    userId: string,
+  ): Promise<{ action: 'removed'; predictionsDeleted: number }> {
+    await this.requireAdmin(groupId, userId);
+
+    const gt = await this.prisma.groupTournament.findUnique({
+      where: { groupId_tournamentId: { groupId, tournamentId } },
+      include: { tournament: true },
+    });
+
+    if (!gt) {
+      throw new NotFoundException('Tournament not found in this group');
+    }
+
+    const blockedStatuses: TournamentStatus[] = [
+      TournamentStatus.IN_PROGRESS,
+      TournamentStatus.FINISHED,
+      TournamentStatus.CANCELLED,
+    ];
+
+    if (blockedStatuses.includes(gt.tournament.status)) {
+      throw new ForbiddenException(
+        'Cannot remove a tournament that is in progress, finished, or cancelled',
+      );
+    }
+
+    const [predictionsResult] = await this.prisma.$transaction([
+      this.prisma.prediction.deleteMany({
+        where: { groupId, match: { tournamentId } },
+      }),
+      this.prisma.bonusPrediction.deleteMany({
+        where: { groupId, bonusType: { tournamentId } },
+      }),
+      this.prisma.groupTournament.delete({
+        where: { id: gt.id },
+      }),
+    ]);
+
+    return { action: 'removed', predictionsDeleted: predictionsResult.count };
   }
 
   // ---------------------------------------------------------------------------

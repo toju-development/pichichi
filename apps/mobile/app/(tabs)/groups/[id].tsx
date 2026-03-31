@@ -13,7 +13,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import type { AxiosError } from 'axios';
 
-import type { GroupMemberRole } from '@pichichi/shared';
+import type { GroupMemberRole, TournamentDto } from '@pichichi/shared';
+import { Ionicons } from '@expo/vector-icons';
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { AddTournamentModal } from '@/components/groups/add-tournament-modal';
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { checkRemoveTournament } from '@/api/groups';
 import {
   useDeleteGroup,
   useGroup,
@@ -29,6 +31,7 @@ import {
   useGroupTournaments,
   useLeaveGroup,
   useRemoveMember,
+  useRemoveTournament,
 } from '@/hooks/use-groups';
 import { queryKeys } from '@/hooks/query-keys';
 import { useAuthStore } from '@/stores/auth-store';
@@ -84,6 +87,7 @@ export default function GroupDetailScreen() {
   const leaveGroupMutation = useLeaveGroup();
   const removeMemberMutation = useRemoveMember();
   const deleteGroupMutation = useDeleteGroup();
+  const removeTournamentMutation = useRemoveTournament();
 
   const currentUserId = useAuthStore((s) => s.user?.id);
 
@@ -273,6 +277,45 @@ export default function GroupDetailScreen() {
     );
   }
 
+  async function handleRemoveTournament(tournament: TournamentDto) {
+    if (!group || removeTournamentMutation.isPending) return;
+
+    try {
+      const result = await checkRemoveTournament(group.id, tournament.id);
+
+      if (!result.canRemove) {
+        Alert.alert('No se puede eliminar', 'El torneo está en curso o finalizado.');
+        return;
+      }
+
+      const message =
+        result.predictionsCount > 0
+          ? `Se borrarán ${result.predictionsCount} predicciones. ¿Estás seguro?`
+          : `¿Eliminar ${tournament.name} del grupo?`;
+
+      Alert.alert('Eliminar torneo', message, [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () =>
+            removeTournamentMutation.mutate(
+              { groupId: group.id, tournamentId: tournament.id },
+              {
+                onError: () =>
+                  Alert.alert(
+                    'Error',
+                    'No se pudo eliminar el torneo. Intentá de nuevo.',
+                  ),
+              },
+            ),
+        },
+      ]);
+    } catch {
+      Alert.alert('Error', 'No se pudo verificar el estado del torneo.');
+    }
+  }
+
   // ── Loading state ─────────────────────────────────────────────────────────
 
   // Show loading during initial fetch OR while navigating away after delete/leave.
@@ -420,38 +463,57 @@ export default function GroupDetailScreen() {
               </View>
             </Card>
           ) : (
-            tournaments.map((tournament) => (
-              <Card
-                key={tournament.id}
-                className="mb-3"
-                onPress={() => router.push(`/(tabs)/groups/tournament/${tournament.slug}`)}
-              >
-                <View style={detailStyles.tournamentRow}>
-                  <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
-                  <View style={detailStyles.tournamentInfo}>
-                    <Text style={detailStyles.tournamentName}>
-                      {tournament.name}
-                    </Text>
-                    <View style={detailStyles.tournamentMeta}>
-                      <View style={detailStyles.tournamentTypeBadge}>
-                        <Text style={detailStyles.tournamentTypeText}>
-                          {tournament.type.replace(/_/g, ' ')}
+            tournaments.map((tournament) => {
+              const canRemove =
+                isAdmin &&
+                (tournament.status === 'DRAFT' || tournament.status === 'UPCOMING');
+
+              return (
+                <Card
+                  key={tournament.id}
+                  className="mb-3"
+                  onPress={() => router.push(`/(tabs)/groups/tournament/${tournament.slug}`)}
+                >
+                  <View style={detailStyles.tournamentRow}>
+                    <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
+                    <View style={detailStyles.tournamentInfo}>
+                      <Text style={detailStyles.tournamentName}>
+                        {tournament.name}
+                      </Text>
+                      <View style={detailStyles.tournamentMeta}>
+                        <View style={detailStyles.tournamentTypeBadge}>
+                          <Text style={detailStyles.tournamentTypeText}>
+                            {tournament.type.replace(/_/g, ' ')}
+                          </Text>
+                        </View>
+                        <Text style={detailStyles.tournamentStatus}>
+                          {tournament.status === 'IN_PROGRESS'
+                            ? 'En curso'
+                            : tournament.status === 'UPCOMING'
+                              ? 'Próximamente'
+                              : tournament.status === 'FINISHED'
+                                ? 'Finalizado'
+                                : tournament.status}
                         </Text>
                       </View>
-                      <Text style={detailStyles.tournamentStatus}>
-                        {tournament.status === 'IN_PROGRESS'
-                          ? 'En curso'
-                          : tournament.status === 'UPCOMING'
-                            ? 'Próximamente'
-                            : tournament.status === 'FINISHED'
-                              ? 'Finalizado'
-                              : tournament.status}
-                      </Text>
                     </View>
+                    {canRemove ? (
+                      <Pressable
+                        onPress={() => handleRemoveTournament(tournament)}
+                        hitSlop={8}
+                        style={detailStyles.removeTournamentButton}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={22}
+                          color={COLORS.error}
+                        />
+                      </Pressable>
+                    ) : null}
                   </View>
-                </View>
-              </Card>
-            ))
+                </Card>
+              );
+            })
           )}
 
           {isAdmin ? (
@@ -725,6 +787,10 @@ const detailStyles = StyleSheet.create({
   tournamentStatus: {
     fontSize: 12,
     color: COLORS.text.muted,
+  },
+  removeTournamentButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 
   // Add tournament

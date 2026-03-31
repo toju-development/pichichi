@@ -202,4 +202,56 @@ export class GroupsController {
   ) {
     return this.groupsService.getGroupTournaments(id, user.sub);
   }
+
+  @Get(':id/tournaments/:tournamentId/check-remove')
+  @ApiOperation({ summary: 'Check if a tournament can be removed from the group (admin only)' })
+  @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
+  @ApiParam({ name: 'tournamentId', description: 'Tournament ID (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Check result',
+    schema: {
+      properties: {
+        canRemove: { type: 'boolean' },
+        predictionsCount: { type: 'number' },
+        reason: { type: 'string', nullable: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Only admins can check tournament removal' })
+  @ApiResponse({ status: 404, description: 'Group or tournament not found' })
+  async checkRemoveTournament(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tournamentId', ParseUUIDPipe) tournamentId: string,
+  ): Promise<{ canRemove: boolean; predictionsCount: number; reason: string | null }> {
+    return this.groupsService.checkRemoveTournament(id, tournamentId, user.sub);
+  }
+
+  @Delete(':id/tournaments/:tournamentId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a tournament from the group (admin only)' })
+  @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
+  @ApiParam({ name: 'tournamentId', description: 'Tournament ID (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tournament removed from group',
+    schema: {
+      properties: {
+        action: { type: 'string', enum: ['removed'] },
+        predictionsDeleted: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Only admins can remove tournaments / tournament status blocked' })
+  @ApiResponse({ status: 404, description: 'Group or tournament not found' })
+  async removeTournament(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tournamentId', ParseUUIDPipe) tournamentId: string,
+  ): Promise<{ action: 'removed'; predictionsDeleted: number }> {
+    return this.groupsService.removeTournament(id, tournamentId, user.sub);
+  }
 }
