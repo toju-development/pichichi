@@ -268,6 +268,13 @@ When Stripe is added, the Plan model will gain a `stripePriceId` column. A webho
 - **AddTournamentModal**: Add tournaments to existing groups (respects plan limits)
 - **Product decision**: No UI for create/edit/delete tournaments — all comes from seeds or automation
 
+### Tournament Context: Neutral vs Interactive
+
+- **Tab Torneos → Torneo**: Neutral reference — fixture, results, standings. No predictions shown. Includes a "Mis Grupos" section listing the user's groups that are playing this tournament, linking back to the group for prediction context.
+- **Grupo → Torneo**: Interactive context — fixture + predictions + leaderboard. The group provides the context for which predictions to show/make.
+
+This avoids the "which group's predictions?" ambiguity when a user participates in multiple groups with the same tournament.
+
 ### Remove Tournament from Group
 
 - **Who**: Admin only
