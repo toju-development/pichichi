@@ -25,6 +25,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import type { MatchDto, MatchPhase, TournamentPhaseDto } from '@pichichi/shared';
@@ -36,6 +37,7 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { Button } from '@/components/ui/button';
 import { useMatches } from '@/hooks/use-matches';
+import { useMyGroupsByTournament } from '@/hooks/use-groups';
 import { useTournament } from '@/hooks/use-tournaments';
 import {
   groupMatchesByDate,
@@ -43,6 +45,7 @@ import {
   TOURNAMENT_TYPE_LABELS,
 } from '@/utils/match-helpers';
 import type { MatchSection } from '@/utils/match-helpers';
+import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -177,6 +180,49 @@ function FilterChip({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+/** "Mis Grupos" horizontal section — shows the user's groups playing this tournament. */
+function MisGruposSection({ tournamentId }: { tournamentId: string }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { data: groups, isLoading } = useMyGroupsByTournament(tournamentId);
+
+  // Don't render anything if not authenticated, still loading, or no groups
+  if (!isAuthenticated || isLoading || !groups?.length) {
+    return null;
+  }
+
+  return (
+    <View style={styles.misGruposContainer}>
+      <Text style={styles.misGruposTitle}>Mis Grupos</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.misGruposScroll}
+      >
+        {groups.map((group) => (
+          <Pressable
+            key={group.id}
+            style={styles.misGruposCard}
+            onPress={() => router.push(`/(tabs)/groups/${group.id}`)}
+          >
+            <View style={styles.misGruposCardIcon}>
+              <Ionicons name="people" size={18} color={COLORS.primary.DEFAULT} />
+            </View>
+            <View style={styles.misGruposCardContent}>
+              <Text style={styles.misGruposCardName} numberOfLines={1}>
+                {group.name}
+              </Text>
+              <Text style={styles.misGruposCardMembers}>
+                {group.memberCount} {group.memberCount === 1 ? 'miembro' : 'miembros'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.text.muted} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -640,6 +686,9 @@ export default function TournamentDetailScreen() {
         <BackButton />
       </ScreenHeader>
 
+      {/* Mis Grupos — user's groups playing this tournament */}
+      <MisGruposSection tournamentId={tournament.id} />
+
       {/* Tab bar */}
       {tabs.length > 0 ? (
         <View style={styles.tabBarContainer}>
@@ -762,6 +811,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+
+  // ── Mis Grupos section ────────────────────────────────────────────────
+  misGruposContainer: {
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  misGruposTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  misGruposScroll: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  misGruposCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary.light,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 160,
+    maxWidth: 220,
+  },
+  misGruposCardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  misGruposCardContent: {
+    flex: 1,
+    marginRight: 4,
+  },
+  misGruposCardName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  misGruposCardMembers: {
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    marginTop: 1,
   },
 
   // ── Error state ───────────────────────────────────────────────────────

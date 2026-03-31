@@ -16,6 +16,8 @@ export const queryKeys = {
   // ─── Groups ────────────────────────────────────────────────────────────────
   groups: {
     all: ['groups', 'list'] as const,
+    byTournament: (tournamentId: string) =>
+      ['groups', 'list', 'tournament', tournamentId] as const,
     detail: (id: string) => ['groups', 'detail', id] as const,
     members: (groupId: string) => ['groups', 'members', groupId] as const,
     tournaments: (groupId: string) =>

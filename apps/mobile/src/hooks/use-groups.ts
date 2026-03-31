@@ -9,7 +9,15 @@ import { queryKeys } from './query-keys';
 export function useMyGroups() {
   return useQuery({
     queryKey: queryKeys.groups.all,
-    queryFn: groupsApi.getMyGroups,
+    queryFn: () => groupsApi.getMyGroups(),
+  });
+}
+
+export function useMyGroupsByTournament(tournamentId: string) {
+  return useQuery({
+    queryKey: queryKeys.groups.byTournament(tournamentId),
+    queryFn: () => groupsApi.getMyGroups({ tournamentId }),
+    enabled: !!tournamentId,
   });
 }
 

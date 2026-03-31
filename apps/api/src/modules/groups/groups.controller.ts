@@ -9,12 +9,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -49,12 +51,14 @@ export class GroupsController {
 
   @Get()
   @ApiOperation({ summary: 'List all groups the current user belongs to' })
+  @ApiQuery({ name: 'tournamentId', required: false, description: 'Filter groups by tournament ID (UUID)' })
   @ApiResponse({ status: 200, description: 'List of groups', type: [GroupResponseDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
     @CurrentUser() user: JwtUserPayload,
+    @Query('tournamentId') tournamentId?: string,
   ): Promise<GroupResponseDto[]> {
-    return this.groupsService.findAllByUser(user.sub);
+    return this.groupsService.findAllByUser(user.sub, { tournamentId });
   }
 
   @Get(':id')

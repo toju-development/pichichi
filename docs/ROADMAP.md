@@ -46,7 +46,7 @@
 
 - [x] **Tournament removal from groups** — Admin-only action, blocked if tournament is in progress or finished, confirmation prompt if predictions exist
 
-- [ ] **Tournament detail: "Mis Grupos" section** — Show user's groups playing this tournament in the standalone tournament detail screen. Tapping a group navigates to group detail where predictions happen. Resolves the "which group's predictions?" ambiguity.
+- [x] **Tournament detail: "Mis Grupos" section** — Show user's groups playing this tournament in the standalone tournament detail screen. Tapping a group navigates to group detail where predictions happen. Resolves the "which group's predictions?" ambiguity.
 
 - [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
 

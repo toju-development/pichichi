@@ -90,9 +90,24 @@ export class GroupsService {
   // List user's groups
   // ---------------------------------------------------------------------------
 
-  async findAllByUser(userId: string): Promise<GroupResponseDto[]> {
+  async findAllByUser(
+    userId: string,
+    filters?: { tournamentId?: string },
+  ): Promise<GroupResponseDto[]> {
     const memberships = await this.prisma.groupMember.findMany({
-      where: { userId, isActive: true },
+      where: {
+        userId,
+        isActive: true,
+        ...(filters?.tournamentId
+          ? {
+              group: {
+                groupTournaments: {
+                  some: { tournamentId: filters.tournamentId },
+                },
+              },
+            }
+          : {}),
+      },
       include: {
         group: {
           include: {

@@ -6,8 +6,10 @@ import type {
 
 import { api } from './client';
 
-export async function getMyGroups(): Promise<GroupDto[]> {
-  const { data } = await api.get<GroupDto[]>('/groups');
+export async function getMyGroups(
+  params?: { tournamentId?: string },
+): Promise<GroupDto[]> {
+  const { data } = await api.get<GroupDto[]>('/groups', { params });
   return data;
 }
 
