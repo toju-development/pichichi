@@ -27,8 +27,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenListeners={({ navigation }) => ({
-        tabPress: (e) => {
-          if (navigation.isFocused()) {
+        tabPress: () => {
+          if (navigation.canGoBack()) {
             navigation.dispatch(StackActions.popToTop());
           }
         },
