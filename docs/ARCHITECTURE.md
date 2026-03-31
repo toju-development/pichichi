@@ -279,6 +279,9 @@ This avoids the "which group's predictions?" ambiguity when a user participates 
 
 - **Who**: Admin only
 - **Rules**: Blocked if tournament `IN_PROGRESS`/`LIVE`/`FINISHED`. Confirmation if predictions exist. Free removal if `UPCOMING` with no predictions.
+- **Data cleanup**: Removing a tournament deletes ALL predictions and bonus predictions for that group+tournament in a single transaction. This is irreversible.
+- **Re-add behavior**: If a tournament is removed and later re-added, it starts fresh — no historical predictions are recovered. Users make new predictions from scratch.
+- **Safety**: Only allowed for `DRAFT`/`UPCOMING` tournaments, so no real points or leaderboard data is ever lost.
 
 ## Dual-Stack Navigation Pattern
 

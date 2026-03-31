@@ -125,6 +125,12 @@ GET /groups/:id/tournaments/:tid/check-remove
                                          └── Confirm → DELETE /groups/:id/tournaments/:tid
 ```
 
+## Data Behavior
+
+- **On removal**: ALL predictions and bonus predictions for the group+tournament combination are hard-deleted in a single transaction. This is irreversible.
+- **Re-add after removal**: If the same tournament is added back to the group later, it starts completely fresh — no historical predictions are recovered. Users make new predictions from scratch.
+- **Why this is safe**: Removal is only allowed for `DRAFT`/`UPCOMING` tournaments (before they start), so no real points or leaderboard data is ever lost. Once a tournament is `IN_PROGRESS` or `FINISHED`, removal is blocked entirely.
+
 ## Not in Scope
 
 - Removing tournaments from the system (tournament CRUD is seed/automation only)
