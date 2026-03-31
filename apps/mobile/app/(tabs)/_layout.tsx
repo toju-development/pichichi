@@ -28,8 +28,10 @@ export default function TabLayout() {
     <Tabs
       screenListeners={({ navigation }) => ({
         tabPress: () => {
-          if (navigation.canGoBack()) {
+          try {
             navigation.dispatch(StackActions.popToTop());
+          } catch {
+            // Stack already at root — nothing to pop
           }
         },
       })}
