@@ -77,7 +77,11 @@ export class PlansService {
     const plan = await this.getUserPlan(userId);
 
     const groupsCreated = await this.prisma.group.count({
-      where: { createdBy: userId, isActive: true },
+      where: {
+        createdBy: userId,
+        isActive: true,
+        members: { some: { userId, isActive: true } },
+      },
     });
 
     if (groupsCreated >= plan.maxGroupsCreated) {

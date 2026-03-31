@@ -424,7 +424,7 @@ export default function GroupDetailScreen() {
               <Card
                 key={tournament.id}
                 className="mb-3"
-                onPress={() => router.push(`/(tabs)/tournaments/${tournament.slug}`)}
+                onPress={() => router.push(`/(tabs)/groups/tournament/${tournament.slug}`)}
               >
                 <View style={detailStyles.tournamentRow}>
                   <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
