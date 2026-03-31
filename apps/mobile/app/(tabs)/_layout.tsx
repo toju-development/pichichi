@@ -28,10 +28,14 @@ export default function TabLayout() {
     <Tabs
       screenListeners={({ navigation }) => ({
         tabPress: () => {
-          try {
-            navigation.dispatch(StackActions.popToTop());
-          } catch {
-            // Stack already at root — nothing to pop
+          const state = navigation.getState();
+          const focusedRoute = state.routes[state.index];
+
+          if (focusedRoute.state?.type === 'stack' && focusedRoute.state?.key) {
+            navigation.dispatch({
+              ...StackActions.popToTop(),
+              target: focusedRoute.state.key,
+            });
           }
         },
       })}
