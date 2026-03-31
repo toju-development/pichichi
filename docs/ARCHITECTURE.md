@@ -285,14 +285,33 @@ This avoids the "which group's predictions?" ambiguity when a user participates 
 
 ## Dual-Stack Navigation Pattern
 
-Tournament detail is accessible from two tab contexts (Groups and Tournaments). To ensure "back" returns to the correct origin:
+Tournament detail and group detail are accessible from both tabs (Groups and Tournaments). To ensure "back" returns to the correct origin, each screen is re-exported inside the other tab's stack:
 
 ```
 Tournaments tab:  tournaments/index → tournaments/[slug] → back → tournaments/index ✓
+                  tournaments/[slug] → tournaments/group/[id] → back → tournaments/[slug] ✓
 Groups tab:       groups/[id] → groups/tournament/[slug] → back → groups/[id] ✓
 ```
 
-`groups/tournament/[slug].tsx` re-exports the component from `tournaments/[slug].tsx`. Navigation from group detail uses the groups-stack route (`/(tabs)/groups/tournament/${slug}`) to stay within the Groups stack. This is the standard Expo Router pattern for hub-and-spoke navigation where a detail screen is reachable from multiple parent contexts.
+Re-export files:
+- `groups/tournament/[slug].tsx` re-exports `tournaments/[slug].tsx`
+- `tournaments/group/[id].tsx` re-exports `groups/[id].tsx`
+
+Navigation always uses the current tab's stack route to avoid cross-tab jumps.
+
+### Tab Bar Stack Reset
+
+Tapping a tab bar icon resets that tab's stack to the root screen. Implemented in `_layout.tsx` via `screenListeners.tabPress`:
+
+```tsx
+const state = navigation.getState();
+const focusedRoute = state.routes[state.index];
+if (focusedRoute.state?.type === 'stack' && focusedRoute.state?.key) {
+  navigation.dispatch({ ...StackActions.popToTop(), target: focusedRoute.state.key });
+}
+```
+
+**Key**: `popToTop` must target the child stack navigator's key, not the tab navigator. Only tournaments and groups tabs have stacks; single-screen tabs (inicio, leaderboard, profile) are safely skipped.
 
 ## Critical Rules: NativeWind Styles
 
