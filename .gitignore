@@ -46,3 +46,9 @@ apps/mobile/dist/
 # Misc
 *.pem
 .vercel
+
+openspec/
+
+.atl/
+
+.mcp.json

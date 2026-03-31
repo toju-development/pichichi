@@ -144,7 +144,12 @@ export default function LoginScreen() {
   const devLogin = useDevLogin();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const [devEmail, setDevEmail] = useState('pablomartinez555@gmail.com');
+  // DEV: iOS → hotmail (admin user), Android → gmail (guest user)
+  const [devEmail, setDevEmail] = useState(
+    Platform.OS === 'ios'
+      ? 'pablomartinez555@hotmail.com'
+      : 'pablomartinez555@gmail.com',
+  );
 
   // ---------------------------------------------------------------------------
   //  Google Sign-In handler — native flow via Google Play Services / iOS SDK

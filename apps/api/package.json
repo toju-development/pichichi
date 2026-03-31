@@ -18,8 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "npx tsx src/database/seeds/world-cup-2026.seed.ts",
-    "seed:wc2026": "npx tsx src/database/seeds/world-cup-2026.seed.ts"
+    "seed:wc2026": "npx tsx src/database/seeds/world-cup-2026.seed.ts",
+    "seed:test": "npx tsx src/database/seeds/test-tournaments.seed.ts",
+    "seed:all": "npx tsx src/database/seeds/world-cup-2026.seed.ts && npx tsx src/database/seeds/test-tournaments.seed.ts"
   },
   "prisma": {
     "seed": "npx tsx src/database/seeds/world-cup-2026.seed.ts"
