@@ -57,9 +57,10 @@ pichichi/
 | `tournaments` | DONE | Tournament CRUD, team management, seed scripts, API-Football ready |
 | `groups` | DONE | Full CRUD, invite codes, member management, cross-device handling, conditional hard-delete |
 | `matches` | DONE | CRUD, filters (tournamentId, phase, status, date, groupLetter), score updates, real-time events |
-| `predictions` | SCAFFOLDED | User match predictions + auto-scoring |
+| `predictions` | DONE | User match predictions with deadline enforcement |
+| `scoring` | DONE | Point calculation engine — pure scoring + orchestrator (extracted to break circular dep) |
 | `bonus-predictions` | SCAFFOLDED | Pre-tournament special predictions |
-| `leaderboard` | SCAFFOLDED | Scoring and rankings (Redis-cached) |
+| `leaderboard` | DONE | Rankings with Redis-cached aggregation (per group × tournament × phase) |
 | `notifications` | SCAFFOLDED | Push notifications (Firebase FCM) |
 
 > "SCAFFOLDED" means the NestJS module exists with controller/service/DTOs but business logic is not yet implemented.
@@ -236,6 +237,136 @@ When Stripe is added, the Plan model will gain a `stripePriceId` column. A webho
 **Cross-device group removal**: When a member is viewing a group that was deleted by the admin from another device (or when the member was expelled), the detail screen detects the 404/403 error via a `useEffect`, shows an Alert explaining the situation, and auto-navigates to the groups list. A `useRef` flag prevents the Alert from firing multiple times.
 
 **maxMembers update**: Admins can change a group's `maxMembers` via the update endpoint. The value is validated against (1) the creator's plan limit and (2) the current active member count — it cannot be set below the number of existing members.
+
+## Infrastructure: Redis & Caching
+
+### What Redis Is Used For
+
+Redis provides caching for leaderboard queries — the most expensive aggregation in the system. Each group × tournament × phase combination produces a distinct leaderboard computed via raw SQL with JOINs across predictions, users, and bonus predictions.
+
+### Setup
+
+- **Module**: `@Global()` `RedisModule` in `src/config/redis.module.ts`
+- **Stack**: `@nestjs/cache-manager` v3 + `cache-manager` v7 (uses Keyv internally) + custom `ioredis` KeyvStoreAdapter
+- **Config**: `REDIS_URL` environment variable (optional). Redis 7 Alpine in `docker-compose.yml`
+- **Default TTL**: 5 minutes (300,000 ms)
+
+### Cache Key Strategy
+
+```
+lb:{groupId}:{tournamentId|'all'}:{phase|'all'}
+```
+
+Examples:
+- `lb:abc123:all:all` — general leaderboard (no filters)
+- `lb:abc123:t456:all` — tournament-filtered leaderboard
+- `lb:abc123:t456:GROUP_STAGE` — phase-filtered leaderboard
+
+### Graceful Degradation
+
+If Redis is unavailable, the system falls through to direct DB queries with **zero feature flags**:
+
+- **No `REDIS_URL`**: `RedisModule` configures in-memory cache (same TTL, same `CACHE_MANAGER` interface)
+- **Redis connection fails**: `ioredis` logs a warning and continues. The KeyvStoreAdapter's `get`/`set`/`delete` methods catch errors and return `undefined`/`false`
+- **LeaderboardService**: `cacheGet()` and `cacheSet()` silently swallow errors — cache miss triggers fresh DB query
+- **ScoringService**: `invalidateLeaderboardCache()` catches `mdel` failures — stale cache expires naturally via TTL
+
+### Cache Invalidation
+
+When `ScoringService.calculatePointsForMatch()` finishes calculating points, it invalidates leaderboard caches for all affected groups:
+
+```
+Match scores finalized
+  → calculatePointsForMatch()
+    → Bulk update predictions
+    → Emit WebSocket events (per group)
+    → Invalidate cache keys:
+        lb:{groupId}:all:all
+        lb:{groupId}:{tournamentId}:all
+        lb:{groupId}:{tournamentId}:{phase}
+```
+
+Since `cache-manager` v7 doesn't support wildcard deletes, invalidation targets the specific key patterns that `LeaderboardService.cacheKey()` produces.
+
+## Performance: Scoring Pipeline
+
+### How Scores Are Updated
+
+Match results are updated **automatically** by the Smart Cron job (see `EXTERNAL-API.md`), which polls API-Football every 5 minutes for live/recently-finished matches. The cron calls `MatchesService.updateScore()` directly — an internal service call, not an HTTP request.
+
+```
+Primary flow (automatic):
+  Smart Cron (every 5 min) → API-Football → MatchesService.updateScore()
+    → ScoringService.calculatePointsForMatch() (fire-and-forget)
+
+Secondary flow (manual correction):
+  Admin → PATCH /matches/:id/score (guarded) → MatchesService.updateScore()
+    → ScoringService.calculatePointsForMatch() (fire-and-forget)
+```
+
+Both flows converge on the same `MatchesService.updateScore()` method, so fire-and-forget + bulk optimization benefits apply to both.
+
+The `PATCH /matches/:id/score` endpoint exists for **manual admin corrections only** (edge case: API-Football reports a wrong score). It is NOT the primary flow.
+
+**Why the cron calls the service directly**: No HTTP overhead, no auth needed for internal calls, more performant. The cron job runs in the same NestJS process, so it imports `MatchesService` and calls the method directly — bypassing controllers, guards, and the HTTP layer entirely.
+
+### Fire-and-Forget
+
+When a match transitions to `FINISHED` (via either flow), point calculation runs asynchronously — the caller does not wait:
+
+```typescript
+// matches.service.ts
+if (status === 'FINISHED') {
+  this.scoringService.calculatePointsForMatch(id).catch((error) => {
+    this.logger.error(`Failed to calculate points for match ${id}: ${error.message}`);
+  });
+}
+return responseDto; // ← returns without waiting
+```
+
+### Bulk Updates
+
+Predictions are grouped by `(pointType, points)` and updated via `updateMany()` inside a single `$transaction`. This reduces N individual updates to ~4-6 DB operations (one per unique point type: EXACT, GOAL_DIFF, WINNER, MISS × distinct multiplier values).
+
+### Database Indexing
+
+`@@index([matchId])` on the `Prediction` model ensures fast lookup during point calculation, since `calculatePointsForMatch()` queries all predictions for a given match.
+
+### Why Not BullMQ
+
+At current scale (thousands of users, not millions), fire-and-forget with `.catch()` logging is sufficient. Redis infrastructure is already in place, so upgrading to BullMQ for durable job queues requires only adding the dependency and wrapping the call — no infrastructure changes needed.
+
+## ScoringModule Architecture
+
+### Why It Was Extracted
+
+`ScoringService` was extracted into its own module to break the circular dependency between `MatchesModule` and `PredictionsModule`. Both modules needed scoring logic, but importing each other created a `forwardRef` cycle.
+
+### Module Structure
+
+```
+ScoringModule
+├── ScoringService (providers + exports)
+│
+├── Used by MatchesModule → fire-and-forget on FINISHED
+└── Used by PredictionsModule → manual recalculation endpoint
+```
+
+### Key Methods
+
+| Method | Type | Description |
+|--------|------|-------------|
+| `calculatePoints()` | **Pure function** | Takes predicted/actual scores + multiplier, returns `{ points, pointType }`. No I/O, no side effects. |
+| `calculatePointsForMatch()` | **Orchestrator** | Fetches match + predictions, calls `calculatePoints()` for each, bulk updates DB, emits WebSocket events, invalidates cache. |
+
+### Dependency Graph (no forwardRef)
+
+```
+MatchesModule ──imports──> ScoringModule
+PredictionsModule ──imports──> ScoringModule
+```
+
+Both consume `ScoringService` without knowing about each other.
 
 ## Tournaments Module
 
