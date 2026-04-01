@@ -1,10 +1,10 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MatchesController } from './matches.controller.js';
 import { MatchesService } from './matches.service.js';
-import { PredictionsModule } from '../predictions/predictions.module.js';
+import { ScoringModule } from '../scoring/scoring.module.js';
 
 @Module({
-  imports: [forwardRef(() => PredictionsModule)],
+  imports: [ScoringModule],
   controllers: [MatchesController],
   providers: [MatchesService],
   exports: [MatchesService],

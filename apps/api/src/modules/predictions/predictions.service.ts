@@ -6,23 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { PredictionPointType } from '@prisma/client';
+import { LOCK_BUFFER_MINUTES } from '@pichichi/shared';
 import { PrismaService } from '../../config/prisma.service.js';
-import { EventsGateway } from '../../gateways/events.gateway.js';
 import type { CreatePredictionDto } from './dto/create-prediction.dto.js';
 import type { PredictionResponseDto, PredictionMatchDto } from './dto/prediction-response.dto.js';
 import type { GroupPredictionsResponseDto, UserPredictionDto } from './dto/group-predictions-response.dto.js';
 import type { PredictionStatsResponseDto } from './dto/prediction-stats-response.dto.js';
-
-export interface CalculatePointsResult {
-  matchId: string;
-  totalPredictions: number;
-  results: {
-    exact: number;
-    goalDiff: number;
-    winner: number;
-    miss: number;
-  };
-}
 
 @Injectable()
 export class PredictionsService {
@@ -30,7 +19,6 @@ export class PredictionsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -64,9 +52,28 @@ export class PredictionsService {
       throw new ConflictException('Predictions are locked for this match');
     }
 
-    // 3. Server-side time check — NEVER trust client
-    if (match.scheduledAt <= new Date()) {
+    // 3. Server-side time check with 5-minute lock buffer — NEVER trust client
+    const lockTime = new Date(
+      match.scheduledAt.getTime() - LOCK_BUFFER_MINUTES * 60 * 1000,
+    );
+    if (lockTime <= new Date()) {
       throw new ConflictException('Predictions are locked for this match');
+    }
+
+    // 3.5. Validate the match's tournament belongs to the target group
+    const groupTournament = await this.prisma.groupTournament.findUnique({
+      where: {
+        groupId_tournamentId: {
+          groupId: dto.groupId,
+          tournamentId: match.tournamentId,
+        },
+      },
+    });
+
+    if (!groupTournament) {
+      throw new ForbiddenException(
+        'This tournament is not part of this group',
+      );
     }
 
     // 4. Upsert prediction (unique constraint: userId + matchId + groupId)
@@ -209,97 +216,6 @@ export class PredictionsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Calculate points for a match (THE CORE SCORING LOGIC)
-  // ---------------------------------------------------------------------------
-
-  async calculatePointsForMatch(matchId: string): Promise<CalculatePointsResult> {
-    // 1. Get the match with tournament and phases
-    const match = await this.prisma.match.findUnique({
-      where: { id: matchId },
-      include: {
-        tournament: {
-          include: { phases: true },
-        },
-      },
-    });
-
-    if (!match) {
-      throw new NotFoundException('Match not found');
-    }
-
-    if (match.homeScore === null || match.awayScore === null) {
-      throw new ConflictException('Match does not have a final score yet');
-    }
-
-    const actualHome = match.homeScore;
-    const actualAway = match.awayScore;
-
-    // 2. Get the multiplier for this match's phase
-    const tournamentPhase = match.tournament.phases.find(
-      (p) => p.phase === match.phase,
-    );
-    const multiplier = tournamentPhase?.multiplier ?? 1;
-
-    // 3. Get ALL predictions for this match (across ALL groups)
-    const predictions = await this.prisma.prediction.findMany({
-      where: { matchId },
-    });
-
-    const results = { exact: 0, goalDiff: 0, winner: 0, miss: 0 };
-
-    // 4. Calculate points for each prediction
-    const updates = predictions.map((prediction) => {
-      const { points, pointType } = this.calculatePoints(
-        prediction.predictedHome,
-        prediction.predictedAway,
-        actualHome,
-        actualAway,
-        multiplier,
-      );
-
-      if (pointType === 'EXACT') results.exact++;
-      else if (pointType === 'GOAL_DIFF') results.goalDiff++;
-      else if (pointType === 'WINNER') results.winner++;
-      else results.miss++;
-
-      return this.prisma.prediction.update({
-        where: { id: prediction.id },
-        data: { pointsEarned: points, pointType },
-      });
-    });
-
-    // 5. Update all predictions
-    await this.prisma.$transaction(updates);
-
-    this.logger.log(
-      `Points calculated for match ${matchId}: ${predictions.length} predictions ` +
-      `(exact: ${results.exact}, goalDiff: ${results.goalDiff}, winner: ${results.winner}, miss: ${results.miss})`,
-    );
-
-    // Emit real-time events to affected groups
-    const affectedGroupIds = [
-      ...new Set(predictions.map((p) => p.groupId)),
-    ];
-
-    for (const groupId of affectedGroupIds) {
-      this.eventsGateway.emitPredictionPointsCalculated(groupId, matchId, {
-        totalPredictions: predictions.length,
-        results,
-      });
-      this.eventsGateway.emitLeaderboardUpdate(groupId, {
-        matchId,
-        reason: 'points_calculated',
-      });
-    }
-
-    return {
-      matchId,
-      totalPredictions: predictions.length,
-      results,
-    };
-  }
-
-  // ---------------------------------------------------------------------------
   // Get user stats in a group
   // ---------------------------------------------------------------------------
 
@@ -349,35 +265,6 @@ export class PredictionsService {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
-
-  private calculatePoints(
-    predictedHome: number,
-    predictedAway: number,
-    actualHome: number,
-    actualAway: number,
-    multiplier: number,
-  ): { points: number; pointType: PredictionPointType } {
-    // Exact score
-    if (predictedHome === actualHome && predictedAway === actualAway) {
-      return { points: 5 * multiplier, pointType: 'EXACT' };
-    }
-
-    // Goal difference match (same diff, NOT same winner only)
-    if (predictedHome - predictedAway === actualHome - actualAway) {
-      return { points: 3 * multiplier, pointType: 'GOAL_DIFF' };
-    }
-
-    // Correct winner (or correct draw)
-    if (
-      Math.sign(predictedHome - predictedAway) ===
-      Math.sign(actualHome - actualAway)
-    ) {
-      return { points: 1 * multiplier, pointType: 'WINNER' };
-    }
-
-    // Miss
-    return { points: 0, pointType: 'MISS' };
-  }
 
   private toResponseDto(
     prediction: {

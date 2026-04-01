@@ -1,9 +1,12 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import type { LeaderboardEntryDto } from './dto/leaderboard-entry.dto.js';
@@ -26,7 +29,10 @@ interface RawLeaderboardRow {
 export class LeaderboardService {
   private readonly logger = new Logger(LeaderboardService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // Get group leaderboard (general ranking)
@@ -39,6 +45,12 @@ export class LeaderboardService {
   ): Promise<LeaderboardResponseDto> {
     const group = await this.requireMembership(groupId, userId);
 
+    const cacheKey = this.cacheKey(groupId, tournamentId);
+    const cached = await this.cacheGet<LeaderboardResponseDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const rows = await this.queryLeaderboard(groupId, tournamentId);
 
     const entries = this.assignPositions(rows);
@@ -47,13 +59,17 @@ export class LeaderboardService {
       where: { groupId, isActive: true },
     });
 
-    return {
+    const result: LeaderboardResponseDto = {
       groupId,
       groupName: group.name,
       tournamentId: tournamentId ?? null,
       entries,
       totalMembers,
     };
+
+    await this.cacheSet(cacheKey, result);
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -68,6 +84,12 @@ export class LeaderboardService {
   ): Promise<LeaderboardResponseDto> {
     const group = await this.requireMembership(groupId, userId);
 
+    const cacheKey = this.cacheKey(groupId, tournamentId, phase);
+    const cached = await this.cacheGet<LeaderboardResponseDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const rows = await this.queryLeaderboard(groupId, tournamentId, phase);
 
     const entries = this.assignPositions(rows);
@@ -76,13 +98,17 @@ export class LeaderboardService {
       where: { groupId, isActive: true },
     });
 
-    return {
+    const result: LeaderboardResponseDto = {
       groupId,
       groupName: group.name,
       tournamentId,
       entries,
       totalMembers,
     };
+
+    await this.cacheSet(cacheKey, result);
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -242,5 +268,46 @@ export class LeaderboardService {
     }
 
     return group;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cache helpers (graceful degradation — never throw on cache errors)
+  // ---------------------------------------------------------------------------
+
+  /** Build a deterministic cache key for a leaderboard query */
+  private cacheKey(
+    groupId: string,
+    tournamentId?: string,
+    phase?: string,
+  ): string {
+    return `lb:${groupId}:${tournamentId ?? 'all'}:${phase ?? 'all'}`;
+  }
+
+  /** Read from cache, returning undefined on miss or error */
+  private async cacheGet<T>(key: string): Promise<T | undefined> {
+    try {
+      const value = await this.cache.get<T>(key);
+      if (value !== undefined && value !== null) {
+        this.logger.debug(`Cache HIT: ${key}`);
+        return value;
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Cache get failed (key=${key}): ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
+    }
+    return undefined;
+  }
+
+  /** Write to cache, silently ignoring errors */
+  private async cacheSet<T>(key: string, value: T): Promise<void> {
+    try {
+      await this.cache.set(key, value);
+      this.logger.debug(`Cache SET: ${key}`);
+    } catch (err) {
+      this.logger.warn(
+        `Cache set failed (key=${key}): ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
+    }
   }
 }

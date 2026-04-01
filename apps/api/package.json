@@ -6,9 +6,12 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prebuild": "npm run build -w @pichichi/shared",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prestart": "npm run build -w @pichichi/shared",
     "start": "nest start",
+    "prestart:dev": "npm run build -w @pichichi/shared",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",

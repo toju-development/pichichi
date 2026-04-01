@@ -1,13 +1,11 @@
 import {
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import type { MatchStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
-import { PredictionsService } from '../predictions/predictions.service.js';
+import { ScoringService } from '../scoring/scoring.service.js';
 import { EventsGateway } from '../../gateways/events.gateway.js';
 import type { CreateMatchDto } from './dto/create-match.dto.js';
 import type { UpdateMatchDto } from './dto/update-match.dto.js';
@@ -25,8 +23,7 @@ export class MatchesService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => PredictionsService))
-    private readonly predictionsService: PredictionsService,
+    private readonly scoringService: ScoringService,
     private readonly eventsGateway: EventsGateway,
   ) {}
 
@@ -228,18 +225,13 @@ export class MatchesService {
       status,
     });
 
-    // Trigger point calculation when match finishes
+    // Trigger point calculation when match finishes (fire-and-forget)
     if (status === 'FINISHED') {
-      try {
-        const result = await this.predictionsService.calculatePointsForMatch(id);
-        this.logger.log(
-          `Points calculated for match ${id}: ${result.totalPredictions} predictions processed`,
-        );
-      } catch (error) {
+      this.scoringService.calculatePointsForMatch(id).catch((error) => {
         this.logger.error(
           `Failed to calculate points for match ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
-      }
+      });
     }
 
     return responseDto;

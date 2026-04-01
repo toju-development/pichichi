@@ -14,6 +14,7 @@ interface EnvironmentVariables {
   APPLE_CLIENT_ID: string;
   JWT_SECRET: string;
   DATABASE_URL: string;
+  REDIS_URL?: string;
 }
 
 const REQUIRED_VARS: readonly (keyof EnvironmentVariables)[] = [
@@ -49,5 +50,8 @@ export function validateEnv(
     APPLE_CLIENT_ID: config.APPLE_CLIENT_ID as string,
     JWT_SECRET: config.JWT_SECRET as string,
     DATABASE_URL: config.DATABASE_URL as string,
+    ...(typeof config.REDIS_URL === 'string' && config.REDIS_URL.trim() !== ''
+      ? { REDIS_URL: config.REDIS_URL as string }
+      : {}),
   };
 }

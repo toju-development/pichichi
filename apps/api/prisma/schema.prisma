@@ -282,6 +282,7 @@ model Prediction {
   group Group @relation(fields: [groupId], references: [id])
 
   @@unique([userId, matchId, groupId])
+  @@index([matchId])
   @@map("predictions")
 }
 

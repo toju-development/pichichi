@@ -18,7 +18,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
-import { PredictionsService, type CalculatePointsResult } from './predictions.service.js';
+import { PredictionsService } from './predictions.service.js';
+import { ScoringService, type CalculatePointsResult } from '../scoring/scoring.service.js';
 import { CreatePredictionDto } from './dto/create-prediction.dto.js';
 import { PredictionResponseDto } from './dto/prediction-response.dto.js';
 import { GroupPredictionsResponseDto } from './dto/group-predictions-response.dto.js';
@@ -29,7 +30,10 @@ import { PredictionStatsResponseDto } from './dto/prediction-stats-response.dto.
 @UseGuards(JwtAuthGuard)
 @Controller('predictions')
 export class PredictionsController {
-  constructor(private readonly predictionsService: PredictionsService) {}
+  constructor(
+    private readonly predictionsService: PredictionsService,
+    private readonly scoringService: ScoringService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -99,6 +103,6 @@ export class PredictionsController {
   async calculatePoints(
     @Param('matchId', ParseUUIDPipe) matchId: string,
   ): Promise<CalculatePointsResult> {
-    return this.predictionsService.calculatePointsForMatch(matchId);
+    return this.scoringService.calculatePointsForMatch(matchId);
   }
 }
