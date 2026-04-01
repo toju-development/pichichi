@@ -65,6 +65,10 @@ interface MatchCardProps {
   hasPrediction?: boolean;
   /** Show the phase/group badge line at the top. */
   showPhaseInfo?: boolean;
+  /** Optional custom content to render in the bottom-right area (replaces default prediction indicator). */
+  bottomRight?: React.ReactNode;
+  /** Optional content rendered centered below the match info (e.g. prediction badge). */
+  footer?: React.ReactNode;
   /** Called when the user taps the card (to open prediction entry). */
   onPress?: () => void;
   /** NativeWind classes for external spacing (e.g. mb-3). */
@@ -194,6 +198,8 @@ export function MatchCard({
   match,
   hasPrediction = false,
   showPhaseInfo = false,
+  bottomRight,
+  footer,
   onPress,
   className,
 }: MatchCardProps) {
@@ -283,27 +289,37 @@ export function MatchCard({
           />
         </View>
 
-        {/* Bottom row: date + prediction indicator */}
+        {/* Bottom row: date + venue (same row, space-between) */}
         <View style={styles.bottomRow}>
           <Text style={styles.dateText}>{formatMatchDate(scheduledAt)}</Text>
-
-          {showPredictionIndicator ? (
-            hasPrediction ? (
-              <View style={styles.predictionRow}>
-                <Text style={styles.predictionCheck}>{'\u2713'}</Text>
-                <Text style={styles.predictionDone}>Predicho</Text>
-              </View>
-            ) : (
-              <Text style={styles.predictionMissing}>Sin predicci\u00F3n</Text>
-            )
+          {venueLine ? (
+            <Text style={styles.venueText} numberOfLines={1}>
+              {venueLine}
+            </Text>
           ) : null}
         </View>
 
-        {/* Venue line */}
-        {venueLine ? (
-          <Text style={styles.venueText} numberOfLines={1}>
-            {venueLine}
-          </Text>
+        {/* Prediction indicator row (suppressed when a footer badge is provided) */}
+        {footer == null && bottomRight != null ? (
+          <View style={styles.predictionIndicatorRow}>{bottomRight}</View>
+        ) : footer == null && showPredictionIndicator ? (
+          hasPrediction ? (
+            <View style={styles.predictionIndicatorRow}>
+              <View style={styles.predictionRow}>
+                <Text style={styles.predictionCheck}>{'\u2713'}</Text>
+                <Text style={styles.predictionDone}>Listo</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.predictionIndicatorRow}>
+              <Text style={styles.predictionMissing}>{'Sin predicción'}</Text>
+            </View>
+          )
+        ) : null}
+
+        {/* Footer (e.g. prediction badge — centered, full width) */}
+        {footer != null ? (
+          <View style={styles.footerRow}>{footer}</View>
         ) : null}
       </View>
     </Card>
@@ -500,11 +516,25 @@ const styles = StyleSheet.create({
     color: COLORS.text.muted,
   },
 
-  // ── Venue ────────────────────────────────────────────────────────────────
+  // ── Venue (now inline with date, right-aligned) ──────────────────────────
   venueText: {
-    marginTop: 6,
     fontSize: 11,
     fontWeight: '400',
     color: COLORS.text.muted,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+
+  // ── Prediction indicator row ─────────────────────────────────────────────
+  predictionIndicatorRow: {
+    marginTop: 6,
+    alignItems: 'flex-end',
+  },
+
+  // ── Footer ──────────────────────────────────────────────────────────────
+  footerRow: {
+    marginTop: 10,
+    alignItems: 'center' as const,
   },
 });

@@ -7,6 +7,7 @@
  */
 
 import type { MatchDto } from '@pichichi/shared';
+import { LOCK_BUFFER_MINUTES } from '@pichichi/shared';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,26 @@ export const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelado',
 };
 
+// ─── Lock Logic ─────────────────────────────────────────────────────────────
+
+/**
+ * Determines whether a match is locked for prediction entry.
+ *
+ * A match is locked when:
+ * 1. Its status is anything other than SCHEDULED, OR
+ * 2. It's within LOCK_BUFFER_MINUTES (5 min) of kickoff.
+ *
+ * Shared by PredictionMatchCard (gate) and ScorePredictionModal (safety re-check).
+ */
+export function isMatchLocked(match: MatchDto): boolean {
+  if (match.status !== 'SCHEDULED') return true;
+
+  const kickoffMs = new Date(match.scheduledAt).getTime();
+  const bufferMs = LOCK_BUFFER_MINUTES * 60_000;
+
+  return Date.now() > kickoffMs - bufferMs;
+}
+
 // ─── Date formatting helpers ────────────────────────────────────────────────
 
 /**
@@ -161,19 +182,51 @@ export function formatSectionDate(iso: string): string {
 
 /**
  * Groups an array of matches by their `scheduledAt` date (local timezone)
+ * and returns sections sorted reverse-chronologically (most recent first),
+ * ready for `SectionList`. Used for results/finished matches.
+ *
+ * Within each section, `data` preserves reverse-chronological order.
+ */
+export function groupMatchesByDateDesc(matches: MatchDto[]): MatchSection[] {
+  // 1. Sort by scheduledAt descending (most recent first)
+  const sorted = [...matches].sort(
+    (a, b) =>
+      new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime(),
+  );
+
+  // 2. Group by calendar date (local timezone)
+  const sectionMap = new Map<string, MatchSection>();
+
+  for (const match of sorted) {
+    const d = new Date(match.scheduledAt);
+    const dateKey = d.toLocaleDateString('en-CA');
+
+    let section = sectionMap.get(dateKey);
+
+    if (!section) {
+      section = {
+        title: formatSectionDate(match.scheduledAt),
+        dateKey,
+        data: [],
+      };
+      sectionMap.set(dateKey, section);
+    }
+
+    section.data.push(match);
+  }
+
+  // 3. Map values preserve insertion order, which is already reverse-chronological
+  return Array.from(sectionMap.values());
+}
+
+/**
+ * Groups an array of matches by their `scheduledAt` date (local timezone)
  * and returns sections sorted chronologically, ready for `SectionList`.
  *
  * - Matches are first sorted by `scheduledAt` ascending.
  * - Each section's `dateKey` is an ISO date string ("2026-06-11").
  * - Each section's `title` is a human-readable Spanish label.
  * - Within each section, `data` preserves the chronological order.
- *
- * @example
- * const sections = groupMatchesByDate(matches);
- * // [
- * //   { title: "Miércoles 11 de Junio", dateKey: "2026-06-11", data: [...] },
- * //   { title: "Jueves 12 de Junio",    dateKey: "2026-06-12", data: [...] },
- * // ]
  */
 export function groupMatchesByDate(matches: MatchDto[]): MatchSection[] {
   // 1. Sort by scheduledAt ascending

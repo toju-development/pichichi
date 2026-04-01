@@ -184,7 +184,7 @@ function FilterChip({
 }
 
 /** "Mis Grupos" horizontal section — shows the user's groups playing this tournament. */
-function MisGruposSection({ tournamentId }: { tournamentId: string }) {
+function MisGruposSection({ tournamentId, tournamentSlug }: { tournamentId: string; tournamentSlug: string }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: groups, isLoading } = useMyGroupsByTournament(tournamentId);
 
@@ -205,7 +205,10 @@ function MisGruposSection({ tournamentId }: { tournamentId: string }) {
           <Pressable
             key={group.id}
             style={styles.misGruposCard}
-            onPress={() => router.push(`/(tabs)/tournaments/group/${group.id}`)}
+            onPress={() => router.push({
+              pathname: '/(tabs)/tournaments/tournament-group/[slug]',
+              params: { slug: tournamentSlug, groupId: group.id },
+            })}
           >
             <View style={styles.misGruposCardIcon}>
               <Ionicons name="people" size={18} color={COLORS.primary.DEFAULT} />
@@ -687,7 +690,7 @@ export default function TournamentDetailScreen() {
       </ScreenHeader>
 
       {/* Mis Grupos — user's groups playing this tournament */}
-      <MisGruposSection tournamentId={tournament.id} />
+      <MisGruposSection tournamentId={tournament.id} tournamentSlug={tournament.slug} />
 
       {/* Tab bar */}
       {tabs.length > 0 ? (
