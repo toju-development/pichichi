@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/card';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { checkRemoveTournament } from '@/api/groups';
+import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '@/utils/match-helpers';
 import {
   useDeleteGroup,
   useGroup,
@@ -483,17 +484,11 @@ export default function GroupDetailScreen() {
                       <View style={detailStyles.tournamentMeta}>
                         <View style={detailStyles.tournamentTypeBadge}>
                           <Text style={detailStyles.tournamentTypeText}>
-                            {tournament.type.replace(/_/g, ' ')}
+                            {TOURNAMENT_TYPE_LABELS[tournament.type] ?? tournament.type}
                           </Text>
                         </View>
                         <Text style={detailStyles.tournamentStatus}>
-                          {tournament.status === 'IN_PROGRESS'
-                            ? 'En curso'
-                            : tournament.status === 'UPCOMING'
-                              ? 'Próximamente'
-                              : tournament.status === 'FINISHED'
-                                ? 'Finalizado'
-                                : tournament.status}
+                          {TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}
                         </Text>
                       </View>
                     </View>
