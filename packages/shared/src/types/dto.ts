@@ -124,9 +124,24 @@ export interface TournamentTeamDto {
   teamId: string;
   name: string;
   shortName: string;
-  flagUrl: string | null;
+  logoUrl: string | null;
   groupLetter: string | null;
   isEliminated: boolean;
+  externalId: number | null;
+}
+
+export interface TournamentPlayerResponseDto {
+  id: string;
+  playerId: string;
+  externalId: number | null;
+  name: string;
+  photoUrl: string | null;
+  position: string | null;
+  shirtNumber: number | null;
+  teamId: string;
+  teamName: string;
+  teamLogoUrl: string | null;
+  teamExternalId: number | null;
 }
 
 // ─── Team (nested in Match) ──────────────────────────────────────────────────
@@ -135,7 +150,7 @@ export interface MatchTeamDto {
   id: string;
   name: string;
   shortName: string;
-  flagUrl: string | null;
+  logoUrl: string | null;
 }
 
 // ─── Match ───────────────────────────────────────────────────────────────────

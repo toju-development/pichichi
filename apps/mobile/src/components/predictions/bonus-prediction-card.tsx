@@ -4,6 +4,12 @@
  * Shows the category label, current prediction value (or "Sin pronóstico"),
  * points available, and lock state. Tappable to edit when unlocked.
  *
+ * Resolves `predictedValue` (which stores `String(externalId)`) to a human
+ * display name via the teams/players arrays passed as props:
+ * - Team bonus types (CHAMPION/REVELATION) → flag + team name
+ * - Player bonus types (TOP_SCORER/MVP) → player photo + name + team flag
+ * - Legacy free-text predictions (lookup fails) → raw predictedValue
+ *
  * Pure presentational — receives derived props, owns zero business logic.
  *
  * IMPORTANT — NativeWind v4 ghost-card fix:
@@ -11,9 +17,14 @@
  * frame. Never mix `style` and `className` on the same element.
  */
 
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { BonusPredictionDto, BonusTypeDto } from '@pichichi/shared';
+import type {
+  BonusPredictionDto,
+  BonusTypeDto,
+  TournamentPlayerResponseDto,
+  TournamentTeamDto,
+} from '@pichichi/shared';
 
 import { COLORS } from '@/theme/colors';
 
@@ -53,27 +64,90 @@ export interface BonusPredictionCardProps {
   isLocked: boolean;
   /** Called when the user taps to edit. Not called when locked. */
   onEdit: () => void;
+  /** Tournament teams — used to resolve externalId → display name for team bonus types. */
+  teams: TournamentTeamDto[];
+  /** Tournament players — used to resolve externalId → display name for player bonus types. */
+  players: TournamentPlayerResponseDto[];
   /** NativeWind classes for external spacing (e.g. mb-3). */
   className?: string;
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Bonus type → picker mode mapping ──────────────────────────────────────
+
+const TEAM_BONUS_KEYS = new Set(['CHAMPION', 'REVELATION']);
+const PLAYER_BONUS_KEYS = new Set(['TOP_SCORER', 'MVP']);
+
+// ─── ExternalId → display name resolution ──────────────────────────────────
+
+interface ResolvedDisplay {
+  displayName: string;
+  logoUrl: string | null;
+  photoUrl: string | null;
+}
+
+/**
+ * Resolves a `predictedValue` (which stores `String(externalId)`) into a
+ * human-readable display name. Falls back to raw `predictedValue` when lookup
+ * fails (legacy free-text predictions).
+ */
+function resolvePredictionDisplay(
+  predictedValue: string,
+  bonusTypeKey: string,
+  teams: TournamentTeamDto[],
+  players: TournamentPlayerResponseDto[],
+): ResolvedDisplay {
+  const key = bonusTypeKey.toUpperCase();
+
+  if (TEAM_BONUS_KEYS.has(key)) {
+    const team = teams.find((t) => String(t.externalId) === predictedValue);
+    if (team) {
+      return { displayName: team.name, logoUrl: team.logoUrl, photoUrl: null };
+    }
+  }
+
+  if (PLAYER_BONUS_KEYS.has(key)) {
+    const player = players.find(
+      (p) => String(p.externalId) === predictedValue,
+    );
+    if (player) {
+      return {
+        displayName: player.name,
+        logoUrl: player.teamLogoUrl,
+        photoUrl: player.photoUrl,
+      };
+    }
+  }
+
+  // Legacy free-text prediction or unknown externalId — show raw value
+  return { displayName: predictedValue, logoUrl: null, photoUrl: null };
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────
 
 export function BonusPredictionCard({
   bonusType,
   prediction,
   isLocked,
   onEdit,
+  teams,
+  players,
   className,
 }: BonusPredictionCardProps) {
   const hasPrediction = prediction != null && prediction.predictedValue !== '';
-  const icon = CATEGORY_ICONS[bonusType.key] ?? '\uD83C\uDFC5'; // medal fallback
-  const displayLabel = BONUS_LABELS[bonusType.key] ?? BONUS_LABELS[bonusType.label] ?? bonusType.label;
+  const normalizedKey = bonusType.key.toUpperCase();
+  const icon = CATEGORY_ICONS[normalizedKey] ?? '\uD83C\uDFC5'; // medal fallback
+  const displayLabel = BONUS_LABELS[normalizedKey] ?? BONUS_LABELS[bonusType.label] ?? bonusType.label;
 
   // ── Determine visual state ──────────────────────────────────────────────
 
   const isScored = prediction?.isCorrect != null;
   const isCorrect = prediction?.isCorrect === true;
+
+  // ── Resolve predictedValue → display name ───────────────────────────────
+
+  const resolved = hasPrediction
+    ? resolvePredictionDisplay(prediction.predictedValue, bonusType.key, teams, players)
+    : null;
 
   const cardContent = (
     <View style={styles.cardSurface}>
@@ -95,8 +169,21 @@ export function BonusPredictionCard({
               <Text style={styles.lockedIcon}>{'\uD83D\uDD12'}</Text>
               <Text style={styles.lockedText}>Sin pronóstico</Text>
             </View>
-          ) : hasPrediction ? (
+          ) : hasPrediction && resolved ? (
             <View style={styles.predictionRow}>
+              {resolved.photoUrl ? (
+                <Image
+                  source={{ uri: resolved.photoUrl }}
+                  style={styles.playerPhoto}
+                  resizeMode="cover"
+                />
+              ) : resolved.logoUrl ? (
+                <Image
+                  source={{ uri: resolved.logoUrl }}
+                  style={styles.resolvedFlag}
+                  resizeMode="cover"
+                />
+              ) : null}
               <Text
                 style={[
                   styles.predictionValue,
@@ -105,8 +192,15 @@ export function BonusPredictionCard({
                 ]}
                 numberOfLines={1}
               >
-                {prediction.predictedValue}
+                {resolved.displayName}
               </Text>
+              {resolved.photoUrl && resolved.logoUrl ? (
+                <Image
+                  source={{ uri: resolved.logoUrl }}
+                  style={styles.teamBadge}
+                  resizeMode="cover"
+                />
+              ) : null}
               {isScored && isCorrect && prediction.pointsEarned > 0 ? (
                 <View style={styles.earnedBadge}>
                   <Text style={styles.earnedText}>
@@ -218,6 +312,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  resolvedFlag: {
+    width: 20,
+    height: 14,
+    borderRadius: 2,
+  },
+  playerPhoto: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  teamBadge: {
+    width: 16,
+    height: 12,
+    borderRadius: 1,
   },
   predictionValue: {
     fontSize: 15,

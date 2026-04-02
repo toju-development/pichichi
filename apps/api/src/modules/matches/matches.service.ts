@@ -263,8 +263,8 @@ export class MatchesService {
       awayTeamPlaceholder: string | null;
       createdAt: Date;
       updatedAt: Date;
-      homeTeam?: { id: string; name: string; shortName: string; flagUrl: string | null } | null;
-      awayTeam?: { id: string; name: string; shortName: string; flagUrl: string | null } | null;
+      homeTeam?: { id: string; name: string; shortName: string; logoUrl: string | null } | null;
+      awayTeam?: { id: string; name: string; shortName: string; logoUrl: string | null } | null;
     },
   ): MatchResponseDto {
     return {
@@ -275,7 +275,7 @@ export class MatchesService {
             id: match.homeTeam.id,
             name: match.homeTeam.name,
             shortName: match.homeTeam.shortName,
-            flagUrl: match.homeTeam.flagUrl,
+            logoUrl: match.homeTeam.logoUrl,
           }
         : null,
       awayTeam: match.awayTeam
@@ -283,7 +283,7 @@ export class MatchesService {
             id: match.awayTeam.id,
             name: match.awayTeam.name,
             shortName: match.awayTeam.shortName,
-            flagUrl: match.awayTeam.flagUrl,
+            logoUrl: match.awayTeam.logoUrl,
           }
         : null,
       phase: match.phase as MatchResponseDto['phase'],

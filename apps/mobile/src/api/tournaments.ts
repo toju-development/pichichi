@@ -1,4 +1,8 @@
-import type { TournamentDto, TournamentTeamDto } from '@pichichi/shared';
+import type {
+  TournamentDto,
+  TournamentPlayerResponseDto,
+  TournamentTeamDto,
+} from '@pichichi/shared';
 
 import { api } from './client';
 
@@ -19,6 +23,15 @@ export async function getTournamentTeams(
 ): Promise<TournamentTeamDto[]> {
   const { data } = await api.get<TournamentTeamDto[]>(
     `/tournaments/${id}/teams`,
+  );
+  return data;
+}
+
+export async function getTournamentPlayers(
+  tournamentId: string,
+): Promise<TournamentPlayerResponseDto[]> {
+  const { data } = await api.get<TournamentPlayerResponseDto[]>(
+    `/tournaments/${tournamentId}/players`,
   );
   return data;
 }

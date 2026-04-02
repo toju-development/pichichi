@@ -65,10 +65,10 @@ const PHASE_SORT_ORDER: Record<MatchPhase, number> = {
 // ---------------------------------------------------------------------------
 
 const STANDARD_BONUS_TYPES = [
-  { key: 'champion', label: 'Champion', points: 10, sortOrder: 0 },
-  { key: 'top_scorer', label: 'Top Scorer', points: 10, sortOrder: 1 },
-  { key: 'mvp', label: 'Most Valuable Player', points: 10, sortOrder: 2 },
-  { key: 'revelation', label: 'Revelation Team', points: 10, sortOrder: 3 },
+  { key: 'CHAMPION', label: 'Champion', points: 10, sortOrder: 0 },
+  { key: 'TOP_SCORER', label: 'Top Scorer', points: 10, sortOrder: 1 },
+  { key: 'MVP', label: 'Most Valuable Player', points: 10, sortOrder: 2 },
+  { key: 'REVELATION', label: 'Revelation Team', points: 10, sortOrder: 3 },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -413,7 +413,7 @@ async function runImportPipeline(
       console.warn(`${prefix}⚠️  No teams returned from API.`);
     } else {
       for (const apiTeam of apiTeams) {
-        const mapped = mapTeamData(apiTeam, league.country.flag);
+        const mapped = mapTeamData(apiTeam);
 
         try {
           if (dryRun) {
@@ -440,14 +440,12 @@ async function runImportPipeline(
                 name: mapped.name,
                 shortName: mapped.shortName,
                 logoUrl: mapped.logoUrl,
-                flagUrl: mapped.flagUrl,
                 country: mapped.country,
               },
               create: {
                 name: mapped.name,
                 shortName: mapped.shortName,
                 logoUrl: mapped.logoUrl,
-                flagUrl: mapped.flagUrl,
                 country: mapped.country,
                 externalId: mapped.externalId,
               },

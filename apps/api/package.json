@@ -22,7 +22,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "import-tournament": "npx tsx src/database/seeds/import-tournament.ts",
-    "clean-db": "npx tsx src/database/seeds/clean-db.ts"
+    "clean-db": "npx tsx src/database/seeds/clean-db.ts",
+    "toggle-tournament": "npx tsx src/database/seeds/toggle-tournament.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.0",

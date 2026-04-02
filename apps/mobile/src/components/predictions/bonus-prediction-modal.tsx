@@ -1,45 +1,84 @@
 /**
- * BonusPredictionModal — slide-up modal for entering/editing a bonus prediction.
+ * BonusPredictionModal — slide-up modal for picking a bonus prediction.
  *
- * Displays category label + TextInput for the predicted value (team/player name)
- * + points reward info + save button.
- * Pre-fills from existing prediction when editing.
- * Uses `useUpsertBonusPrediction` hook for submission.
+ * Replaces the old TextInput approach with structured FlatList pickers:
+ * - Team mode (CHAMPION/REVELATION): single-step team FlatList
+ * - Player mode (TOP_SCORER/MVP): two-step flow (team → player)
+ *
+ * Receives teams[] and players[] as props from the parent (BonusSection).
+ * Stores `String(externalId)` as the predictedValue — NOT names.
+ * Filters out entities without externalId.
  *
  * NativeWind v4 rule: className-only — NEVER mix style + className.
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
+  FlatList,
+  Image,
   Modal,
-  Platform,
   Pressable,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
-import { Button } from '@/components/ui/button';
+import type {
+  TournamentPlayerResponseDto,
+  TournamentTeamDto,
+} from '@pichichi/shared';
+
 import { useUpsertBonusPrediction } from '@/hooks/use-bonus-predictions';
 import { COLORS } from '@/theme/colors';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const MAX_VALUE_LENGTH = 100;
-const BONUS_POINTS = 10;
+const BONUS_TYPE_KEY = {
+  CHAMPION: 'CHAMPION',
+  TOP_SCORER: 'TOP_SCORER',
+  MVP: 'MVP',
+  REVELATION: 'REVELATION',
+} as const;
+
+type BonusTypeKey = (typeof BONUS_TYPE_KEY)[keyof typeof BONUS_TYPE_KEY];
+
+const PICKER_MODE = {
+  TEAM: 'team',
+  PLAYER: 'player',
+} as const;
+
+type PickerMode = (typeof PICKER_MODE)[keyof typeof PICKER_MODE];
+
+const PICKER_STEP = {
+  TEAM_LIST: 'team-list',
+  PLAYER_SELECT: 'player-select',
+} as const;
+
+type PickerStep = (typeof PICKER_STEP)[keyof typeof PICKER_STEP];
+
+/** Maps bonusTypeKey → picker mode */
+const KEY_TO_MODE: Record<string, PickerMode> = {
+  [BONUS_TYPE_KEY.CHAMPION]: PICKER_MODE.TEAM,
+  [BONUS_TYPE_KEY.REVELATION]: PICKER_MODE.TEAM,
+  [BONUS_TYPE_KEY.TOP_SCORER]: PICKER_MODE.PLAYER,
+  [BONUS_TYPE_KEY.MVP]: PICKER_MODE.PLAYER,
+};
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface BonusPredictionModalProps {
   visible: boolean;
   onClose: () => void;
-  category: string | null;
-  categoryLabel: string | null;
+  bonusTypeId: string | null;
+  bonusTypeKey: string | null;
+  bonusTypeLabel: string | null;
   currentValue: string | null;
   groupId: string;
   tournamentId: string;
+  teams: TournamentTeamDto[];
+  players: TournamentPlayerResponseDto[];
+  isPlayersLoading: boolean;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -47,44 +86,94 @@ interface BonusPredictionModalProps {
 export function BonusPredictionModal({
   visible,
   onClose,
-  category,
-  categoryLabel,
+  bonusTypeId,
+  bonusTypeKey,
+  bonusTypeLabel,
   currentValue,
   groupId,
+  teams,
+  players,
+  isPlayersLoading,
 }: BonusPredictionModalProps) {
-  const [value, setValue] = useState('');
+  const [step, setStep] = useState<PickerStep>(PICKER_STEP.TEAM_LIST);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   const upsertBonusPrediction = useUpsertBonusPrediction();
 
-  // Pre-fill from existing prediction or reset when modal opens
-  useEffect(() => {
-    if (visible && currentValue) {
-      setValue(currentValue);
-    } else if (visible) {
-      setValue('');
-    }
-  }, [visible, currentValue]);
+  // ── Derived state ───────────────────────────────────────────────────────
+
+  const mode: PickerMode = bonusTypeKey
+    ? (KEY_TO_MODE[bonusTypeKey.toUpperCase()] ?? PICKER_MODE.TEAM)
+    : PICKER_MODE.TEAM;
+
+  const displayLabel = bonusTypeLabel ?? 'Pronóstico bonus';
+
+  // Filter out teams without externalId, sort alphabetically
+  const filteredTeams = teams
+    .filter((t) => t.externalId != null)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Filter players for selected team, exclude those without externalId
+  const filteredPlayers = selectedTeamId
+    ? players
+        .filter((p) => p.teamId === selectedTeamId && p.externalId != null)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
+  const selectedTeam = selectedTeamId
+    ? filteredTeams.find((t) => t.teamId === selectedTeamId) ?? null
+    : null;
+
+  // ── Blocked state checks ────────────────────────────────────────────────
+
+  const isTeamsBlocked = filteredTeams.length === 0;
+  const isPlayersBlocked =
+    mode === PICKER_MODE.PLAYER &&
+    step === PICKER_STEP.PLAYER_SELECT &&
+    filteredPlayers.length === 0 &&
+    !isPlayersLoading;
+
+  // ── Handlers ────────────────────────────────────────────────────────────
+
+  function resetState() {
+    setStep(PICKER_STEP.TEAM_LIST);
+    setSelectedTeamId(null);
+    upsertBonusPrediction.reset();
+  }
 
   function handleClose() {
-    upsertBonusPrediction.reset();
+    resetState();
     onClose();
   }
 
-  function handleSubmit() {
-    if (!category) return;
-
-    const trimmedValue = value.trim();
-
-    if (!trimmedValue) {
-      Alert.alert('Campo vacío', 'Ingresá tu pronóstico antes de guardar.');
-      return;
+  function handleTeamSelect(team: TournamentTeamDto) {
+    if (mode === PICKER_MODE.TEAM) {
+      // Direct team selection — submit immediately
+      submitPrediction(String(team.externalId));
+    } else {
+      // Player mode — go to step 2
+      setSelectedTeamId(team.teamId);
+      setStep(PICKER_STEP.PLAYER_SELECT);
     }
+  }
+
+  function handlePlayerSelect(player: TournamentPlayerResponseDto) {
+    submitPrediction(String(player.externalId));
+  }
+
+  function handleBackToTeams() {
+    setSelectedTeamId(null);
+    setStep(PICKER_STEP.TEAM_LIST);
+  }
+
+  function submitPrediction(predictedValue: string) {
+    if (!bonusTypeId) return;
 
     upsertBonusPrediction.mutate(
       {
         groupId,
-        bonusTypeId: category,
-        predictedValue: trimmedValue,
+        bonusTypeId,
+        predictedValue,
       },
       {
         onSuccess: () => {
@@ -106,10 +195,11 @@ export function BonusPredictionModal({
     );
   }
 
-  // Don't render body when no category (modal is hidden)
-  if (!category) return null;
+  // ── Don't render when no bonusTypeId ─────────────────────────────────────
 
-  const displayLabel = categoryLabel ?? 'Pronóstico bonus';
+  if (!bonusTypeId) return null;
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <Modal
@@ -118,81 +208,273 @@ export function BonusPredictionModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 bg-background"
-      >
-        {/* Header */}
+      <View className="flex-1 bg-background">
+        {/* ── Header ──────────────────────────────────────────────────── */}
         <View className="flex-row items-center justify-between border-b border-border px-5 pb-4 pt-5">
           <Text className="text-xl font-bold text-text-primary">
             {displayLabel}
           </Text>
           <Pressable onPress={handleClose} className="active:opacity-70">
             <Text className="text-base font-medium text-primary">
-              Cancelar
+              Cerrar
             </Text>
           </Pressable>
         </View>
 
-        {/* Body */}
-        <View className="flex-1 px-5 pt-6">
-          {/* Points info */}
-          <View className="mb-6 items-center rounded-xl bg-primary-light px-4 py-3">
-            <Text className="text-sm font-semibold text-primary">
-              🏆 {BONUS_POINTS} pts si acertás
+        {/* ── Sub-header for player step 2 (back + team name) ─────── */}
+        {mode === PICKER_MODE.PLAYER &&
+          step === PICKER_STEP.PLAYER_SELECT &&
+          selectedTeam && (
+            <View className="flex-row items-center border-b border-border px-5 py-3">
+              <Pressable
+                onPress={handleBackToTeams}
+                className="mr-3 active:opacity-70"
+              >
+                <Text className="text-2xl text-primary">←</Text>
+              </Pressable>
+              {selectedTeam.logoUrl ? (
+                <Image
+                  source={{ uri: selectedTeam.logoUrl }}
+                  className="mr-2 h-4 w-6 rounded-sm"
+                  resizeMode="cover"
+                />
+              ) : null}
+              <Text className="text-base font-semibold text-text-primary">
+                {selectedTeam.name}
+              </Text>
+            </View>
+          )}
+
+        {/* ── Saving indicator ────────────────────────────────────── */}
+        {upsertBonusPrediction.isPending && (
+          <View className="items-center py-4">
+            <ActivityIndicator size="small" color={COLORS.primary.DEFAULT} />
+            <Text className="mt-1 text-sm text-text-muted">
+              Guardando...
             </Text>
           </View>
+        )}
 
-          {/* Input label */}
-          <Text className="mb-2 text-sm font-semibold text-text-primary">
-            Tu pronóstico
-          </Text>
-
-          {/* Text input */}
-          <TextInput
-            value={value}
-            onChangeText={setValue}
-            placeholder={getPlaceholder(categoryLabel)}
-            placeholderTextColor={COLORS.text.muted}
-            maxLength={MAX_VALUE_LENGTH}
-            autoCapitalize="words"
-            autoCorrect={false}
-            editable={!upsertBonusPrediction.isPending}
-            className="mb-1 rounded-xl border border-border bg-white px-4 py-3 text-base text-text-primary"
+        {/* ── Body content ────────────────────────────────────────── */}
+        {step === PICKER_STEP.TEAM_LIST && (
+          <TeamList
+            teams={filteredTeams}
+            currentValue={currentValue}
+            isBlocked={isTeamsBlocked}
+            isSubmitting={upsertBonusPrediction.isPending}
+            showSelectHint={mode === PICKER_MODE.PLAYER}
+            onSelect={handleTeamSelect}
           />
-          <Text className="mb-5 text-xs text-text-muted">
-            {value.length}/{MAX_VALUE_LENGTH}
-          </Text>
-        </View>
+        )}
 
-        {/* Footer */}
-        <View className="border-t border-border px-5 pb-8 pt-4">
-          <Button
-            title="Guardar pronóstico"
-            variant="primary"
-            loading={upsertBonusPrediction.isPending}
-            disabled={!value.trim() || upsertBonusPrediction.isPending}
-            onPress={handleSubmit}
+        {step === PICKER_STEP.PLAYER_SELECT && (
+          <PlayerList
+            players={filteredPlayers}
+            currentValue={currentValue}
+            isBlocked={isPlayersBlocked}
+            isLoading={isPlayersLoading}
+            isSubmitting={upsertBonusPrediction.isPending}
+            onSelect={handlePlayerSelect}
           />
-        </View>
-      </KeyboardAvoidingView>
+        )}
+      </View>
     </Modal>
   );
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── TeamList sub-component ─────────────────────────────────────────────────
 
-function getPlaceholder(categoryLabel: string | null): string {
-  switch (categoryLabel) {
-    case 'Campeón':
-      return 'Ej: Argentina';
-    case 'Goleador':
-      return 'Ej: Lionel Messi';
-    case 'MVP':
-      return 'Ej: Kylian Mbappé';
-    case 'Revelación':
-      return 'Ej: Marruecos';
-    default:
-      return 'Ingresá tu pronóstico';
+interface TeamListProps {
+  teams: TournamentTeamDto[];
+  currentValue: string | null;
+  isBlocked: boolean;
+  isSubmitting: boolean;
+  /** Show "Elegí un equipo" hint (player mode step 1) */
+  showSelectHint: boolean;
+  onSelect: (team: TournamentTeamDto) => void;
+}
+
+function TeamList({
+  teams,
+  currentValue,
+  isBlocked,
+  isSubmitting,
+  showSelectHint,
+  onSelect,
+}: TeamListProps) {
+  if (isBlocked) {
+    return (
+      <View className="flex-1 items-center justify-center px-5">
+        <Text className="text-base text-text-muted">
+          Equipos no disponibles
+        </Text>
+      </View>
+    );
   }
+
+  return (
+    <FlatList
+      data={teams}
+      keyExtractor={(item) => item.teamId}
+      className="flex-1"
+      contentContainerClassName="px-5 py-3"
+      ListHeaderComponent={
+        showSelectHint ? (
+          <Text className="mb-3 text-sm text-text-secondary">
+            Elegí un equipo para ver sus jugadores
+          </Text>
+        ) : null
+      }
+      renderItem={({ item }) => {
+        const isSelected =
+          currentValue != null && currentValue === String(item.externalId);
+
+        return (
+          <Pressable
+            onPress={() => onSelect(item)}
+            disabled={isSubmitting}
+            className={`mb-2 flex-row items-center rounded-xl px-4 py-3.5 active:opacity-70 ${
+              isSelected
+                ? 'border border-primary bg-primary-light'
+                : 'border border-border bg-white'
+            } ${isSubmitting ? 'opacity-50' : ''}`}
+          >
+            {item.logoUrl ? (
+              <Image
+                source={{ uri: item.logoUrl }}
+                className="mr-3 h-4 w-6 rounded-sm"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="mr-3 h-4 w-6 rounded-sm bg-border" />
+            )}
+            <Text
+              className={`flex-1 text-base font-medium ${
+                isSelected ? 'text-primary' : 'text-text-primary'
+              }`}
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
+            {isSelected && (
+              <Text className="text-sm font-semibold text-primary">✓</Text>
+            )}
+          </Pressable>
+        );
+      }}
+    />
+  );
+}
+
+// ─── PlayerList sub-component ───────────────────────────────────────────────
+
+interface PlayerListProps {
+  players: TournamentPlayerResponseDto[];
+  currentValue: string | null;
+  isBlocked: boolean;
+  isLoading: boolean;
+  isSubmitting: boolean;
+  onSelect: (player: TournamentPlayerResponseDto) => void;
+}
+
+/** Maps API position strings to Spanish display labels */
+const POSITION_LABELS: Record<string, string> = {
+  Goalkeeper: 'Arquero',
+  Defender: 'Defensor',
+  Midfielder: 'Mediocampista',
+  Attacker: 'Delantero',
+};
+
+function PlayerList({
+  players,
+  currentValue,
+  isBlocked,
+  isLoading,
+  isSubmitting,
+  onSelect,
+}: PlayerListProps) {
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color={COLORS.primary.DEFAULT} />
+        <Text className="mt-3 text-sm text-text-muted">
+          Cargando jugadores...
+        </Text>
+      </View>
+    );
+  }
+
+  if (isBlocked) {
+    return (
+      <View className="flex-1 items-center justify-center px-5">
+        <Text className="text-base text-text-muted">
+          Jugadores no disponibles
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={players}
+      keyExtractor={(item) => item.id}
+      className="flex-1"
+      contentContainerClassName="px-5 py-3"
+      renderItem={({ item }) => {
+        const isSelected =
+          currentValue != null && currentValue === String(item.externalId);
+
+        const positionLabel = item.position
+          ? (POSITION_LABELS[item.position] ?? item.position)
+          : null;
+
+        return (
+          <Pressable
+            onPress={() => onSelect(item)}
+            disabled={isSubmitting}
+            className={`mb-2 flex-row items-center rounded-xl px-4 py-3 active:opacity-70 ${
+              isSelected
+                ? 'border border-primary bg-primary-light'
+                : 'border border-border bg-white'
+            } ${isSubmitting ? 'opacity-50' : ''}`}
+          >
+            {/* Player photo */}
+            {item.photoUrl ? (
+              <Image
+                source={{ uri: item.photoUrl }}
+                className="mr-3 h-10 w-10 rounded-full bg-border"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-border">
+                <Text className="text-sm text-text-muted">⚽</Text>
+              </View>
+            )}
+
+            {/* Name + position column */}
+            <View className="flex-1">
+              <Text
+                className={`text-base font-medium ${
+                  isSelected ? 'text-primary' : 'text-text-primary'
+                }`}
+                numberOfLines={1}
+              >
+                {item.name}
+              </Text>
+              {positionLabel && (
+                <Text className="mt-0.5 text-xs text-text-secondary">
+                  {positionLabel}
+                  {item.shirtNumber != null ? ` · #${item.shirtNumber}` : ''}
+                </Text>
+              )}
+            </View>
+
+            {isSelected && (
+              <Text className="text-sm font-semibold text-primary">✓</Text>
+            )}
+          </Pressable>
+        );
+      }}
+    />
+  );
 }

@@ -109,6 +109,7 @@ export type {
   TournamentBonusTypeDto,
   TournamentDto,
   TournamentTeamDto,
+  TournamentPlayerResponseDto,
   MatchTeamDto,
   MatchDto,
   PredictionMatchDto,

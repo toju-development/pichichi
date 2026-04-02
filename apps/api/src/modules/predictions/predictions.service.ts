@@ -285,8 +285,8 @@ export class PredictionsService {
         homeScore: number | null;
         awayScore: number | null;
         phase: string;
-        homeTeam?: { name: string; shortName: string; flagUrl: string | null } | null;
-        awayTeam?: { name: string; shortName: string; flagUrl: string | null } | null;
+        homeTeam?: { name: string; shortName: string; logoUrl: string | null } | null;
+        awayTeam?: { name: string; shortName: string; logoUrl: string | null } | null;
       };
     },
   ): PredictionResponseDto {
@@ -299,8 +299,8 @@ export class PredictionsService {
           awayTeamName: prediction.match.awayTeam?.name ?? null,
           homeTeamShortName: prediction.match.homeTeam?.shortName ?? null,
           awayTeamShortName: prediction.match.awayTeam?.shortName ?? null,
-          homeTeamFlagUrl: prediction.match.homeTeam?.flagUrl ?? null,
-          awayTeamFlagUrl: prediction.match.awayTeam?.flagUrl ?? null,
+          homeTeamFlagUrl: prediction.match.homeTeam?.logoUrl ?? null,
+          awayTeamFlagUrl: prediction.match.awayTeam?.logoUrl ?? null,
           homeScore: prediction.match.homeScore,
           awayScore: prediction.match.awayScore,
           phase: prediction.match.phase,

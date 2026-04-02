@@ -10,6 +10,7 @@ import type { CreateTournamentDto } from './dto/create-tournament.dto.js';
 import type { UpdateTournamentDto } from './dto/update-tournament.dto.js';
 import type { TournamentResponseDto } from './dto/tournament-response.dto.js';
 import type { TournamentTeamResponseDto } from './dto/tournament-team-response.dto.js';
+import type { TournamentPlayerResponseDto } from './dto/tournament-player-response.dto.js';
 
 @Injectable()
 export class TournamentsService {
@@ -278,9 +279,10 @@ export class TournamentsService {
       teamId: tt.team.id,
       name: tt.team.name,
       shortName: tt.team.shortName,
-      flagUrl: tt.team.flagUrl,
+      logoUrl: tt.team.logoUrl ?? null,
       groupLetter: tt.groupLetter,
       isEliminated: tt.isEliminated,
+      externalId: tt.team.externalId ?? null,
     }));
   }
 
@@ -331,9 +333,10 @@ export class TournamentsService {
       teamId: tournamentTeam.team.id,
       name: tournamentTeam.team.name,
       shortName: tournamentTeam.team.shortName,
-      flagUrl: tournamentTeam.team.flagUrl,
+      logoUrl: tournamentTeam.team.logoUrl ?? null,
       groupLetter: tournamentTeam.groupLetter,
       isEliminated: tournamentTeam.isEliminated,
+      externalId: tournamentTeam.team.externalId ?? null,
     };
   }
 
@@ -353,6 +356,52 @@ export class TournamentsService {
     await this.prisma.tournamentTeam.delete({
       where: { id: tournamentTeam.id },
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Get players in tournament
+  // ---------------------------------------------------------------------------
+
+  async getPlayers(
+    tournamentId: string,
+    teamId?: string,
+  ): Promise<TournamentPlayerResponseDto[]> {
+    const tournament = await this.prisma.tournament.findUnique({
+      where: { id: tournamentId, isActive: true },
+    });
+
+    if (!tournament) {
+      throw new NotFoundException('Tournament not found');
+    }
+
+    const tournamentPlayers = await this.prisma.tournamentPlayer.findMany({
+      where: {
+        tournamentId,
+        ...(teamId ? { teamId } : {}),
+      },
+      include: {
+        player: true,
+        team: true,
+      },
+      orderBy: [
+        { team: { name: 'asc' } },
+        { player: { name: 'asc' } },
+      ],
+    });
+
+    return tournamentPlayers.map((tp) => ({
+      id: tp.id,
+      playerId: tp.player.id,
+      externalId: tp.player.externalId ?? null,
+      name: tp.player.name,
+      photoUrl: tp.player.photoUrl ?? null,
+      position: tp.player.position ?? null,
+      shirtNumber: tp.shirtNumber ?? null,
+      teamId: tp.team.id,
+      teamName: tp.team.name,
+      teamLogoUrl: tp.team.logoUrl ?? null,
+      teamExternalId: tp.team.externalId ?? null,
+    }));
   }
 
   // ---------------------------------------------------------------------------

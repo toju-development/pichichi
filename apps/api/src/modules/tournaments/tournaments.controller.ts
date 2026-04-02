@@ -28,6 +28,7 @@ import { UpdateTournamentDto } from './dto/update-tournament.dto.js';
 import { AddTeamDto } from './dto/add-team.dto.js';
 import { TournamentResponseDto } from './dto/tournament-response.dto.js';
 import { TournamentTeamResponseDto } from './dto/tournament-team-response.dto.js';
+import { TournamentPlayerResponseDto } from './dto/tournament-player-response.dto.js';
 
 @ApiTags('Tournaments')
 @Controller('tournaments')
@@ -111,6 +112,19 @@ export class TournamentsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TournamentTeamResponseDto[]> {
     return this.tournamentsService.getTeams(id);
+  }
+
+  @Get(':id/players')
+  @ApiOperation({ summary: 'List players in a tournament' })
+  @ApiParam({ name: 'id', description: 'Tournament ID (UUID)' })
+  @ApiQuery({ name: 'teamId', required: false, description: 'Filter by team ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'List of players', type: [TournamentPlayerResponseDto] })
+  @ApiResponse({ status: 404, description: 'Tournament not found' })
+  async getPlayers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('teamId') teamId?: string,
+  ): Promise<TournamentPlayerResponseDto[]> {
+    return this.tournamentsService.getPlayers(id, teamId);
   }
 
   @Post(':id/teams')

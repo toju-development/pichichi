@@ -216,14 +216,12 @@ export interface MappedTeamData {
   name: string;
   shortName: string;
   logoUrl: string;
-  flagUrl: string | null;
   country: string;
   externalId: number;
 }
 
 export function mapTeamData(
   apiTeam: ApiFootballTeam,
-  countryFlag?: string | null,
 ): MappedTeamData {
   // shortName: use team.code if available, otherwise first 3 chars of name (uppercased)
   const code = apiTeam.team.code;
@@ -235,7 +233,6 @@ export function mapTeamData(
     name: apiTeam.team.name,
     shortName,
     logoUrl: apiTeam.team.logo,
-    flagUrl: countryFlag ?? null,
     country: apiTeam.team.country,
     externalId: apiTeam.team.id,
   };

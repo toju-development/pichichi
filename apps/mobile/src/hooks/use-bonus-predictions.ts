@@ -4,19 +4,24 @@ import * as bonusPredictionsApi from '@/api/bonus-predictions';
 
 import { queryKeys } from './query-keys';
 
-export function useBonusPredictions(groupId: string) {
+export function useBonusPredictions(groupId: string, tournamentId: string) {
   return useQuery({
-    queryKey: queryKeys.bonusPredictions.mine(groupId),
-    queryFn: () => bonusPredictionsApi.getMyBonusPredictions(groupId),
-    enabled: !!groupId,
+    queryKey: queryKeys.bonusPredictions.mine(groupId, tournamentId),
+    queryFn: () =>
+      bonusPredictionsApi.getMyBonusPredictions(groupId, tournamentId),
+    enabled: !!groupId && !!tournamentId,
   });
 }
 
-export function useGroupBonusPredictions(groupId: string) {
+export function useGroupBonusPredictions(
+  groupId: string,
+  tournamentId: string,
+) {
   return useQuery({
-    queryKey: queryKeys.bonusPredictions.group(groupId),
-    queryFn: () => bonusPredictionsApi.getGroupBonusPredictions(groupId),
-    enabled: !!groupId,
+    queryKey: queryKeys.bonusPredictions.group(groupId, tournamentId),
+    queryFn: () =>
+      bonusPredictionsApi.getGroupBonusPredictions(groupId, tournamentId),
+    enabled: !!groupId && !!tournamentId,
   });
 }
 
@@ -26,11 +31,9 @@ export function useUpsertBonusPrediction() {
   return useMutation({
     mutationFn: bonusPredictionsApi.upsertBonusPrediction,
     onSuccess: (_data, variables) => {
+      // Invalidate all bonus prediction queries for this group (prefix match)
       qc.invalidateQueries({
-        queryKey: queryKeys.bonusPredictions.mine(variables.groupId),
-      });
-      qc.invalidateQueries({
-        queryKey: queryKeys.bonusPredictions.group(variables.groupId),
+        queryKey: queryKeys.bonusPredictions.byGroup(variables.groupId),
       });
     },
   });

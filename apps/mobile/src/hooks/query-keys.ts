@@ -29,6 +29,7 @@ export const queryKeys = {
     all: ['tournaments'] as const,
     bySlug: (slug: string) => ['tournaments', slug] as const,
     teams: (id: string) => ['tournaments', id, 'teams'] as const,
+    players: (id: string) => ['tournaments', id, 'players'] as const,
   },
 
   // ─── Matches ───────────────────────────────────────────────────────────────
@@ -57,9 +58,13 @@ export const queryKeys = {
 
   // ─── Bonus Predictions ─────────────────────────────────────────────────────
   bonusPredictions: {
-    mine: (groupId: string) => ['bonus-predictions', groupId] as const,
-    group: (groupId: string) =>
-      ['bonus-predictions', groupId, 'all'] as const,
+    /** Prefix key for invalidating all bonus prediction queries in a group. */
+    byGroup: (groupId: string) =>
+      ['bonus-predictions', groupId] as const,
+    mine: (groupId: string, tournamentId: string) =>
+      ['bonus-predictions', groupId, 'mine', tournamentId] as const,
+    group: (groupId: string, tournamentId: string) =>
+      ['bonus-predictions', groupId, 'all', tournamentId] as const,
   },
 
   // ─── Notifications ─────────────────────────────────────────────────────────

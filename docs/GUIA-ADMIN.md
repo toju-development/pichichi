@@ -14,6 +14,7 @@
   - [Límites de la API](#límites-de-la-api)
   - [Solución de Problemas](#solución-de-problemas)
 - [Limpiar Base de Datos](#limpiar-base-de-datos)
+- [Activar/Desactivar Torneos](#activardesactivar-torneos)
 
 ---
 
@@ -199,6 +200,60 @@ El orden de borrado respeta las restricciones de claves foráneas:
 9. Tournament teams
 10. Teams
 11. Tournaments
+
+---
+
+## Activar/Desactivar Torneos
+
+Herramienta CLI para activar o desactivar un torneo moviendo las fechas de todos sus partidos. Útil para testing: simular un torneo que "arranca mañana" o uno que "ya terminó".
+
+### Activar un Torneo
+
+Mueve todos los partidos al futuro (el primer partido queda a NOW + 1 día), resetea los scores y pone el torneo en estado `UPCOMING`:
+
+```bash
+npm run toggle-tournament -- --slug world-cup-2022 --activate
+```
+
+**Lo que hace:**
+1. Calcula el offset para que el primer partido sea mañana
+2. Mueve **todos** los partidos por el mismo offset (preserva el espaciado relativo)
+3. Resetea todos los partidos: `status = SCHEDULED`, scores = null
+4. Actualiza el torneo: `status = UPCOMING`, ajusta `startDate` y `endDate`
+
+### Desactivar un Torneo
+
+Mueve todos los partidos al pasado (el último partido queda a NOW - 1 día), pone scores dummy (0-0) y marca todo como `FINISHED`:
+
+```bash
+npm run toggle-tournament -- --slug world-cup-2022 --deactivate
+```
+
+**Lo que hace:**
+1. Calcula el offset para que el último partido sea ayer
+2. Mueve **todos** los partidos por el mismo offset
+3. Pone todos los partidos en: `status = FINISHED`, `homeScore = 0`, `awayScore = 0`
+4. Actualiza el torneo: `status = FINISHED`, ajusta `startDate` y `endDate`
+
+### Saltar Confirmación
+
+```bash
+npm run toggle-tournament -- --slug world-cup-2022 --activate --force
+```
+
+### Opciones del CLI
+
+| Flag | Requerido | Descripción |
+|------|-----------|-------------|
+| `--slug <slug>` | Sí | Slug del torneo |
+| `--activate` | Sí* | Mover partidos al futuro, resetear scores |
+| `--deactivate` | Sí* | Mover partidos al pasado, poner scores dummy |
+| `--force` | No | Saltar confirmación interactiva |
+| `--help` | No | Muestra información de uso |
+
+*Usar `--activate` o `--deactivate`, no ambos.
+
+> **Nota**: Esta operación usa transacciones — si algo falla, no quedan datos a medio actualizar. Se puede ejecutar múltiples veces sin problema.
 
 ---
 

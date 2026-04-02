@@ -13,12 +13,15 @@ export class TournamentTeamResponseDto {
   @ApiProperty({ description: 'Team short name', example: 'ARG' })
   shortName!: string;
 
-  @ApiPropertyOptional({ description: 'Team flag URL', example: 'https://example.com/flags/arg.png' })
-  flagUrl?: string | null;
+  @ApiPropertyOptional({ description: 'Team logo URL', example: 'https://example.com/logos/arg.png' })
+  logoUrl?: string | null;
 
   @ApiPropertyOptional({ description: 'Group letter', example: 'A' })
   groupLetter?: string | null;
 
   @ApiProperty({ description: 'Whether the team is eliminated', example: false })
   isEliminated!: boolean;
+
+  @ApiPropertyOptional({ description: 'External ID from API-Football', example: 26 })
+  externalId!: number | null;
 }

@@ -206,7 +206,7 @@ export default function GroupTournamentScreen() {
     isLoading: isLoadingBonus,
     refetch: refetchBonus,
     isRefetching: isRefetchingBonus,
-  } = useBonusPredictions(groupId!);
+  } = useBonusPredictions(groupId!, tournamentId);
 
   // ── Leaderboard (group-scoped) ────────────────────────────────────────
   const {

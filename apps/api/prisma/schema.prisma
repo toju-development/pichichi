@@ -169,7 +169,6 @@ model Team {
   id         String  @id @default(uuid()) @db.Uuid
   name       String  @db.VarChar(100)
   shortName  String  @map("short_name") @db.VarChar(5)
-  flagUrl    String? @map("flag_url") @db.VarChar(500)
   logoUrl    String? @map("logo_url") @db.VarChar(500)
   country    String? @db.VarChar(100)
   externalId Int?    @unique @map("external_id")

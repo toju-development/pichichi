@@ -61,8 +61,8 @@ function createMatch(minutesUntilKickoff: number) {
     tournamentId,
     status: 'SCHEDULED',
     scheduledAt,
-    homeTeam: { name: 'Argentina', shortName: 'ARG', flagUrl: null },
-    awayTeam: { name: 'Brasil', shortName: 'BRA', flagUrl: null },
+    homeTeam: { name: 'Argentina', shortName: 'ARG', logoUrl: null },
+    awayTeam: { name: 'Brasil', shortName: 'BRA', logoUrl: null },
   };
 }
 
@@ -89,8 +89,8 @@ const upsertedPrediction = {
     homeScore: null,
     awayScore: null,
     phase: 'GROUP_STAGE',
-    homeTeam: { name: 'Argentina', shortName: 'ARG', flagUrl: null },
-    awayTeam: { name: 'Brasil', shortName: 'BRA', flagUrl: null },
+    homeTeam: { name: 'Argentina', shortName: 'ARG', logoUrl: null },
+    awayTeam: { name: 'Brasil', shortName: 'BRA', logoUrl: null },
   },
 };
 

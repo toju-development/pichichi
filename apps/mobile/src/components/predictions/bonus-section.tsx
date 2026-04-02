@@ -2,10 +2,14 @@
  * BonusSection — renders all bonus prediction cards + manages the edit modal.
  *
  * Displays a "Pronósticos Bonus" header with a point-value subtitle,
- * then a 2-column grid of BonusPredictionCard components (one per
+ * then a vertical list of BonusPredictionCard components (one per
  * bonus type defined in the tournament). The bonus types come from the
  * parent (via the tournament data), NOT hardcoded — so the section
  * renders whatever categories the backend provides.
+ *
+ * Fetches tournament teams and players data, then passes them down to:
+ * - BonusPredictionCard (for externalId → display name resolution)
+ * - BonusPredictionModal (for the structured FlatList picker)
  *
  * Owns the BonusPredictionModal open/close state: when a card is
  * tapped, this section opens the modal for that specific category.
@@ -21,6 +25,10 @@ import type { BonusPredictionDto, BonusTypeDto } from '@pichichi/shared';
 
 import { BonusPredictionCard } from '@/components/predictions/bonus-prediction-card';
 import { BonusPredictionModal } from '@/components/predictions/bonus-prediction-modal';
+import {
+  useTournamentPlayers,
+  useTournamentTeams,
+} from '@/hooks/use-tournaments';
 import { COLORS } from '@/theme/colors';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -34,7 +42,7 @@ export interface BonusSectionProps {
   isLocked: boolean;
   /** The group ID — needed by the modal for the upsert mutation. */
   groupId: string;
-  /** The tournament ID — passed to the modal. */
+  /** The tournament ID — used to fetch teams/players and passed to the modal. */
   tournamentId: string;
   /** NativeWind classes for external spacing (e.g. mb-6). */
   className?: string;
@@ -45,17 +53,20 @@ export interface BonusSectionProps {
 interface ModalState {
   visible: boolean;
   /** bonusType.id — used as bonusTypeId in the mutation. */
-  category: string | null;
+  bonusTypeId: string | null;
+  /** bonusType.key — e.g. CHAMPION, TOP_SCORER, MVP, REVELATION. */
+  bonusTypeKey: string | null;
   /** Human-readable label for the modal header. */
-  categoryLabel: string | null;
+  bonusTypeLabel: string | null;
   /** Current predicted value for pre-fill (null if no prediction). */
   currentValue: string | null;
 }
 
 const INITIAL_MODAL_STATE: ModalState = {
   visible: false,
-  category: null,
-  categoryLabel: null,
+  bonusTypeId: null,
+  bonusTypeKey: null,
+  bonusTypeLabel: null,
   currentValue: null,
 };
 
@@ -71,6 +82,11 @@ export function BonusSection({
 }: BonusSectionProps) {
   const [modal, setModal] = useState<ModalState>(INITIAL_MODAL_STATE);
 
+  // Fetch teams and players for externalId resolution + modal picker
+  const { data: teams = [] } = useTournamentTeams(tournamentId);
+  const { data: players = [], isLoading: isPlayersLoading } =
+    useTournamentPlayers(tournamentId);
+
   // Nothing to render if the tournament has no bonus types
   if (bonusTypes.length === 0) return null;
 
@@ -84,8 +100,9 @@ export function BonusSection({
     const existing = predictionsByTypeId.get(bonusType.id);
     setModal({
       visible: true,
-      category: bonusType.id,
-      categoryLabel: bonusType.label,
+      bonusTypeId: bonusType.id,
+      bonusTypeKey: bonusType.key,
+      bonusTypeLabel: bonusType.label,
       currentValue: existing?.predictedValue ?? null,
     });
   }
@@ -120,6 +137,8 @@ export function BonusSection({
             prediction={predictionsByTypeId.get(bonusType.id)}
             isLocked={isLocked}
             onEdit={() => handleEdit(bonusType)}
+            teams={teams}
+            players={players}
           />
         ))}
       </View>
@@ -128,11 +147,15 @@ export function BonusSection({
       <BonusPredictionModal
         visible={modal.visible}
         onClose={handleCloseModal}
-        category={modal.category}
-        categoryLabel={modal.categoryLabel}
+        bonusTypeId={modal.bonusTypeId}
+        bonusTypeKey={modal.bonusTypeKey}
+        bonusTypeLabel={modal.bonusTypeLabel}
         currentValue={modal.currentValue}
         groupId={groupId}
         tournamentId={tournamentId}
+        teams={teams}
+        players={players}
+        isPlayersLoading={isPlayersLoading}
       />
     </View>
   );

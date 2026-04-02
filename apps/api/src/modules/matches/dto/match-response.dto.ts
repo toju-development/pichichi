@@ -11,8 +11,8 @@ export class MatchTeamResponseDto {
   @ApiProperty({ description: 'Team short name', example: 'ARG' })
   shortName!: string;
 
-  @ApiPropertyOptional({ description: 'Team flag URL', example: 'https://flagcdn.com/w80/ar.png' })
-  flagUrl?: string | null;
+  @ApiPropertyOptional({ description: 'Team logo URL', example: 'https://media.api-sports.io/teams/26.png' })
+  logoUrl?: string | null;
 }
 
 export class MatchResponseDto {

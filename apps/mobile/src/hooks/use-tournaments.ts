@@ -26,3 +26,11 @@ export function useTournamentTeams(id: string) {
     enabled: !!id,
   });
 }
+
+export function useTournamentPlayers(tournamentId: string) {
+  return useQuery({
+    queryKey: queryKeys.tournaments.players(tournamentId),
+    queryFn: () => tournamentsApi.getTournamentPlayers(tournamentId),
+    enabled: !!tournamentId,
+  });
+}

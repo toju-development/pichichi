@@ -2,7 +2,7 @@
 
 > This document is auto-maintained. Updated as features are implemented.
 >
-> Last updated: 2026-03-30
+> Last updated: 2026-04-02
 
 ## V1 - World Cup 2026
 
@@ -41,37 +41,53 @@
   - Mobile: Tournament list and detail screens, MatchCard component (5 visual states), match-helpers utilities
   - Mobile: AddTournamentModal, CreateGroupModal tournament selection
 - [x] **Tournament navigation** — Dual-stack Expo Router pattern for correct back navigation from groups tab vs tournaments tab
+- [x] **Tournament removal from groups** — Admin-only action, blocked if tournament is in progress or finished, confirmation prompt if predictions exist
+- [x] **Tournament detail: "Mis Grupos" section** — Show user's groups playing this tournament in the standalone tournament detail screen. Tapping a group navigates to group detail where predictions happen. Resolves the "which group's predictions?" ambiguity.
+- [x] **Predictions module** — Core game mechanic (backend + mobile)
+  - Predict match scores before kickoff
+  - Auto-lock at kickoff (5-min buffer, server-side)
+  - Reveal other users' predictions after kickoff
+  - Auto-calculate points when results arrive (fire-and-forget scoring engine)
+  - ScoringService extracted to separate module (breaks circular deps)
+  - 50 unit tests covering scoring logic
+- [x] **Predictions mobile UI** — 4-tab GroupTournamentScreen
+  - Tabs: Pronósticos (upcoming+live), Resultados (finished), Bonus, Ranking
+  - Score input modal with +/- stepper
+  - Badge states: open, predicted, locked, live, scored
+  - Match card with prediction footer
+  - Bonus prediction vertical list
+  - Leaderboard display
+- [x] **Bonus predictions (backend)** — Pre-tournament specials
+  - Champion, top scorer, MVP, revelation
+  - Lock at tournament start
+  - Resolve at tournament end
+  - Note: UI uses free text input — pending bonus-select feature for dropdowns
+- [x] **Leaderboard module** — Per-group per-tournament rankings
+  - Redis-cached with graceful in-memory fallback
+  - Raw SQL aggregation for performance
+  - Tiebreaker: most exact score predictions, then shared position
+- [x] **WebSocket gateway (partial)** — Real-time updates
+  - Room: `group:{id}` for leaderboard/prediction reveals
+  - Room: `match:{id}` for live score updates
+  - Socket.IO events for prediction updates
+- [x] **Tournament import script** — CLI to import tournaments from API-Football
+  - Flags: --search, --league, --season, --include-players, --dry-run
+  - Player and TournamentPlayer models added
+  - Clean-db script for full reset
+  - Hardcoded seed scripts removed
+  - GUIA-ADMIN.md created
 
 ### Pending
 
-- [x] **Tournament removal from groups** — Admin-only action, blocked if tournament is in progress or finished, confirmation prompt if predictions exist
+- [ ] **Bonus select UI** — Change bonus predictions from free text to select dropdowns (teams for Champion/Revelation, players for Top Scorer/MVP). Depends on tournament-import-script (now complete). **NEXT PRIORITY.**
 
-- [x] **Tournament detail: "Mis Grupos" section** — Show user's groups playing this tournament in the standalone tournament detail screen. Tapping a group navigates to group detail where predictions happen. Resolves the "which group's predictions?" ambiguity.
+- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates
+  - Match status state machine (SCHEDULED → LIVE → FINISHED)
+  - The import script handles initial data; this handles ongoing updates during a tournament
 
 - [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
 
 - [ ] **Apple Developer Program membership** — $99/year, required for iOS builds + Apple Sign In
-
-- [ ] **Matches module** — Schedule display + result sync
-  - Match list by date / phase
-  - Smart cron for automatic result updates via API-Football
-  - Match status state machine (SCHEDULED → LIVE → FINISHED)
-
-- [ ] **Predictions module** — Core game mechanic
-  - Predict match scores (before kickoff)
-  - Auto-lock at kickoff (server-side)
-  - Reveal other users' predictions after kickoff
-  - Auto-calculate points when results arrive
-
-- [ ] **Bonus predictions** — Pre-tournament specials
-  - Champion, top scorer, MVP, revelation
-  - Lock at tournament start
-  - Resolve at tournament end
-
-- [ ] **Leaderboard module** — Rankings
-  - Per-group per-tournament rankings
-  - Redis-cached for performance
-  - Real-time updates via WebSocket
 
 - [ ] **Notifications** — Push + in-app
   - Match reminders (1h before kickoff)
@@ -79,10 +95,6 @@
   - Prediction deadline alerts
   - Group invite notifications
   - Leaderboard position changes
-
-- [ ] **WebSocket gateway** — Real-time updates
-  - Room: `group:{id}` for leaderboard/prediction reveals
-  - Room: `match:{id}` for live score updates
 
 ### Future (post-V1)
 
@@ -110,7 +122,8 @@
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Hardcoded scoring values in predictions.service.ts | Low | All tournaments share same points (5/3/1/0). Make configurable per tournament if needed later. |
+| Bonus predictions use free text instead of select dropdowns | Medium | Bonus-select feature pending. Teams for Champion/Revelation, players for Top Scorer/MVP. |
+| API-Football squad endpoint returns current roster, not historical | Low | Only affects past tournaments. Current/future tournament imports are accurate. |
 | No structured logging (JSON) | Low | Using NestJS built-in Logger. Consider pino for production. |
 | No rate limiting on API | Medium | Add before production launch. |
 | No health check endpoint | Low | Add `/health` for infrastructure monitoring. |
