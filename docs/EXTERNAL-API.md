@@ -163,3 +163,5 @@ The smart cron saves ~75% of API requests, keeping us well within free tier limi
 - Final bonus prediction resolution (champion, top scorer, MVP, revelation)
 - Archive tournament data
 - Downgrade API plan to free tier
+
+> **Note**: For the tournament import CLI tool usage guide, see [GUIA-ADMIN.md](./GUIA-ADMIN.md).

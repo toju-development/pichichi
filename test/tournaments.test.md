@@ -10,7 +10,7 @@
 
 - **Backend** corriendo: `docker compose up -d postgres && cd apps/api && pnpm dev`
 - **Mobile** corriendo: `cd apps/mobile && EXPO_USE_EXPO_GO=true npx expo start -c --go`
-- **Torneos seedeados**: `cd apps/api && npm run seed:all` (World Cup 2026 + test tournaments)
+- **Torneos importados**: `cd apps/api && npm run import-tournament -- --league 1 --season 2026` (ver `docs/GUIA-ADMIN.md`)
 - **Dos cuentas de usuario** (Usuario A = admin de grupo, Usuario B = miembro de grupo)
 - **Un grupo creado** con al menos un torneo asociado (para tests de integración grupo–torneo)
 - Usuario A en **plan FREE** (default): 2 torneos/grupo

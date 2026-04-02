@@ -301,6 +301,30 @@ export interface NotificationDto {
   createdAt: string;
 }
 
+// ─── Player ──────────────────────────────────────────────────────────────────
+
+export interface PlayerDto {
+  id: string;
+  externalId: number | null;
+  name: string;
+  photoUrl: string | null;
+  position: string | null;
+  nationality: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentPlayerDto {
+  id: string;
+  tournamentId: string;
+  teamId: string;
+  playerId: string;
+  shirtNumber: number | null;
+  player?: PlayerDto;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Pagination ──────────────────────────────────────────────────────────────
 
 export interface PaginationMeta {

@@ -123,6 +123,8 @@ export type {
   UserBonusPredictionDto,
   GroupBonusPredictionsDto,
   NotificationDto,
+  PlayerDto,
+  TournamentPlayerDto,
   PaginationMeta,
   PaginatedResponseDto,
   ApiErrorResponseDto,

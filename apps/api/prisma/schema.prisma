@@ -126,25 +126,29 @@ model User {
 }
 
 model Tournament {
-  id          String           @id @default(uuid()) @db.Uuid
-  name        String           @db.VarChar(200)
-  slug        String           @unique @db.VarChar(200)
-  type        TournamentType
-  description String?          @db.VarChar(500)
-  logoUrl     String?          @map("logo_url") @db.VarChar(500)
-  startDate   DateTime         @map("start_date")
-  endDate     DateTime         @map("end_date")
-  status      TournamentStatus @default(DRAFT)
-  isActive    Boolean          @default(true) @map("is_active")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  id               String           @id @default(uuid()) @db.Uuid
+  name             String           @db.VarChar(200)
+  slug             String           @unique @db.VarChar(200)
+  type             TournamentType
+  description      String?          @db.VarChar(500)
+  logoUrl          String?          @map("logo_url") @db.VarChar(500)
+  startDate        DateTime         @map("start_date")
+  endDate          DateTime         @map("end_date")
+  status           TournamentStatus @default(DRAFT)
+  externalLeagueId Int?             @map("external_league_id")
+  externalSeason   Int?             @map("external_season")
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  phases           TournamentPhase[]
-  tournamentTeams  TournamentTeam[]
-  matches          Match[]
-  groupTournaments GroupTournament[]
-  bonusTypes       TournamentBonusType[]
+  phases            TournamentPhase[]
+  tournamentTeams   TournamentTeam[]
+  matches           Match[]
+  groupTournaments  GroupTournament[]
+  bonusTypes        TournamentBonusType[]
+  tournamentPlayers TournamentPlayer[]
 
+  @@unique([externalLeagueId, externalSeason])
   @@map("tournaments")
 }
 
@@ -162,15 +166,18 @@ model TournamentPhase {
 }
 
 model Team {
-  id        String  @id @default(uuid()) @db.Uuid
-  name      String  @db.VarChar(100)
-  shortName String  @map("short_name") @db.VarChar(5)
-  flagUrl   String? @map("flag_url") @db.VarChar(500)
-  country   String? @db.VarChar(100)
+  id         String  @id @default(uuid()) @db.Uuid
+  name       String  @db.VarChar(100)
+  shortName  String  @map("short_name") @db.VarChar(5)
+  flagUrl    String? @map("flag_url") @db.VarChar(500)
+  logoUrl    String? @map("logo_url") @db.VarChar(500)
+  country    String? @db.VarChar(100)
+  externalId Int?    @unique @map("external_id")
 
-  tournamentTeams TournamentTeam[]
-  homeMatches     Match[]          @relation("HomeTeam")
-  awayMatches     Match[]          @relation("AwayTeam")
+  tournamentTeams   TournamentTeam[]
+  homeMatches       Match[]          @relation("HomeTeam")
+  awayMatches       Match[]          @relation("AwayTeam")
+  tournamentPlayers TournamentPlayer[]
 
   @@map("teams")
 }
@@ -208,6 +215,7 @@ model Match {
   isExtraTime         Boolean     @default(false) @map("is_extra_time")
   homeTeamPlaceholder String?     @map("home_team_placeholder") @db.VarChar(50)
   awayTeamPlaceholder String?     @map("away_team_placeholder") @db.VarChar(50)
+  externalId          Int?        @unique @map("external_id")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
@@ -334,4 +342,36 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   @@map("notifications")
+}
+
+model Player {
+  id          String   @id @default(uuid()) @db.Uuid
+  externalId  Int?     @unique @map("external_id")
+  name        String   @db.VarChar(200)
+  photoUrl    String?  @map("photo_url") @db.VarChar(500)
+  position    String?  @db.VarChar(50)
+  nationality String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tournamentPlayers TournamentPlayer[]
+
+  @@map("players")
+}
+
+model TournamentPlayer {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @map("tournament_id") @db.Uuid
+  teamId       String   @map("team_id") @db.Uuid
+  playerId     String   @map("player_id") @db.Uuid
+  shirtNumber  Int?     @map("shirt_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId])
+  @@map("tournament_players")
 }
