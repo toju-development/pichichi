@@ -61,7 +61,7 @@
   - Champion, top scorer, MVP, revelation
   - Lock at tournament start
   - Resolve at tournament end
-  - Note: UI uses free text input — pending bonus-select feature for dropdowns
+  - UI upgraded from free text to select dropdowns (see bonus-select feature)
 - [x] **Leaderboard module** — Per-group per-tournament rankings
   - Redis-cached with graceful in-memory fallback
   - Raw SQL aggregation for performance
@@ -76,12 +76,18 @@
   - Clean-db script for full reset
   - Hardcoded seed scripts removed
   - GUIA-ADMIN.md created
+- [x] **Bonus select UI** — Bonus predictions now use select dropdowns instead of free text (`33a16e3`, 2026-04-02)
+  - Champion/Revelation: team picker from tournament teams
+  - Top Scorer/MVP: player picker from tournament players
+  - BonusPredictionSelect component with React Hook Form integration
+  - Backend: GET /tournaments/:id/teams and GET /tournaments/:id/players endpoints
+  - Shared: BonusOptionDto, getTournamentTeams/getTournamentPlayers API client functions
+  - TanStack hooks: useTournamentTeams, useTournamentPlayers
+- [x] **Toggle tournament script** — Dev tool to toggle tournament status (NOT_STARTED ↔ IN_PROGRESS) for testing predictions lock behavior (`33a16e3`, 2026-04-02)
 
 ### Pending
 
-- [ ] **Bonus select UI** — Change bonus predictions from free text to select dropdowns (teams for Champion/Revelation, players for Top Scorer/MVP). Depends on tournament-import-script (now complete). **NEXT PRIORITY.**
-
-- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates
+- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates. **NEXT PRIORITY.**
   - Match status state machine (SCHEDULED → LIVE → FINISHED)
   - The import script handles initial data; this handles ongoing updates during a tournament
 
@@ -117,12 +123,13 @@
 | iOS vs Android style inconsistency on home screen "Ver proximos partidos" button | Low | Button renders small/left-aligned on iOS, full-width on Android. Fix when polishing UI components. |
 | `app.controller.spec.ts` has stale `getHello` test | Low | Boilerplate NestJS test, unrelated to app functionality. |
 | Apple Sign In not testable | Medium | Requires Apple Developer Program ($99/year). Google OAuth verified and working. |
+| iOS "Mis Grupos" section in tournament detail | Low | Navigation from standalone tournament detail to group detail may have edge cases on iOS. Deferred. |
+| Navigation cross-tab state | Low | Deep-linking across tabs (e.g., tournament → group) may not preserve back stack in all scenarios. Deferred. |
 
 ## Technical Debt
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Bonus predictions use free text instead of select dropdowns | Medium | Bonus-select feature pending. Teams for Champion/Revelation, players for Top Scorer/MVP. |
 | API-Football squad endpoint returns current roster, not historical | Low | Only affects past tournaments. Current/future tournament imports are accurate. |
 | No structured logging (JSON) | Low | Using NestJS built-in Logger. Consider pino for production. |
 | No rate limiting on API | Medium | Add before production launch. |
