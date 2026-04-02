@@ -1,5 +1,6 @@
 export { CreateBonusPredictionDto } from './create-bonus-prediction.dto.js';
 export { ResolveBonusDto } from './resolve-bonus.dto.js';
+export { ResolveBonusByKeyDto } from './resolve-bonus-by-key.dto.js';
 export {
   BonusPredictionResponseDto,
   BonusTypeDto,

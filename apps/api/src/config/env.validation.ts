@@ -15,6 +15,8 @@ interface EnvironmentVariables {
   JWT_SECRET: string;
   DATABASE_URL: string;
   REDIS_URL?: string;
+  API_FOOTBALL_KEY?: string;
+  SYNC_ENABLED: string;
 }
 
 const REQUIRED_VARS: readonly (keyof EnvironmentVariables)[] = [
@@ -53,5 +55,14 @@ export function validateEnv(
     ...(typeof config.REDIS_URL === 'string' && config.REDIS_URL.trim() !== ''
       ? { REDIS_URL: config.REDIS_URL as string }
       : {}),
+    ...(typeof config.API_FOOTBALL_KEY === 'string' &&
+    config.API_FOOTBALL_KEY.trim() !== ''
+      ? { API_FOOTBALL_KEY: config.API_FOOTBALL_KEY as string }
+      : {}),
+    SYNC_ENABLED:
+      typeof config.SYNC_ENABLED === 'string' &&
+      config.SYNC_ENABLED.trim() !== ''
+        ? config.SYNC_ENABLED as string
+        : 'false',
   };
 }

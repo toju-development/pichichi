@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
@@ -18,6 +19,7 @@ import { LeaderboardModule } from './modules/leaderboard/leaderboard.module.js';
 import { BonusPredictionsModule } from './modules/bonus-predictions/bonus-predictions.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PlansModule } from './modules/plans/plans.module.js';
+import { MatchSyncModule } from './modules/match-sync/match-sync.module.js';
 import { EventsModule } from './gateways/events.module.js';
 
 @Module({
@@ -27,6 +29,7 @@ import { EventsModule } from './gateways/events.module.js';
       envFilePath: '.env',
       validate: validateEnv,
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
     EventsModule,
@@ -41,6 +44,7 @@ import { EventsModule } from './gateways/events.module.js';
     BonusPredictionsModule,
     NotificationsModule,
     PlansModule,
+    MatchSyncModule,
   ],
   controllers: [AppController],
   providers: [

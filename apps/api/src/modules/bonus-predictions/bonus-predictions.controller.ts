@@ -21,10 +21,11 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
-import { BonusPredictionsService, type ResolveResult } from './bonus-predictions.service.js';
+import { BonusPredictionsService, type ResolveResult, type BulkResolveResult } from './bonus-predictions.service.js';
 import { CreateBonusPredictionDto } from './dto/create-bonus-prediction.dto.js';
 import { BonusPredictionResponseDto, GroupBonusPredictionsResponseDto } from './dto/bonus-prediction-response.dto.js';
 import { ResolveBonusDto } from './dto/resolve-bonus.dto.js';
+import { ResolveBonusByKeyDto } from './dto/resolve-bonus-by-key.dto.js';
 
 @ApiTags('Bonus Predictions')
 @ApiBearerAuth()
@@ -76,6 +77,18 @@ export class BonusPredictionsController {
     @Query('tournamentId', ParseUUIDPipe) tournamentId: string,
   ): Promise<GroupBonusPredictionsResponseDto> {
     return this.bonusPredictionsService.findAllByGroup(groupId, user.sub, tournamentId);
+  }
+
+  @Post('resolve')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bulk-resolve bonus predictions by type key for a tournament (admin)' })
+  @ApiResponse({ status: 200, description: 'Bonus predictions resolved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Bonus type not found for tournament' })
+  async resolveByKey(
+    @Body() dto: ResolveBonusByKeyDto,
+  ): Promise<BulkResolveResult> {
+    return this.bonusPredictionsService.resolveByKey(dto.tournamentId, dto.key, dto.correctValue);
   }
 
   @Patch(':id/resolve')

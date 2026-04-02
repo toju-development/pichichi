@@ -25,6 +25,12 @@ export interface LockResult {
   lockedCount: number;
 }
 
+export interface BulkResolveResult {
+  resolved: number;
+  correct: number;
+  incorrect: number;
+}
+
 @Injectable()
 export class BonusPredictionsService {
   private readonly logger = new Logger(BonusPredictionsService.name);
@@ -238,6 +244,99 @@ export class BonusPredictionsService {
       tournamentId,
       lockedCount: result.count,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bulk-resolve bonus predictions by bonus type key
+  // ---------------------------------------------------------------------------
+
+  async resolveByKey(
+    tournamentId: string,
+    bonusTypeKey: string,
+    correctValue: string,
+  ): Promise<BulkResolveResult> {
+    // 1. Find the BonusType by key (case-insensitive) for this tournament
+    const bonusTypes = await this.prisma.tournamentBonusType.findMany({
+      where: { tournamentId },
+    });
+
+    const bonusType = bonusTypes.find(
+      (bt) => bt.key.toLowerCase() === bonusTypeKey.toLowerCase(),
+    );
+
+    if (!bonusType) {
+      throw new NotFoundException(
+        `Bonus type '${bonusTypeKey}' not found for tournament ${tournamentId}`,
+      );
+    }
+
+    // 2. Find all unresolved predictions for this tournament + bonus type
+    const predictions = await this.prisma.bonusPrediction.findMany({
+      where: {
+        bonusTypeId: bonusType.id,
+        isCorrect: null,
+      },
+    });
+
+    if (predictions.length === 0) {
+      this.logger.log(
+        `No unresolved predictions for bonus type '${bonusTypeKey}' in tournament ${tournamentId}`,
+      );
+      return { resolved: 0, correct: 0, incorrect: 0 };
+    }
+
+    // 3. Partition predictions into correct and incorrect
+    const trimmedCorrect = correctValue.trim().toLowerCase();
+    const correctIds: string[] = [];
+    const incorrectIds: string[] = [];
+
+    for (const prediction of predictions) {
+      const trimmedPredicted = prediction.predictedValue.trim().toLowerCase();
+
+      if (trimmedPredicted === trimmedCorrect) {
+        correctIds.push(prediction.id);
+      } else {
+        incorrectIds.push(prediction.id);
+      }
+    }
+
+    // 4. Bulk update in a transaction
+    const updates: ReturnType<typeof this.prisma.bonusPrediction.updateMany>[] =
+      [];
+
+    if (correctIds.length > 0) {
+      updates.push(
+        this.prisma.bonusPrediction.updateMany({
+          where: { id: { in: correctIds } },
+          data: { isCorrect: true, pointsEarned: bonusType.points },
+        }),
+      );
+    }
+
+    if (incorrectIds.length > 0) {
+      updates.push(
+        this.prisma.bonusPrediction.updateMany({
+          where: { id: { in: incorrectIds } },
+          data: { isCorrect: false, pointsEarned: 0 },
+        }),
+      );
+    }
+
+    await this.prisma.$transaction(updates);
+
+    // 5. Log and return results
+    const result: BulkResolveResult = {
+      resolved: predictions.length,
+      correct: correctIds.length,
+      incorrect: incorrectIds.length,
+    };
+
+    this.logger.log(
+      `Resolved bonus type '${bonusTypeKey}' for tournament ${tournamentId}: ` +
+        `${result.resolved} total, ${result.correct} correct, ${result.incorrect} incorrect`,
+    );
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------

@@ -215,6 +215,7 @@ model Match {
   homeTeamPlaceholder String?     @map("home_team_placeholder") @db.VarChar(50)
   awayTeamPlaceholder String?     @map("away_team_placeholder") @db.VarChar(50)
   externalId          Int?        @unique @map("external_id")
+  lastSyncedAt        DateTime?   @map("last_synced_at")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 

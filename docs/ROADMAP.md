@@ -87,9 +87,15 @@
 
 ### Pending
 
-- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates. **NEXT PRIORITY.**
-  - Match status state machine (SCHEDULED → LIVE → FINISHED)
-  - The import script handles initial data; this handles ongoing updates during a tournament
+- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates. **IN PROGRESS.**
+  - Smart Cron polling: hourly heartbeat + 5-min dynamic intervals when matches are live
+  - API-Football integration: batch fixture fetching, rate-limit tracking
+  - Match change detection and auto-score updates via `MatchesService.updateScore()`
+  - Tournament auto-finish: when all matches complete, tournament status → FINISHED
+  - Champion bonus auto-resolve on tournament final
+  - `BonusPredictionsService.resolveByKey()` for manual resolution (TOP_SCORER, MVP, REVELATION)
+  - Admin API: `POST /match-sync/trigger`, `POST /match-sync/toggle`, `POST /bonus-predictions/resolve`
+  - Remaining: controller/module wiring, admin endpoint, tournament auto-finish integration, unit tests, manual verification
 
 - [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
 
@@ -101,6 +107,17 @@
   - Prediction deadline alerts
   - Group invite notifications
   - Leaderboard position changes
+
+- [ ] **Admin Panel Web** — Web-based admin interface for tournament and sync management
+  - Trigger manual sync and view sync status/logs
+  - Toggle sync on/off at runtime
+  - Resolve bonus predictions (TOP_SCORER, MVP, REVELATION) via UI
+  - Manage tournaments (import, status, configuration)
+  - Likely Next.js (web app already exists in monorepo)
+
+- [ ] **Navigation fixes** — Cross-tab state pollution
+  - Deep-linking across tabs (tournament → group) may not preserve back stack
+  - Fix Expo Router cross-tab navigation edge cases
 
 ### Future (post-V1)
 
