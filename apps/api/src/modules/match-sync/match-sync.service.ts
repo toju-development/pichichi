@@ -208,8 +208,11 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
       }
 
       // Fetch fixtures from API-Football
+      this.logger.debug(`syncTick: fetching ${externalIds.length} fixtures: [${externalIds.join(', ')}]`);
       const fixtures = await this.apiFootballService.fetchFixturesByIds(externalIds);
       result.apiCallsMade = Math.ceil(externalIds.length / 20); // batches of 20
+
+      this.logger.debug(`syncTick: API returned ${fixtures.length} fixture(s)`);
 
       if (fixtures.length === 0) {
         this.logger.warn('syncTick: API returned 0 fixtures — skipping this tick');
@@ -229,7 +232,10 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         if (dbMatch.externalId === null) continue;
 
         const apiFixture = fixtureMap.get(dbMatch.externalId);
-        if (!apiFixture) continue;
+        if (!apiFixture) {
+          this.logger.warn(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — fixture not found in API response, skipping`);
+          continue;
+        }
 
         try {
           if (this.hasMatchChanged(dbMatch, apiFixture)) {
@@ -251,6 +257,8 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
                 await this.resolveChampionBonus(dbMatch, apiFixture);
               }
             }
+          } else {
+            this.logger.debug(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — no changes detected, skipping`);
           }
 
           // Update lastSyncedAt regardless of change
@@ -258,6 +266,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
             where: { id: dbMatch.id },
             data: { lastSyncedAt: new Date() },
           });
+          this.logger.debug(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — lastSyncedAt updated`);
         } catch (error: unknown) {
           const message =
             error instanceof Error ? error.message : 'Unknown error';
@@ -398,7 +407,10 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    if (unfinishedCount > 0) return false;
+    if (unfinishedCount > 0) {
+      this.logger.debug(`Tournament ${tournamentId}: ${unfinishedCount} unfinished match(es) remaining`);
+      return false;
+    }
 
     const tournament = await this.prisma.tournament.update({
       where: { id: tournamentId },
@@ -550,6 +562,12 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
    */
   private ensureDynamicIntervalRunning(): void {
     if (this.hasDynamicInterval()) return;
+
+    // Run immediately, don't wait for first interval tick
+    this.syncTick().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Initial syncTick failed: ${message}`);
+    });
 
     const interval = setInterval(() => {
       this.syncTick().catch((error: unknown) => {
