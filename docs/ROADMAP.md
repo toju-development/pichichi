@@ -6,7 +6,7 @@
 
 ## V1 - World Cup 2026
 
-### Completed
+### Completado
 
 - [x] **Project scaffolding** — Monorepo with NestJS API, Next.js web, Expo mobile, shared packages
 - [x] **Database schema** — 13 models, multi-tournament ready (Prisma + PostgreSQL)
@@ -95,43 +95,115 @@
   - Debug logging + immediate syncTick on enable for faster feedback
   - Tested live with Liga Argentina match (Talleres 0-1 Boca)
 
-### Pending
+### Fase 1 — Funcionalidades Faltantes
 
-- [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
+Features needed to complete the MVP functionality.
 
-- [ ] **Apple Developer Program membership** — $99/year, required for iOS builds + Apple Sign In
+#### Home Screen con datos reales
+- La pantalla de Inicio muestra datos hardcodeados/placeholder
+- Necesita: stats reales del usuario (predicciones, puntos, posición), próximos partidos across groups, accesos rápidos
 
-- [ ] **Notifications** — Push + in-app (connect Socket.IO client on mobile)
-  - Match reminders (1h before kickoff)
-  - Result notifications
-  - Prediction deadline alerts
-  - Group invite notifications
-  - Leaderboard position changes
+#### Socket.IO client en mobile
+- El backend YA emite eventos (match:score_update, match:status_update, leaderboard:update, prediction:points_calculated)
+- El mobile NO tiene socket.io-client — todo es poll-based con TanStack Query
+- Crítico para la experiencia en vivo del Mundial
 
-- [ ] **Admin Panel Web** — Web interface for tournament management, sync control, bonus resolution
-  - Trigger manual sync and view sync status/logs
-  - Toggle sync on/off at runtime
-  - Resolve bonus predictions (TOP_SCORER, MVP, REVELATION) via UI
-  - Manage tournaments (import, status, configuration)
-  - Likely Next.js (web app already exists in monorepo)
+#### Notification triggers
+- El backend de notificaciones existe (CRUD, mark read, unread count, FCM token registration)
+- PERO `sendPush()` es un stub y NINGÚN servicio dispara notificaciones
+- Necesita triggers: partido por empezar (1h antes), resultado disponible, cambio en leaderboard, invitación a grupo
 
-- [ ] **Navigation fixes** — Cross-tab state pollution
-  - Deep-linking across tabs (tournament → group) may not preserve back stack
-  - Fix Expo Router cross-tab navigation edge cases
+#### Push Notifications (FCM)
+- Firebase Admin SDK no configurado
+- Expo notification permissions no implementados
+- Depende de Notification triggers
 
-### Future (post-V1)
+#### Ranking tab global
+- La tab "Ranking" existe en el tab bar pero es placeholder estático
+- El leaderboard por grupo dentro del torneo SÍ funciona
+- Necesita decisión UX: ¿ranking por grupo? ¿agregado? ¿por torneo?
 
-- [ ] Copa America support (add tournament, no code changes needed)
-- [ ] Champions League support
-- [ ] League format support (requires MATCHDAY phase enum)
-- [ ] Production deployment (API + database + Redis)
-- [ ] Google OAuth consent screen: "Publish App"
-- [ ] App Store / Play Store submission
-- [ ] **Stripe payments** — Premium plan billing
-  - Stripe Checkout for subscription
-  - Webhook to upgrade/downgrade user plan
-  - Architecture ready: planId FK on User, Plan model seeded with limits
-- [ ] Social features (group chat, activity feed)
+#### Admin Panel Web
+- Interfaz web para administración
+- Resolver bonus predictions manualmente (TOP_SCORER, MVP, REVELATION)
+- Control de sync (trigger, toggle, status)
+- Gestión de torneos
+- Probablemente Next.js (ya existe en el monorepo)
+
+### Fase 2 — Mejoras UI y Navegación
+
+Polish and UX improvements.
+
+#### Profile screen funcional
+- Actualmente solo muestra nombre + logout
+- Settings rows ("Mi cuenta", "Notificaciones", "Acerca de") son no-ops
+- Necesita: editar display name, configuración real
+
+#### Navigation fixes
+- Cross-tab state pollution (bug recurrente)
+- Dual-stack mirror pattern implementado pero hay edge cases
+
+#### Onboarding flow
+- Usuarios nuevos llegan a home screen vacía sin grupos
+- Necesita flujo guiado: crear/unirse a primer grupo → elegir torneo → empezar a predecir
+
+#### Match detail screen
+- No existe pantalla dedicada al detalle de un partido
+- Podría mostrar: predicciones de todos los miembros del grupo, comparación head-to-head, stats del partido
+- Driver de engagement social
+
+#### Error handling / offline
+- No hay error boundary global
+- No hay manejo de offline (predicciones se pierden sin conexión)
+- No hay retry queue
+
+#### Deep linking
+- Compartir invitación de grupo por link (WhatsApp, etc.)
+- Actualmente solo se comparte código manual
+- Clave para viralidad durante el Mundial
+
+### Fase 3 — Monetización
+
+#### Modelo de negocio
+- Definir estrategia de monetización (freemium, premium features, etc.)
+- El sistema de planes FREE/PREMIUM ya existe con enforcement en backend
+- Necesita definición clara de qué features son premium
+
+#### Stripe integration
+- Cero código de Stripe actualmente
+- Modelo de Plan ya existe en DB (FREE/PREMIUM con límites)
+- Implementar checkout, webhooks, subscription management
+
+### Fase 4 — Deploy y Distribución
+
+#### EAS development build
+- Necesario para testear OAuth real en dispositivos físicos
+- Actualmente se usa Expo Go con dev-login bypass
+
+#### Apple Developer Program + Apple Sign In
+- $99/año enrollment
+- Apple REQUIERE Apple Sign In si ofrecés third-party auth (Google)
+- Backend verification code ya existe
+
+#### Deploy backend
+- API corriendo en localhost:3000
+- Necesita hosting (Railway, Fly.io, AWS, etc.)
+- Base de datos PostgreSQL en la nube
+- Redis (opcional pero recomendado para leaderboard cache)
+
+#### Deploy landing web
+- Landing Next.js "Selva Mundialista" existe
+- Necesita deploy (Vercel probable)
+- Dominio propio
+
+#### Rate limiting API
+- Sin protección actualmente
+- Necesita rate limiting básico antes de ir a producción
+
+#### App Store + Play Store submission
+- Builds de producción
+- Store listings, screenshots, descriptions
+- Review process
 
 ## Known Issues
 
