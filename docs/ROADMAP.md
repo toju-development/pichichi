@@ -2,7 +2,7 @@
 
 > This document is auto-maintained. Updated as features are implemented.
 >
-> Last updated: 2026-04-02
+> Last updated: 2026-04-03
 
 ## V1 - World Cup 2026
 
@@ -84,10 +84,7 @@
   - Shared: BonusOptionDto, getTournamentTeams/getTournamentPlayers API client functions
   - TanStack hooks: useTournamentTeams, useTournamentPlayers
 - [x] **Toggle tournament script** — Dev tool to toggle tournament status (NOT_STARTED ↔ IN_PROGRESS) for testing predictions lock behavior (`33a16e3`, 2026-04-02)
-
-### Pending
-
-- [ ] **match-data-sync** — Smart Cron + API-Football for automatic live result updates. **IN PROGRESS.**
+- [x] **match-data-sync** — Smart Cron + API-Football for automatic live result updates (`0f4ce7a` + `69cedca`, 2026-04-03)
   - Smart Cron polling: hourly heartbeat + 5-min dynamic intervals when matches are live
   - API-Football integration: batch fixture fetching, rate-limit tracking
   - Match change detection and auto-score updates via `MatchesService.updateScore()`
@@ -95,20 +92,23 @@
   - Champion bonus auto-resolve on tournament final
   - `BonusPredictionsService.resolveByKey()` for manual resolution (TOP_SCORER, MVP, REVELATION)
   - Admin API: `POST /match-sync/trigger`, `POST /match-sync/toggle`, `POST /bonus-predictions/resolve`
-  - Remaining: controller/module wiring, admin endpoint, tournament auto-finish integration, unit tests, manual verification
+  - Debug logging + immediate syncTick on enable for faster feedback
+  - Tested live with Liga Argentina match (Talleres 0-1 Boca)
+
+### Pending
 
 - [ ] **EAS development build** — Required for testing real OAuth flows on physical devices
 
 - [ ] **Apple Developer Program membership** — $99/year, required for iOS builds + Apple Sign In
 
-- [ ] **Notifications** — Push + in-app
+- [ ] **Notifications** — Push + in-app (connect Socket.IO client on mobile)
   - Match reminders (1h before kickoff)
   - Result notifications
   - Prediction deadline alerts
   - Group invite notifications
   - Leaderboard position changes
 
-- [ ] **Admin Panel Web** — Web-based admin interface for tournament and sync management
+- [ ] **Admin Panel Web** — Web interface for tournament management, sync control, bonus resolution
   - Trigger manual sync and view sync status/logs
   - Toggle sync on/off at runtime
   - Resolve bonus predictions (TOP_SCORER, MVP, REVELATION) via UI
