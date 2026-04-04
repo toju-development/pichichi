@@ -216,14 +216,8 @@ export class MatchesService {
 
     const responseDto = this.toResponseDto(match);
 
-    // Emit real-time score update
-    this.eventsGateway.emitMatchScoreUpdate(id, responseDto);
-
-    // Emit status update if status changed
-    this.eventsGateway.emitMatchStatusUpdate(id, {
-      matchId: id,
-      status,
-    });
+    // Broadcast match update to all connected clients
+    this.eventsGateway.emitMatchUpdated(id);
 
     // Trigger point calculation when match finishes (fire-and-forget)
     if (status === 'FINISHED') {

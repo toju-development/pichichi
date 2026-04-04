@@ -4,7 +4,6 @@
  * Responsibilities:
  * - Connect/disconnect socket in response to auth state changes
  * - Disconnect on app background, reconnect + full invalidation on foreground
- * - Auto-join user and group rooms on every `connect` event (initial + reconnect)
  * - Wire server→client event listeners via useSocketEvents hook
  *
  * Placement in provider hierarchy (see _layout.tsx):
@@ -16,7 +15,6 @@
 
 import {
   createContext,
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -25,10 +23,7 @@ import {
 import { AppState, type AppStateStatus } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 
-import type { GroupDto } from '@pichichi/shared';
-
 import { useSocketEvents } from '@/hooks/use-socket-events';
-import { queryKeys } from '@/hooks/query-keys';
 import { getSocket, destroySocket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/auth-store';
 import type { TypedSocket } from '@/types/socket-events';
@@ -58,32 +53,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
   const queryClient = useQueryClient();
 
   const accessToken = useAuthStore((s) => s.accessToken);
-  const userId = useAuthStore((s) => s.user?.id ?? null);
-
-  // ── Room join helper ────────────────────────────────────────────────────
-  // Called on every `connect` event (initial + reconnect). Socket.IO clears
-  // server-side rooms on disconnect, so we must re-join every time.
-
-  const joinRooms = useCallback(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-
-    // Join personal room
-    if (userId) {
-      socket.emit('room:join', { room: `user:${userId}` });
-    }
-
-    // Join all group rooms — read from TanStack Query cache to avoid
-    // an extra network round-trip. Falls back gracefully if cache is empty
-    // (rooms will be joined when the groups query resolves and triggers a
-    // reconnect or the user navigates to a group screen).
-    const groups = queryClient.getQueryData<GroupDto[]>(queryKeys.groups.all);
-    if (groups) {
-      for (const group of groups) {
-        socket.emit('room:join', { room: `group:${group.id}` });
-      }
-    }
-  }, [userId, queryClient]);
 
   // ── Auth-driven connect/disconnect ──────────────────────────────────────
 
@@ -95,7 +64,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
 
       const onConnect = () => {
         setIsConnected(true);
-        joinRooms();
       };
 
       const onDisconnect = () => {
@@ -118,7 +86,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
     setIsConnected(false);
 
     return undefined;
-  }, [accessToken, joinRooms]);
+  }, [accessToken]);
 
   // ── AppState listener (background/foreground) ───────────────────────────
   // Disconnect on background to save battery. Reconnect + full cache

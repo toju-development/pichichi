@@ -145,23 +145,14 @@ export class ScoringService {
       `(exact: ${results.exact}, goalDiff: ${results.goalDiff}, winner: ${results.winner}, miss: ${results.miss})`,
     );
 
-    // Emit real-time events to affected groups
+    // Broadcast a single match:updated event (clients refetch their own data)
+    this.eventsGateway.emitMatchUpdated(matchId);
+
+    // Invalidate leaderboard caches for affected groups
     const affectedGroupIds = [
       ...new Set(predictions.map((p) => p.groupId)),
     ];
 
-    for (const groupId of affectedGroupIds) {
-      this.eventsGateway.emitPredictionPointsCalculated(groupId, matchId, {
-        totalPredictions: predictions.length,
-        results,
-      });
-      this.eventsGateway.emitLeaderboardUpdate(groupId, {
-        matchId,
-        reason: 'points_calculated',
-      });
-    }
-
-    // Invalidate leaderboard caches for affected groups
     await this.invalidateLeaderboardCache(
       affectedGroupIds,
       match.tournamentId,

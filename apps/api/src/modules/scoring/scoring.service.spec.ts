@@ -16,8 +16,7 @@ const mockPrisma = {
 };
 
 const mockEventsGateway = {
-  emitPredictionPointsCalculated: jest.fn(),
-  emitLeaderboardUpdate: jest.fn(),
+  emitMatchUpdated: jest.fn(),
 };
 
 const mockCache = {
@@ -388,39 +387,16 @@ describe('ScoringService', () => {
       expect(transactionArg).toHaveLength(1);
     });
 
-    it('should emit WebSocket events per affected group', async () => {
+    it('should broadcast a single match:updated event', async () => {
       mockPrisma.match.findUnique.mockResolvedValue(baseMatch);
       mockPrisma.prediction.findMany.mockResolvedValue(basePredictions);
       mockPrisma.$transaction.mockResolvedValue([]);
 
       await service.calculatePointsForMatch(matchId);
 
-      // Predictions are in group-a and group-b
-      expect(
-        mockEventsGateway.emitPredictionPointsCalculated,
-      ).toHaveBeenCalledTimes(2);
-      expect(
-        mockEventsGateway.emitPredictionPointsCalculated,
-      ).toHaveBeenCalledWith('group-a', matchId, {
-        totalPredictions: 4,
-        results: { exact: 1, goalDiff: 1, winner: 1, miss: 1 },
-      });
-      expect(
-        mockEventsGateway.emitPredictionPointsCalculated,
-      ).toHaveBeenCalledWith('group-b', matchId, {
-        totalPredictions: 4,
-        results: { exact: 1, goalDiff: 1, winner: 1, miss: 1 },
-      });
-
-      expect(mockEventsGateway.emitLeaderboardUpdate).toHaveBeenCalledTimes(2);
-      expect(mockEventsGateway.emitLeaderboardUpdate).toHaveBeenCalledWith(
-        'group-a',
-        { matchId, reason: 'points_calculated' },
-      );
-      expect(mockEventsGateway.emitLeaderboardUpdate).toHaveBeenCalledWith(
-        'group-b',
-        { matchId, reason: 'points_calculated' },
-      );
+      // Single broadcast, not per-group
+      expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledTimes(1);
+      expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledWith(matchId);
     });
 
     it('should invalidate leaderboard cache for affected groups', async () => {
@@ -523,10 +499,10 @@ describe('ScoringService', () => {
         totalPredictions: 0,
         results: { exact: 0, goalDiff: 0, winner: 0, miss: 0 },
       });
-      // No groups to emit to, no cache keys to delete
-      expect(
-        mockEventsGateway.emitPredictionPointsCalculated,
-      ).not.toHaveBeenCalled();
+      // Even with zero predictions, the match was scored → broadcast the update
+      expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledTimes(1);
+      expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledWith(matchId);
+      // No groups to invalidate cache for
       expect(mockCache.mdel).not.toHaveBeenCalled();
     });
   });

@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import type { NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
-import { EventsGateway } from '../../gateways/events.gateway.js';
 import type { NotificationResponseDto } from './dto/notification-response.dto.js';
 
 @Injectable()
@@ -14,7 +13,6 @@ export class NotificationsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventsGateway: EventsGateway,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -39,9 +37,6 @@ export class NotificationsService {
     });
 
     const responseDto = this.toResponseDto(notification);
-
-    // Emit real-time notification via WebSocket
-    this.eventsGateway.emitNewNotification(userId, responseDto);
 
     // Attempt push notification if user has an FCM token
     const user = await this.prisma.user.findUnique({
