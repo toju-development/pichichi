@@ -354,6 +354,59 @@ export interface PaginatedResponseDto<T> {
   meta: PaginationMeta;
 }
 
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+
+export interface DashboardGroupRankingDto {
+  groupId: string;
+  groupName: string;
+  userPosition: number;
+  totalMembers: number;
+  userPoints: number;
+  /** Top 3 entries for mini-leaderboard display */
+  topEntries: {
+    position: number;
+    displayName: string;
+    avatarUrl: string | null;
+    totalPoints: number;
+  }[];
+}
+
+export interface DashboardTodayMatchDto {
+  matchId: string;
+  homeTeam: { id: string; name: string; logoUrl: string | null } | null;
+  awayTeam: { id: string; name: string; logoUrl: string | null } | null;
+  homePlaceholder: string | null;
+  awayPlaceholder: string | null;
+  scheduledAt: string;
+  status: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  phase: string;
+  tournamentName: string;
+  tournamentSlug: string;
+  groupId: string;
+  groupName: string;
+  hasPrediction: boolean;
+  predictedHome: number | null;
+  predictedAway: number | null;
+  isLocked: boolean;
+}
+
+export interface DashboardUserStatsDto {
+  totalPoints: number;
+  totalPredictions: number;
+  exactCount: number;
+  /** Percentage 0-100 of non-MISS predictions */
+  accuracy: number;
+  groupCount: number;
+}
+
+export interface DashboardResponseDto {
+  todayMatches: DashboardTodayMatchDto[] | null;
+  stats: DashboardUserStatsDto | null;
+  groups: DashboardGroupRankingDto[] | null;
+}
+
 // ─── API Error ───────────────────────────────────────────────────────────────
 
 export interface ApiErrorResponseDto {

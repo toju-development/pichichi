@@ -41,3 +41,4 @@ export {
   useMarkAsRead,
   useMarkAllAsRead,
 } from './use-notifications';
+export { useDashboard } from './use-dashboard';

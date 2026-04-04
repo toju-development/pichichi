@@ -8,3 +8,4 @@ export * as predictionsApi from './predictions';
 export * as leaderboardApi from './leaderboard';
 export * as bonusPredictionsApi from './bonus-predictions';
 export * as notificationsApi from './notifications';
+export * as dashboardApi from './dashboard';

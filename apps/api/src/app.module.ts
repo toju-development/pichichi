@@ -19,6 +19,7 @@ import { LeaderboardModule } from './modules/leaderboard/leaderboard.module.js';
 import { BonusPredictionsModule } from './modules/bonus-predictions/bonus-predictions.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { PlansModule } from './modules/plans/plans.module.js';
+import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { MatchSyncModule } from './modules/match-sync/match-sync.module.js';
 import { EventsModule } from './gateways/events.module.js';
 
@@ -44,6 +45,7 @@ import { EventsModule } from './gateways/events.module.js';
     BonusPredictionsModule,
     NotificationsModule,
     PlansModule,
+    DashboardModule,
     MatchSyncModule,
   ],
   controllers: [AppController],

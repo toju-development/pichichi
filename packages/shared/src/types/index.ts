@@ -129,4 +129,8 @@ export type {
   PaginationMeta,
   PaginatedResponseDto,
   ApiErrorResponseDto,
+  DashboardGroupRankingDto,
+  DashboardTodayMatchDto,
+  DashboardUserStatsDto,
+  DashboardResponseDto,
 } from './dto.js';

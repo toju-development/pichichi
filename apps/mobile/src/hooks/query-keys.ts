@@ -67,6 +67,11 @@ export const queryKeys = {
       ['bonus-predictions', groupId, 'all', tournamentId] as const,
   },
 
+  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  dashboard: {
+    all: ['dashboard'] as const,
+  },
+
   // ─── Notifications ─────────────────────────────────────────────────────────
   notifications: {
     all: ['notifications'] as const,
