@@ -120,6 +120,7 @@ export type {
   GroupPredictionsDto,
   LeaderboardEntryDto,
   LeaderboardDto,
+  GlobalLeaderboardDto,
   BonusTypeDto,
   BonusPredictionDto,
   UserBonusPredictionDto,

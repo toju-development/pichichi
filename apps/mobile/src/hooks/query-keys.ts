@@ -54,6 +54,7 @@ export const queryKeys = {
     byGroup: (groupId: string) => ['leaderboard', groupId] as const,
     myPosition: (groupId: string) =>
       ['leaderboard', groupId, 'me'] as const,
+    global: ['leaderboard', 'global'] as const,
   },
 
   // ─── Bonus Predictions ─────────────────────────────────────────────────────

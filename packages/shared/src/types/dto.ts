@@ -262,6 +262,12 @@ export interface LeaderboardDto {
   totalMembers: number;
 }
 
+export interface GlobalLeaderboardDto {
+  entries: LeaderboardEntryDto[];
+  total: number;
+  currentUserEntry: LeaderboardEntryDto | null;
+}
+
 // ─── Bonus Prediction ────────────────────────────────────────────────────────
 
 export interface BonusTypeDto {

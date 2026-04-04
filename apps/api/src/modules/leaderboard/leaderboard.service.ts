@@ -25,6 +25,25 @@ interface RawLeaderboardRow {
   bonus_points: bigint | number;
 }
 
+export interface RawGlobalLeaderboardRow {
+  user_id: string;
+  display_name: string;
+  username: string;
+  avatar_url: string | null;
+  total_points: bigint | number;
+  exact_count: bigint | number;
+  goal_diff_count: bigint | number;
+  winner_count: bigint | number;
+  miss_count: bigint | number;
+  bonus_points: bigint | number;
+  position: bigint | number;
+}
+
+export interface GlobalLeaderboardQueryResult {
+  entries: LeaderboardEntryDto[];
+  total: number;
+}
+
 @Injectable()
 export class LeaderboardService {
   private readonly logger = new Logger(LeaderboardService.name);
@@ -240,6 +259,276 @@ export class LeaderboardService {
     }
 
     return entries;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Global leaderboard — orchestrator with Redis caching
+  // ---------------------------------------------------------------------------
+
+  async getGlobalLeaderboard(
+    userId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{
+    entries: LeaderboardEntryDto[];
+    total: number;
+    currentUserEntry: LeaderboardEntryDto | null;
+  }> {
+    const cacheKey = 'lb:global:all';
+
+    // 1. Try cache first
+    let allData = await this.cacheGet<GlobalLeaderboardQueryResult>(cacheKey);
+
+    // 2. Cache miss → query ALL results and cache them
+    if (!allData) {
+      allData = await this.queryGlobalLeaderboard(1_000_000, 0);
+      await this.cacheSet(cacheKey, allData);
+    }
+
+    // 3. Slice in-memory for pagination
+    const entries = allData.entries.slice(offset, offset + limit);
+
+    // 4. Get current user's entry from cached data (avoid extra DB call)
+    let currentUserEntry =
+      allData.entries.find((e) => e.userId === userId) ?? null;
+
+    // If user not in cache (0 points — excluded by HAVING), try DB as fallback
+    if (!currentUserEntry) {
+      currentUserEntry = await this.queryCurrentUserGlobalPosition(userId);
+    }
+
+    return {
+      entries,
+      total: allData.total,
+      currentUserEntry,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Global leaderboard — raw SQL query with deduplication
+  // ---------------------------------------------------------------------------
+
+  async queryGlobalLeaderboard(
+    limit: number,
+    offset: number,
+  ): Promise<GlobalLeaderboardQueryResult> {
+    // Pre-aggregate each source to user-level BEFORE joining to avoid fan-out.
+    // Without this, a user with N match predictions × M bonus predictions
+    // produces N×M rows, inflating SUM/COUNT by the cross-product factor.
+    const rows = await this.prisma.$queryRaw<RawGlobalLeaderboardRow[]>`
+      WITH deduped_predictions AS (
+        SELECT
+          p.user_id,
+          p.match_id,
+          MAX(p.points_earned) AS points_earned,
+          (ARRAY_AGG(p.point_type ORDER BY p.points_earned DESC))[1] AS point_type
+        FROM predictions p
+        GROUP BY p.user_id, p.match_id
+      ),
+      user_match_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS match_points,
+          COUNT(CASE WHEN point_type = 'EXACT' THEN 1 END) AS exact_count,
+          COUNT(CASE WHEN point_type = 'GOAL_DIFF' THEN 1 END) AS goal_diff_count,
+          COUNT(CASE WHEN point_type = 'WINNER' THEN 1 END) AS winner_count,
+          COUNT(CASE WHEN point_type = 'MISS' THEN 1 END) AS miss_count
+        FROM deduped_predictions
+        GROUP BY user_id
+      ),
+      deduped_bonus AS (
+        SELECT
+          bp.user_id,
+          bp.bonus_type_id,
+          MAX(bp.points_earned) AS points_earned
+        FROM bonus_predictions bp
+        GROUP BY bp.user_id, bp.bonus_type_id
+      ),
+      user_bonus_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS bonus_points
+        FROM deduped_bonus
+        GROUP BY user_id
+      ),
+      user_totals AS (
+        SELECT
+          u.id AS user_id,
+          u.display_name,
+          u.username,
+          u.avatar_url,
+          COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0) AS total_points,
+          COALESCE(ump.exact_count, 0) AS exact_count,
+          COALESCE(ump.goal_diff_count, 0) AS goal_diff_count,
+          COALESCE(ump.winner_count, 0) AS winner_count,
+          COALESCE(ump.miss_count, 0) AS miss_count,
+          COALESCE(ubp.bonus_points, 0) AS bonus_points,
+          DENSE_RANK() OVER (
+            ORDER BY COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0) DESC,
+                     COALESCE(ump.exact_count, 0) DESC
+          ) AS position
+        FROM users u
+        LEFT JOIN user_match_points ump ON ump.user_id = u.id
+        LEFT JOIN user_bonus_points ubp ON ubp.user_id = u.id
+        WHERE u.is_active = true
+        AND (COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0)) > 0
+      )
+      SELECT * FROM user_totals
+      ORDER BY position, exact_count DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const totalResult = await this.prisma.$queryRaw<[{ count: bigint }]>`
+      WITH deduped_predictions AS (
+        SELECT
+          p.user_id,
+          p.match_id,
+          MAX(p.points_earned) AS points_earned
+        FROM predictions p
+        GROUP BY p.user_id, p.match_id
+      ),
+      user_match_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS match_points
+        FROM deduped_predictions
+        GROUP BY user_id
+      ),
+      deduped_bonus AS (
+        SELECT
+          bp.user_id,
+          bp.bonus_type_id,
+          MAX(bp.points_earned) AS points_earned
+        FROM bonus_predictions bp
+        GROUP BY bp.user_id, bp.bonus_type_id
+      ),
+      user_bonus_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS bonus_points
+        FROM deduped_bonus
+        GROUP BY user_id
+      ),
+      user_totals AS (
+        SELECT u.id AS user_id
+        FROM users u
+        LEFT JOIN user_match_points ump ON ump.user_id = u.id
+        LEFT JOIN user_bonus_points ubp ON ubp.user_id = u.id
+        WHERE u.is_active = true
+        AND (COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0)) > 0
+      )
+      SELECT COUNT(*)::bigint AS count FROM user_totals
+    `;
+
+    const total = Number(totalResult[0]?.count ?? 0);
+
+    const entries: LeaderboardEntryDto[] = rows.map((row) => ({
+      position: Number(row.position),
+      userId: row.user_id,
+      displayName: row.display_name,
+      username: row.username,
+      avatarUrl: row.avatar_url,
+      totalPoints: Number(row.total_points),
+      exactCount: Number(row.exact_count),
+      goalDiffCount: Number(row.goal_diff_count),
+      winnerCount: Number(row.winner_count),
+      missCount: Number(row.miss_count),
+      bonusPoints: Number(row.bonus_points),
+      streak: 0,
+    }));
+
+    return { entries, total };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Current user's global position
+  // ---------------------------------------------------------------------------
+
+  async queryCurrentUserGlobalPosition(
+    userId: string,
+  ): Promise<LeaderboardEntryDto | null> {
+    // Same user-level pre-aggregation as queryGlobalLeaderboard to avoid fan-out
+    const rows = await this.prisma.$queryRaw<RawGlobalLeaderboardRow[]>`
+      WITH deduped_predictions AS (
+        SELECT
+          p.user_id,
+          p.match_id,
+          MAX(p.points_earned) AS points_earned,
+          (ARRAY_AGG(p.point_type ORDER BY p.points_earned DESC))[1] AS point_type
+        FROM predictions p
+        GROUP BY p.user_id, p.match_id
+      ),
+      user_match_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS match_points,
+          COUNT(CASE WHEN point_type = 'EXACT' THEN 1 END) AS exact_count,
+          COUNT(CASE WHEN point_type = 'GOAL_DIFF' THEN 1 END) AS goal_diff_count,
+          COUNT(CASE WHEN point_type = 'WINNER' THEN 1 END) AS winner_count,
+          COUNT(CASE WHEN point_type = 'MISS' THEN 1 END) AS miss_count
+        FROM deduped_predictions
+        GROUP BY user_id
+      ),
+      deduped_bonus AS (
+        SELECT
+          bp.user_id,
+          bp.bonus_type_id,
+          MAX(bp.points_earned) AS points_earned
+        FROM bonus_predictions bp
+        GROUP BY bp.user_id, bp.bonus_type_id
+      ),
+      user_bonus_points AS (
+        SELECT
+          user_id,
+          COALESCE(SUM(points_earned), 0) AS bonus_points
+        FROM deduped_bonus
+        GROUP BY user_id
+      ),
+      user_totals AS (
+        SELECT
+          u.id AS user_id,
+          u.display_name,
+          u.username,
+          u.avatar_url,
+          COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0) AS total_points,
+          COALESCE(ump.exact_count, 0) AS exact_count,
+          COALESCE(ump.goal_diff_count, 0) AS goal_diff_count,
+          COALESCE(ump.winner_count, 0) AS winner_count,
+          COALESCE(ump.miss_count, 0) AS miss_count,
+          COALESCE(ubp.bonus_points, 0) AS bonus_points,
+          DENSE_RANK() OVER (
+            ORDER BY COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0) DESC,
+                     COALESCE(ump.exact_count, 0) DESC
+          ) AS position
+        FROM users u
+        LEFT JOIN user_match_points ump ON ump.user_id = u.id
+        LEFT JOIN user_bonus_points ubp ON ubp.user_id = u.id
+        WHERE u.is_active = true
+        AND (COALESCE(ump.match_points, 0) + COALESCE(ubp.bonus_points, 0)) > 0
+      )
+      SELECT * FROM user_totals
+      WHERE user_id = ${userId}::uuid
+    `;
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const row = rows[0]!;
+    return {
+      position: Number(row.position),
+      userId: row.user_id,
+      displayName: row.display_name,
+      username: row.username,
+      avatarUrl: row.avatar_url,
+      totalPoints: Number(row.total_points),
+      exactCount: Number(row.exact_count),
+      goalDiffCount: Number(row.goal_diff_count),
+      winnerCount: Number(row.winner_count),
+      missCount: Number(row.miss_count),
+      bonusPoints: Number(row.bonus_points),
+      streak: 0,
+    };
   }
 
   // ---------------------------------------------------------------------------

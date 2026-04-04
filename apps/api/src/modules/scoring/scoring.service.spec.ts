@@ -432,8 +432,8 @@ describe('ScoringService', () => {
       expect(mockCache.mdel).toHaveBeenCalledTimes(1);
       const deletedKeys = mockCache.mdel.mock.calls[0][0] as string[];
 
-      // 2 groups × 3 key patterns = 6 keys
-      expect(deletedKeys).toHaveLength(6);
+      // 2 groups × 3 key patterns = 6 keys + 1 global key = 7 keys
+      expect(deletedKeys).toHaveLength(7);
       expect(deletedKeys).toContain('lb:group-a:all:all');
       expect(deletedKeys).toContain(`lb:group-a:${tournamentId}:all`);
       expect(deletedKeys).toContain(
@@ -444,6 +444,7 @@ describe('ScoringService', () => {
       expect(deletedKeys).toContain(
         `lb:group-b:${tournamentId}:GROUP_STAGE`,
       );
+      expect(deletedKeys).toContain('lb:global:all');
     });
 
     it('should use default multiplier 1 when phase not found', async () => {
@@ -527,8 +528,10 @@ describe('ScoringService', () => {
       // Even with zero predictions, the match was scored → broadcast the update
       expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledTimes(1);
       expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledWith(matchId);
-      // No groups to invalidate cache for
-      expect(mockCache.mdel).not.toHaveBeenCalled();
+      // Global cache is always invalidated, even with no group-specific predictions
+      expect(mockCache.mdel).toHaveBeenCalledTimes(1);
+      const deletedKeys = mockCache.mdel.mock.calls[0][0] as string[];
+      expect(deletedKeys).toEqual(['lb:global:all']);
       // No predictions → no notifications
       expect(mockNotificationsService.createMany).not.toHaveBeenCalled();
     });

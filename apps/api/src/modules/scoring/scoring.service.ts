@@ -218,12 +218,15 @@ export class ScoringService {
       );
     }
 
+    // Always invalidate global leaderboard cache on any scoring event
+    keysToDelete.push('lb:global:all');
+
     if (keysToDelete.length === 0) return;
 
     try {
       await this.cache.mdel(keysToDelete);
       this.logger.debug(
-        `Invalidated ${keysToDelete.length} leaderboard cache keys for ${groupIds.length} groups`,
+        `Invalidated ${keysToDelete.length} leaderboard cache keys for ${groupIds.length} groups (+ global)`,
       );
     } catch (err) {
       this.logger.warn(

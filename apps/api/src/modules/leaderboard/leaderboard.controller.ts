@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Query,
   UseGuards,
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { LeaderboardService } from './leaderboard.service.js';
 import { LeaderboardResponseDto } from './dto/leaderboard-response.dto.js';
 import { LeaderboardEntryDto } from './dto/leaderboard-entry.dto.js';
+import { GlobalLeaderboardResponseDto } from './dto/global-leaderboard-response.dto.js';
 
 @ApiTags('Leaderboard')
 @ApiBearerAuth()
@@ -26,6 +28,39 @@ import { LeaderboardEntryDto } from './dto/leaderboard-entry.dto.js';
 @Controller('leaderboard')
 export class LeaderboardController {
   constructor(private readonly leaderboardService: LeaderboardService) {}
+
+  @Get('global')
+  @ApiOperation({ summary: 'Get global leaderboard across all groups' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of entries per page (default 20, max 50)',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Number of entries to skip (default 0)',
+    example: 0,
+  })
+  @ApiResponse({ status: 200, description: 'Global leaderboard', type: GlobalLeaderboardResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getGlobalLeaderboard(
+    @CurrentUser() user: JwtUserPayload,
+    @Query('limit') rawLimit?: string,
+    @Query('offset') rawOffset?: string,
+  ): Promise<GlobalLeaderboardResponseDto> {
+    const parsedLimit = Number(rawLimit);
+    const limit = Math.min(Math.max(Number.isNaN(parsedLimit) ? 20 : parsedLimit, 1), 50);
+    const parsedOffset = Number(rawOffset);
+    const offset = Math.max(Number.isNaN(parsedOffset) ? 0 : parsedOffset, 0);
+
+    return this.leaderboardService.getGlobalLeaderboard(
+      user.sub,
+      limit,
+      offset,
+    );
+  }
 
   @Get('group/:groupId')
   @ApiOperation({ summary: 'Get group leaderboard' })
