@@ -42,3 +42,6 @@ export {
   useMarkAllAsRead,
 } from './use-notifications';
 export { useDashboard } from './use-dashboard';
+export { useSocket } from './use-socket';
+export { useSocketEvents } from './use-socket-events';
+export { useRoom } from './use-room';

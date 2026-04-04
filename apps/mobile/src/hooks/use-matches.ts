@@ -36,7 +36,5 @@ export function useLiveMatches() {
   return useQuery({
     queryKey: queryKeys.matches.live,
     queryFn: matchesApi.getLive,
-    // Refetch live matches more aggressively
-    refetchInterval: 30_000,
   });
 }
