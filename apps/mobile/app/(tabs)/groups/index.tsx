@@ -21,8 +21,10 @@ import { GroupIcon } from '@/components/brand/icons';
 import { CreateGroupModal, JoinGroupModal } from '@/components/groups';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useMyGroups } from '@/hooks/use-groups';
+import { useUnreadCount } from '@/hooks/use-notifications';
 import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 
@@ -140,6 +142,7 @@ export default function GroupsScreen() {
   const maxGroupsCreated = user?.plan.maxGroupsCreated ?? 3;
 
   const { data: groups, isLoading, error, refetch, isRefetching } = useMyGroups();
+  const { refetch: refetchUnreadCount } = useUnreadCount();
 
   const hasGroups = groups && groups.length > 0;
 
@@ -161,8 +164,10 @@ export default function GroupsScreen() {
   }
 
   const onRefresh = useCallback(() => {
+    console.log('[Notifications] 🔄 Refetching unread count');
     refetch();
-  }, [refetch]);
+    refetchUnreadCount();
+  }, [refetch, refetchUnreadCount]);
 
   return (
     <View style={screenStyles.root}>
@@ -202,6 +207,9 @@ export default function GroupsScreen() {
                 #
               </Text>
             </Pressable>
+
+            {/* Notifications bell */}
+            <NotificationBell />
           </View>
         }
       />

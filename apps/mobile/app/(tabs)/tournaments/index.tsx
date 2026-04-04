@@ -19,7 +19,9 @@ import { TrophyIcon } from '@/components/brand/icons';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { useUnreadCount } from '@/hooks/use-notifications';
 import { useTournaments } from '@/hooks/use-tournaments';
 import { COLORS } from '@/theme/colors';
 
@@ -161,12 +163,15 @@ const cardStyles = StyleSheet.create({
 
 export default function TournamentsScreen() {
   const { data: tournaments, isLoading, error, refetch, isRefetching } = useTournaments();
+  const { refetch: refetchUnreadCount } = useUnreadCount();
 
   const hasTournaments = tournaments && tournaments.length > 0;
 
   const onRefresh = useCallback(() => {
+    console.log('[Notifications] 🔄 Refetching unread count');
     refetch();
-  }, [refetch]);
+    refetchUnreadCount();
+  }, [refetch, refetchUnreadCount]);
 
   // ── Loading state ─────────────────────────────────────────────────────────
 
@@ -182,6 +187,7 @@ export default function TournamentsScreen() {
         title="Torneos"
         subtitle="Competiciones disponibles"
         gradient
+        rightAction={<NotificationBell />}
       />
 
       {error ? (

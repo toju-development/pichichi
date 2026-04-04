@@ -364,6 +364,7 @@ export interface DashboardGroupRankingDto {
   userPoints: number;
   /** Top 3 entries for mini-leaderboard display */
   topEntries: {
+    userId: string;
     position: number;
     displayName: string;
     avatarUrl: string | null;

@@ -7,6 +7,7 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
 
 /** Single podium item (top 3). */
@@ -66,6 +67,7 @@ export default function LeaderboardScreen() {
         title="Ranking"
         subtitle="Tabla de posiciones"
         gradient={true}
+        rightAction={<NotificationBell />}
       />
 
       <ScrollView

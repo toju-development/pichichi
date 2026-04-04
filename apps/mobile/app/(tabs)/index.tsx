@@ -19,14 +19,15 @@ import {
   Text,
   View,
 } from 'react-native';
-
 import {
   GroupRankingsSection,
   TodayMatchesSection,
   UserStatsSection,
 } from '@/components/home';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useUnreadCount } from '@/hooks/use-notifications';
 import { COLORS } from '@/theme/colors';
 
 // ─── Skeleton placeholder ───────────────────────────────────────────────────
@@ -57,16 +58,19 @@ function SectionError({ label }: { label: string }) {
 
 export default function HomeScreen() {
   const { data, isLoading, isRefetching, refetch, error } = useDashboard();
+  const { refetch: refetchUnreadCount } = useUnreadCount();
 
   const onRefresh = useCallback(() => {
+    console.log('[Notifications] 🔄 Refetching unread count');
     refetch();
-  }, [refetch]);
+    refetchUnreadCount();
+  }, [refetch, refetchUnreadCount]);
 
   // Full-screen loading state (first load only)
   if (isLoading) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient />
+        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
         <ScrollView
           style={styles.fill}
           contentContainerStyle={styles.scrollContent}
@@ -83,7 +87,7 @@ export default function HomeScreen() {
   if (error && !data) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient />
+        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
         <ScrollView
           style={styles.fill}
           contentContainerStyle={styles.errorScrollContent}
@@ -112,7 +116,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient />
+      <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
 
       <ScrollView
         style={styles.fill}

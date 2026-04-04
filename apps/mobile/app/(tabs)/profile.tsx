@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 
 import { GlobeIcon, LiveIcon, PointsIcon } from '@/components/brand/icons';
 import { Card } from '@/components/ui/card';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useLogout } from '@/hooks/use-auth';
 import { useAuthStore } from '@/stores/auth-store';
@@ -69,7 +70,7 @@ export default function ProfileScreen() {
   return (
     <View className="flex-1 bg-background">
       {/* Compact header with avatar embedded */}
-      <ScreenHeader title="Perfil" gradient>
+      <ScreenHeader title="Perfil" gradient rightAction={<NotificationBell />}>
         <View className="mt-3 flex-row items-center">
           {/* Avatar circle */}
           <View className="h-14 w-14 items-center justify-center rounded-full bg-white/20">

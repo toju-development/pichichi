@@ -52,6 +52,34 @@ export class NotificationsService {
   }
 
   // ---------------------------------------------------------------------------
+  // Batch-create notifications (no FCM push, fire-and-forget safe)
+  // ---------------------------------------------------------------------------
+
+  async createMany(
+    notifications: {
+      userId: string;
+      type: NotificationType;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+    }[],
+  ): Promise<{ count: number }> {
+    const result = await this.prisma.notification.createMany({
+      data: notifications.map((n) => ({
+        userId: n.userId,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        data: (n.data ?? undefined) as Prisma.InputJsonValue | undefined,
+      })),
+    });
+
+    this.logger.log(`Created ${result.count} notifications`);
+
+    return { count: result.count };
+  }
+
+  // ---------------------------------------------------------------------------
   // List user notifications (paginated)
   // ---------------------------------------------------------------------------
 

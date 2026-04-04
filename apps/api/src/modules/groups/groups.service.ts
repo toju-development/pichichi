@@ -6,9 +6,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GroupMemberRole, TournamentStatus } from '@prisma/client';
+import { GroupMemberRole, NotificationType, TournamentStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { PlansService } from '../plans/plans.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateGroupDto } from './dto/create-group.dto.js';
 import type { UpdateGroupDto } from './dto/update-group.dto.js';
 import type { GroupResponseDto } from './dto/group-response.dto.js';
@@ -25,6 +26,7 @@ export class GroupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly plansService: PlansService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -294,7 +296,7 @@ export class GroupsService {
     // worst case they get a slightly stale count and the tx catches the real limit)
     await this.plansService.enforceCanJoinGroup(userId);
 
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         const group = await tx.group.findUnique({
           where: { inviteCode, isActive: true },
@@ -373,6 +375,18 @@ export class GroupsService {
         isolationLevel: 'Serializable',
       },
     );
+
+    // Fire-and-forget: create GROUP_JOIN notifications for existing members
+    this.createGroupJoinNotifications(result.id, result.name, userId).catch(
+      (err: unknown) =>
+        this.logger.error(
+          `Failed to create GROUP_JOIN notifications for group ${result.id}: ${
+            err instanceof Error ? err.message : 'Unknown error'
+          }`,
+        ),
+    );
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -697,6 +711,49 @@ export class GroupsService {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------
+  // GROUP_JOIN notifications (fire-and-forget)
+  // ---------------------------------------------------------------------------
+
+  private async createGroupJoinNotifications(
+    groupId: string,
+    groupName: string,
+    joiningUserId: string,
+  ): Promise<void> {
+    // Get the joining user's display name
+    const joiningUser = await this.prisma.user.findUnique({
+      where: { id: joiningUserId },
+      select: { displayName: true },
+    });
+
+    const displayName = joiningUser?.displayName ?? 'Alguien';
+
+    // Get all active members of the group EXCEPT the joining user
+    const existingMembers = await this.prisma.groupMember.findMany({
+      where: {
+        groupId,
+        isActive: true,
+        userId: { not: joiningUserId },
+      },
+      select: { userId: true },
+    });
+
+    if (existingMembers.length === 0) return;
+
+    const notifications = existingMembers.map((member) => ({
+      userId: member.userId,
+      type: 'GROUP_JOIN' as const,
+      title: `${displayName} se unió a tu grupo`,
+      body: groupName,
+      data: { groupId },
+    }));
+
+    const { count } = await this.notificationsService.createMany(notifications);
+    this.logger.log(
+      `Created ${count} GROUP_JOIN notifications for group ${groupId}`,
+    );
+  }
 
   private async generateUniqueInviteCode(): Promise<string> {
     const MAX_RETRIES = 10;

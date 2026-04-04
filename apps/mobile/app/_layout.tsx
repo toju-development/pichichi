@@ -5,14 +5,17 @@
  * 1. QueryClientProvider (TanStack Query)
  * 2. AuthProvider (hydration + auth state)
  * 3. SocketProvider (real-time connection lifecycle)
- * 4. Slot (Expo Router)
+ * 4. Stack (Expo Router)
+ *
+ * Uses a root Stack (instead of Slot) so screens like /notifications can be
+ * pushed from any tab via `router.push('/notifications')`.
  */
 
 import '../global.css';
 import '@/nativewind-interop';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 
 import { queryClient } from '@/hooks/query-client';
 import { AuthProvider } from '@/providers/auth-provider';
@@ -23,7 +26,15 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SocketProvider>
-          <Slot />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="notifications"
+              options={{ animation: 'slide_from_right' }}
+            />
+          </Stack>
         </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -101,7 +101,7 @@ function GroupCard({ group }: { group: DashboardGroupRankingDto }) {
       <View style={styles.miniLeaderboard}>
         {group.topEntries.map((entry) => (
           <LeaderboardRow
-            key={`${group.groupId}-${entry.position}`}
+            key={`${group.groupId}-${entry.userId}`}
             position={entry.position}
             displayName={entry.displayName}
             totalPoints={entry.totalPoints}

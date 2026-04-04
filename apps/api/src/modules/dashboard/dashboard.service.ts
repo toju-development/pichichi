@@ -251,6 +251,7 @@ export class DashboardService {
 
       // Top 3
       const topEntries = entries.slice(0, 3).map((e) => ({
+        userId: e.userId,
         position: e.position,
         displayName: e.displayName,
         avatarUrl: e.avatarUrl,

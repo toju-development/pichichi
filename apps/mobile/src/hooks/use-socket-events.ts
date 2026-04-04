@@ -8,15 +8,15 @@
  * prefixes. TanStack Query only triggers re-renders if the refetched
  * data actually differs from the cache, so broad invalidation is cheap.
  *
- * | Socket Event     | Query Keys Invalidated (prefix)                       |
- * |------------------|-------------------------------------------------------|
- * | `match:updated`  | dashboard, matches, predictions, leaderboard, groups  |
+ * | Socket Event     | Query Keys Invalidated (prefix)                                    |
+ * |------------------|--------------------------------------------------------------------|
+ * | `match:updated`  | dashboard, matches, predictions, leaderboard, groups, notifications |
  */
 
 import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 
-import type { TypedSocket } from '@/types/socket-events';
+import type { TypedSocket, MatchUpdatedPayload } from '@/types/socket-events';
 
 /**
  * Subscribe to `match:updated` and invalidate all relevant query caches.
@@ -31,12 +31,16 @@ export function useSocketEvents(
   useEffect(() => {
     if (!socket) return;
 
-    const onMatchUpdated = () => {
+    const onMatchUpdated = (payload: MatchUpdatedPayload) => {
+      console.log(`[Socket] 🔔 match:updated received - matchId: ${payload.matchId} - timestamp: ${new Date().toISOString()}`);
+      console.log('[Socket] 🔄 Invalidating queries: dashboard, matches, predictions, leaderboard, groups, notifications');
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       void queryClient.invalidateQueries({ queryKey: ['matches'] });
       void queryClient.invalidateQueries({ queryKey: ['predictions'] });
       void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
       void queryClient.invalidateQueries({ queryKey: ['groups'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     };
 
     socket.on('match:updated', onMatchUpdated);

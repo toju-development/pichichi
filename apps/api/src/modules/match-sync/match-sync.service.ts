@@ -31,6 +31,7 @@ import { PrismaService } from '../../config/prisma.service.js';
 import { ApiFootballService } from './api-football.service.js';
 import { MatchesService } from '../matches/matches.service.js';
 import { BonusPredictionsService } from '../bonus-predictions/bonus-predictions.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { ApiFootballFixture } from './api-football.types.js';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,7 @@ import type { ApiFootballFixture } from './api-football.types.js';
 const DYNAMIC_INTERVAL_NAME = 'match-sync';
 const DYNAMIC_INTERVAL_MS = 300_000; // 5 minutes
 const UPCOMING_WINDOW_HOURS = 2;
+const REMINDER_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 const MIN_RATE_LIMIT_REMAINING = 10;
 
 // ---------------------------------------------------------------------------
@@ -107,6 +109,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
     private readonly apiFootballService: ApiFootballService,
     private readonly matchesService: MatchesService,
     private readonly bonusPredictionsService: BonusPredictionsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -163,6 +166,117 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Heartbeat failed: ${message}`);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Match Reminder — @Cron('*/5 * * * *') (every 5 minutes)
+  // ---------------------------------------------------------------------------
+
+  @Cron('*/5 * * * *', { name: 'match-reminder' })
+  async handleMatchReminders(): Promise<void> {
+    try {
+      const windowEnd = new Date(Date.now() + REMINDER_WINDOW_MS);
+
+      // Find SCHEDULED matches within 30-min window that haven't been reminded
+      const matches = await this.prisma.match.findMany({
+        where: {
+          status: 'SCHEDULED',
+          scheduledAt: { lte: windowEnd },
+          reminderSentAt: null,
+        },
+        include: {
+          homeTeam: { select: { name: true } },
+          awayTeam: { select: { name: true } },
+        },
+      });
+
+      if (matches.length === 0) return;
+
+      this.logger.log(
+        `Match reminder: found ${matches.length} match(es) to check`,
+      );
+
+      for (const match of matches) {
+        try {
+          await this.sendRemindersForMatch(match);
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(
+            `Failed to send reminders for match ${match.id}: ${message}`,
+          );
+        }
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`handleMatchReminders failed: ${message}`);
+    }
+  }
+
+  /**
+   * For a given match, find users who haven't predicted and send them reminders.
+   * Always sets `reminderSentAt` to prevent duplicates, even when 0 users need notifying.
+   */
+  private async sendRemindersForMatch(
+    match: {
+      id: string;
+      tournamentId: string;
+      homeTeam: { name: string } | null;
+      awayTeam: { name: string } | null;
+    },
+  ): Promise<void> {
+    // Find users who are in groups linked to this match's tournament
+    // but who do NOT have a prediction for this match in any group
+    const usersWithoutPredictions = await this.prisma.groupMember.findMany({
+      where: {
+        isActive: true,
+        group: {
+          isActive: true,
+          groupTournaments: {
+            some: { tournamentId: match.tournamentId },
+          },
+        },
+        // Exclude users who already have a prediction for this match
+        user: {
+          predictions: {
+            none: { matchId: match.id },
+          },
+        },
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    const homeTeamName = match.homeTeam?.name ?? '?';
+    const awayTeamName = match.awayTeam?.name ?? '?';
+
+    if (usersWithoutPredictions.length > 0) {
+      const notifications = usersWithoutPredictions.map((member) => ({
+        userId: member.userId,
+        type: 'MATCH_REMINDER' as const,
+        title: `${homeTeamName} vs ${awayTeamName} arranca en 30 min`,
+        body: '¡Hacé tu pronóstico!',
+        data: { matchId: match.id },
+      }));
+
+      const { count } = await this.notificationsService.createMany(
+        notifications,
+      );
+      this.logger.log(
+        `Match ${match.id}: sent ${count} MATCH_REMINDER notification(s)`,
+      );
+    } else {
+      this.logger.debug(
+        `Match ${match.id}: all eligible users already predicted — no reminders needed`,
+      );
+    }
+
+    // Always mark as reminded to prevent duplicates
+    await this.prisma.match.update({
+      where: { id: match.id },
+      data: { reminderSentAt: new Date() },
+    });
   }
 
   // ---------------------------------------------------------------------------

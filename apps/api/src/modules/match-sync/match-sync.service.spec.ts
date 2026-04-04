@@ -6,6 +6,7 @@ import { MatchSyncService } from './match-sync.service';
 import { ApiFootballService } from './api-football.service';
 import { MatchesService } from '../matches/matches.service';
 import { BonusPredictionsService } from '../bonus-predictions/bonus-predictions.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../../config/prisma.service';
 import type {
   ApiFootballFixture,
@@ -38,6 +39,7 @@ function makeDbMatch(overrides: Record<string, unknown> = {}) {
     awayTeamPlaceholder: null,
     externalId: 100 as number | null,
     lastSyncedAt: null as Date | null,
+    reminderSentAt: null as Date | null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -130,6 +132,9 @@ const mockPrisma = {
   team: {
     findFirst: jest.fn(),
   },
+  groupMember: {
+    findMany: jest.fn(),
+  },
 };
 
 const mockApiFootball = {
@@ -146,6 +151,10 @@ const mockBonusPredictions = {
   resolveByKey: jest
     .fn()
     .mockResolvedValue({ resolved: 0, correct: 0, incorrect: 0 }),
+};
+
+const mockNotificationsService = {
+  createMany: jest.fn().mockResolvedValue({ count: 0 }),
 };
 
 const mockConfigService = {
@@ -172,6 +181,7 @@ async function createService(): Promise<MatchSyncService> {
       { provide: ApiFootballService, useValue: mockApiFootball },
       { provide: MatchesService, useValue: mockMatchesService },
       { provide: BonusPredictionsService, useValue: mockBonusPredictions },
+      { provide: NotificationsService, useValue: mockNotificationsService },
     ],
   }).compile();
 
@@ -1166,5 +1176,270 @@ describe('MatchSyncService', () => {
         );
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // handleMatchReminders — MATCH_REMINDER cron
+  // ---------------------------------------------------------------------------
+
+  describe('handleMatchReminders', () => {
+    const now = new Date('2026-06-15T17:00:00Z');
+
+    beforeEach(() => {
+      jest.setSystemTime(now);
+    });
+
+    it('should do nothing when no matches are within the 30-min window', async () => {
+      mockPrisma.match.findMany.mockResolvedValue([]);
+
+      await service.handleMatchReminders();
+
+      expect(mockPrisma.groupMember.findMany).not.toHaveBeenCalled();
+      expect(mockNotificationsService.createMany).not.toHaveBeenCalled();
+    });
+
+    it('should send reminders to users without predictions for a match within 30 min', async () => {
+      // Match kicks off in 25 minutes
+      const match = {
+        ...makeDbMatch({
+          id: 'match-reminder-1',
+          tournamentId: 'tournament-1',
+          status: 'SCHEDULED',
+          scheduledAt: new Date('2026-06-15T17:25:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Argentina' },
+        awayTeam: { name: 'Brasil' },
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([
+        { userId: 'user-1' },
+        { userId: 'user-2' },
+      ]);
+      mockNotificationsService.createMany.mockResolvedValue({ count: 2 });
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      expect(mockNotificationsService.createMany).toHaveBeenCalledWith([
+        {
+          userId: 'user-1',
+          type: 'MATCH_REMINDER',
+          title: 'Argentina vs Brasil arranca en 30 min',
+          body: '¡Hacé tu pronóstico!',
+          data: { matchId: 'match-reminder-1' },
+        },
+        {
+          userId: 'user-2',
+          type: 'MATCH_REMINDER',
+          title: 'Argentina vs Brasil arranca en 30 min',
+          body: '¡Hacé tu pronóstico!',
+          data: { matchId: 'match-reminder-1' },
+        },
+      ]);
+    });
+
+    it('should set reminderSentAt after sending reminders', async () => {
+      const match = {
+        ...makeDbMatch({
+          id: 'match-reminder-1',
+          scheduledAt: new Date('2026-06-15T17:20:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Argentina' },
+        awayTeam: { name: 'Brasil' },
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([
+        { userId: 'user-1' },
+      ]);
+      mockNotificationsService.createMany.mockResolvedValue({ count: 1 });
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      expect(mockPrisma.match.update).toHaveBeenCalledWith({
+        where: { id: 'match-reminder-1' },
+        data: { reminderSentAt: expect.any(Date) },
+      });
+    });
+
+    it('should set reminderSentAt even when all users already predicted (0 notifications)', async () => {
+      const match = {
+        ...makeDbMatch({
+          id: 'match-reminder-1',
+          scheduledAt: new Date('2026-06-15T17:20:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Argentina' },
+        awayTeam: { name: 'Brasil' },
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match]);
+      // No users without predictions
+      mockPrisma.groupMember.findMany.mockResolvedValue([]);
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      // Should NOT call createMany when there are no users to notify
+      expect(mockNotificationsService.createMany).not.toHaveBeenCalled();
+      // But SHOULD still set reminderSentAt to prevent future checks
+      expect(mockPrisma.match.update).toHaveBeenCalledWith({
+        where: { id: 'match-reminder-1' },
+        data: { reminderSentAt: expect.any(Date) },
+      });
+    });
+
+    it('should skip matches that already have reminderSentAt set (via query filter)', async () => {
+      // The Prisma query filters by reminderSentAt: null, so matches with
+      // reminderSentAt already set won't appear in the results at all.
+      // We verify the query's where clause is correct by checking findMany args.
+      mockPrisma.match.findMany.mockResolvedValue([]);
+
+      await service.handleMatchReminders();
+
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            reminderSentAt: null,
+          }),
+        }),
+      );
+    });
+
+    it('should query for SCHEDULED matches within 30-min window', async () => {
+      mockPrisma.match.findMany.mockResolvedValue([]);
+
+      await service.handleMatchReminders();
+
+      const expectedWindowEnd = new Date(
+        now.getTime() + 30 * 60 * 1000,
+      );
+
+      expect(mockPrisma.match.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'SCHEDULED',
+            scheduledAt: { lte: expectedWindowEnd },
+            reminderSentAt: null,
+          }),
+        }),
+      );
+    });
+
+    it('should query groupMembers with correct filter to exclude users with predictions', async () => {
+      const match = {
+        ...makeDbMatch({
+          id: 'match-reminder-1',
+          tournamentId: 'tournament-1',
+          scheduledAt: new Date('2026-06-15T17:20:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Team A' },
+        awayTeam: { name: 'Team B' },
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([]);
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      expect(mockPrisma.groupMember.findMany).toHaveBeenCalledWith({
+        where: {
+          isActive: true,
+          group: {
+            isActive: true,
+            groupTournaments: {
+              some: { tournamentId: 'tournament-1' },
+            },
+          },
+          user: {
+            predictions: {
+              none: { matchId: 'match-reminder-1' },
+            },
+          },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+    });
+
+    it('should continue processing other matches when one fails', async () => {
+      const match1 = {
+        ...makeDbMatch({
+          id: 'match-fail',
+          scheduledAt: new Date('2026-06-15T17:20:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Team A' },
+        awayTeam: { name: 'Team B' },
+      };
+      const match2 = {
+        ...makeDbMatch({
+          id: 'match-success',
+          scheduledAt: new Date('2026-06-15T17:25:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: { name: 'Team C' },
+        awayTeam: { name: 'Team D' },
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match1, match2]);
+
+      // First match's groupMember query fails, second succeeds
+      mockPrisma.groupMember.findMany
+        .mockRejectedValueOnce(new Error('DB error'))
+        .mockResolvedValueOnce([{ userId: 'user-1' }]);
+      mockNotificationsService.createMany.mockResolvedValue({ count: 1 });
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      // Second match should still be processed despite first failing
+      expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.match.update).toHaveBeenCalledWith({
+        where: { id: 'match-success' },
+        data: { reminderSentAt: expect.any(Date) },
+      });
+    });
+
+    it('should handle team names gracefully when teams are null', async () => {
+      const match = {
+        ...makeDbMatch({
+          id: 'match-null-teams',
+          scheduledAt: new Date('2026-06-15T17:20:00Z'),
+          reminderSentAt: null,
+        }),
+        homeTeam: null,
+        awayTeam: null,
+      };
+
+      mockPrisma.match.findMany.mockResolvedValue([match]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([
+        { userId: 'user-1' },
+      ]);
+      mockNotificationsService.createMany.mockResolvedValue({ count: 1 });
+      mockPrisma.match.update.mockResolvedValue({});
+
+      await service.handleMatchReminders();
+
+      expect(mockNotificationsService.createMany).toHaveBeenCalledWith([
+        expect.objectContaining({
+          title: '? vs ? arranca en 30 min',
+        }),
+      ]);
+    });
+
+    it('should not throw when the entire cron handler errors', async () => {
+      mockPrisma.match.findMany.mockRejectedValue(new Error('DB down'));
+
+      await expect(
+        service.handleMatchReminders(),
+      ).resolves.toBeUndefined();
+    });
   });
 });

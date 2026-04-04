@@ -59,6 +59,7 @@ let socket: TypedSocket | null = null;
  */
 export function getSocket(): TypedSocket {
   if (!socket) {
+    console.log(`[Socket] 🔌 Creating socket instance - URL: ${SOCKET_URL}/events`);
     socket = io(`${SOCKET_URL}/events`, {
       autoConnect: false,
       transports: ['websocket'],

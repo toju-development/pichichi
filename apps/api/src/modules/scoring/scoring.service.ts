@@ -10,6 +10,7 @@ import type { Cache } from 'cache-manager';
 import type { PredictionPointType } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { EventsGateway } from '../../gateways/events.gateway.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface CalculatePointsResult {
   matchId: string;
@@ -29,6 +30,7 @@ export class ScoringService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventsGateway: EventsGateway,
+    private readonly notificationsService: NotificationsService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
@@ -74,6 +76,8 @@ export class ScoringService {
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
       include: {
+        homeTeam: true,
+        awayTeam: true,
         tournament: {
           include: { phases: true },
         },
@@ -106,6 +110,8 @@ export class ScoringService {
 
     // 4. Calculate points for each prediction and group by (pointType, points)
     const groups = new Map<string, { pointType: PredictionPointType; points: number; ids: string[] }>();
+    // Track total points per user (aggregated across groups) for notifications
+    const pointsByUser = new Map<string, number>();
 
     for (const prediction of predictions) {
       const { points, pointType } = this.calculatePoints(
@@ -128,6 +134,12 @@ export class ScoringService {
       } else {
         groups.set(groupKey, { pointType, points, ids: [prediction.id] });
       }
+
+      // Aggregate points per user for notifications
+      pointsByUser.set(
+        prediction.userId,
+        (pointsByUser.get(prediction.userId) ?? 0) + points,
+      );
     }
 
     // 5. Bulk update predictions grouped by (pointType, points) — reduces N ops to ~4-6
@@ -158,6 +170,18 @@ export class ScoringService {
       match.tournamentId,
       match.phase,
     );
+
+    // Fire-and-forget: create MATCH_RESULT notifications for users with predictions
+    if (predictions.length > 0) {
+      this.createMatchResultNotifications(match, pointsByUser).catch(
+        (err: unknown) =>
+          this.logger.error(
+            `Failed to create MATCH_RESULT notifications for match ${matchId}: ${
+              err instanceof Error ? err.message : 'Unknown error'
+            }`,
+          ),
+      );
+    }
 
     return {
       matchId,
@@ -206,5 +230,39 @@ export class ScoringService {
         `Cache invalidation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // MATCH_RESULT notifications (fire-and-forget)
+  // ---------------------------------------------------------------------------
+
+  private async createMatchResultNotifications(
+    match: {
+      id: string;
+      homeScore: number | null;
+      awayScore: number | null;
+      homeTeam: { name: string } | null;
+      awayTeam: { name: string } | null;
+    },
+    pointsByUser: Map<string, number>,
+  ): Promise<void> {
+    const homeTeamName = match.homeTeam?.name ?? '?';
+    const awayTeamName = match.awayTeam?.name ?? '?';
+    const title = `Terminó ${homeTeamName} ${match.homeScore}-${match.awayScore} ${awayTeamName}`;
+
+    const notifications = [...pointsByUser.entries()].map(
+      ([userId, points]) => ({
+        userId,
+        type: 'MATCH_RESULT' as const,
+        title,
+        body: `Ganaste ${points} puntos`,
+        data: { matchId: match.id, points },
+      }),
+    );
+
+    const { count } = await this.notificationsService.createMany(notifications);
+    this.logger.log(
+      `Created ${count} MATCH_RESULT notifications for match ${match.id}`,
+    );
   }
 }

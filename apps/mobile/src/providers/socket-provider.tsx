@@ -63,20 +63,28 @@ export function SocketProvider({ children }: SocketProviderProps) {
       socketRef.current = socket;
 
       const onConnect = () => {
+        console.log(`[Socket] ✅ Connected - id: ${socket.id}`);
         setIsConnected(true);
       };
 
-      const onDisconnect = () => {
+      const onDisconnect = (reason: string) => {
+        console.log(`[Socket] ❌ Disconnected - reason: ${reason}`);
         setIsConnected(false);
+      };
+
+      const onConnectError = (error: Error) => {
+        console.log(`[Socket] ⚠️ Connection error: ${error.message}`);
       };
 
       socket.on('connect', onConnect);
       socket.on('disconnect', onDisconnect);
+      socket.on('connect_error', onConnectError);
       socket.connect();
 
       return () => {
         socket.off('connect', onConnect);
         socket.off('disconnect', onDisconnect);
+        socket.off('connect_error', onConnectError);
       };
     }
 
@@ -105,6 +113,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
           nextAppState.match(/inactive|background/)
         ) {
           // Going to background → disconnect
+          console.log(`[Socket] 📱 AppState: ${nextAppState} - disconnecting`);
           socket?.disconnect();
         }
 
@@ -114,6 +123,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
         ) {
           // Returning to foreground → reconnect + invalidate all cached queries
           if (socket && accessToken) {
+            console.log(`[Socket] 📱 AppState: ${nextAppState} - connecting`);
             socket.connect();
             void queryClient.invalidateQueries();
           }

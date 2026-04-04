@@ -14,6 +14,7 @@ export class NotificationResponseDto {
       'GROUP_INVITE',
       'LEADERBOARD_CHANGE',
       'BONUS_REMINDER',
+      'GROUP_JOIN',
     ],
   })
   type!: NotificationType;
