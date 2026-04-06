@@ -13,9 +13,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import type { GroupDto } from '@pichichi/shared';
+import { Hash, Plus, Users } from 'lucide-react-native';
 
 import { GroupIcon } from '@/components/brand/icons';
 import { CreateGroupModal, JoinGroupModal } from '@/components/groups';
@@ -53,84 +54,84 @@ function RoleBadge({ role }: { role: string }) {
 
 const badgeStyles = StyleSheet.create({
   badge: {
-    borderRadius: 9999,
+    borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   badgeAdmin: {
-    backgroundColor: 'rgba(11, 110, 79, 0.15)',
+    backgroundColor: '#062E22',
   },
   badgeMember: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0FAF4',
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   badgeTextAdmin: {
-    color: COLORS.primary.DEFAULT,
+    color: '#FFD166',
   },
   badgeTextMember: {
-    color: COLORS.text.muted,
+    color: '#0B6E4F',
   },
 });
 
 /** Single group card with name, description, members, and role. */
 function GroupCard({ group }: { group: GroupDto }) {
   return (
-    <Card
-      accent
-      onPress={() => router.push(`/(tabs)/groups/${group.id}`)}
-      className="mb-3"
-    >
-      <View style={cardStyles.content}>
-        {/* Group name */}
-        <Text style={cardStyles.name}>
-          {group.name}
-        </Text>
-
-        {/* Description (truncated to 1 line) */}
-        {group.description ? (
-          <Text style={cardStyles.description} numberOfLines={1}>
-            {group.description}
+    <View style={cardStyles.cardWrapper}>
+      <Card
+        accent
+        onPress={() => router.push(`/(tabs)/groups/${group.id}`)}
+      >
+        <View style={cardStyles.content}>
+          {/* Group name */}
+          <Text style={cardStyles.name}>
+            {group.name}
           </Text>
-        ) : null}
 
-        {/* Bottom row: member count + role badge */}
-        <View style={cardStyles.bottomRow}>
-          <Text style={cardStyles.memberCount}>
-            {group.memberCount} {group.memberCount === 1 ? 'miembro' : 'miembros'}
-          </Text>
-          <RoleBadge role={group.userRole} />
+          {/* Bottom row: member count + role badge */}
+          <View style={cardStyles.bottomRow}>
+            <View style={cardStyles.memberRow}>
+              <Users size={12} color="#9CA3AF" />
+              <Text style={cardStyles.memberCount}>
+                {group.memberCount} {group.memberCount === 1 ? 'miembro' : 'miembros'}
+              </Text>
+            </View>
+            <RoleBadge role={group.userRole} />
+          </View>
         </View>
-      </View>
-    </Card>
+      </Card>
+    </View>
   );
 }
 
 const cardStyles = StyleSheet.create({
+  cardWrapper: {
+    marginBottom: 12,
+  },
   content: {
     paddingLeft: 12,
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: COLORS.text.primary,
-  },
-  description: {
-    marginTop: 4,
-    fontSize: 14,
-    color: COLORS.text.secondary,
+    color: '#1A1A2E',
   },
   bottomRow: {
-    marginTop: 8,
+    marginTop: 3,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   memberCount: {
-    fontSize: 12,
-    color: COLORS.text.muted,
+    fontSize: 11,
+    color: '#6B7280',
   },
 });
 
@@ -174,44 +175,7 @@ export default function GroupsScreen() {
       <ScreenHeader
         title="Mis Grupos"
         gradient
-        rightAction={
-          <View style={headerActionStyles.row}>
-            {/* Create group */}
-            <Pressable
-              onPress={handleCreatePress}
-              style={[
-                headerActionStyles.button,
-                canCreateGroup
-                  ? headerActionStyles.buttonEnabled
-                  : headerActionStyles.buttonDisabled,
-              ]}
-            >
-              <Text
-                style={[
-                  headerActionStyles.buttonText,
-                  canCreateGroup
-                    ? headerActionStyles.textEnabled
-                    : headerActionStyles.textDisabled,
-                ]}
-              >
-                +
-              </Text>
-            </Pressable>
-
-            {/* Join group */}
-            <Pressable
-              onPress={() => setShowJoinModal(true)}
-              style={[headerActionStyles.button, headerActionStyles.buttonEnabled]}
-            >
-              <Text style={[headerActionStyles.hashText, headerActionStyles.textEnabled]}>
-                #
-              </Text>
-            </Pressable>
-
-            {/* Notifications bell */}
-            <NotificationBell />
-          </View>
-        }
+        rightAction={<NotificationBell />}
       />
 
       {/* Loading */}
@@ -306,6 +270,26 @@ export default function GroupsScreen() {
         visible={showJoinModal}
         onClose={() => setShowJoinModal(false)}
       />
+
+      {/* Floating action buttons */}
+      <View style={fabStyles.container}>
+        <View style={fabStyles.fabCreate}>
+          <Pressable
+            onPress={handleCreatePress}
+            style={({ pressed }) => [pressed && fabStyles.fabPressed]}
+          >
+            <Plus size={22} color="#FFFFFF" />
+          </Pressable>
+        </View>
+        <View style={fabStyles.fabJoin}>
+          <Pressable
+            onPress={() => setShowJoinModal(true)}
+            style={({ pressed }) => [pressed && fabStyles.fabPressed]}
+          >
+            <Hash size={22} color="#FFD166" />
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
@@ -345,37 +329,53 @@ const screenStyles = StyleSheet.create({
   },
 });
 
-const headerActionStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+const fabStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
     gap: 12,
+    alignItems: 'center',
   },
-  button: {
-    height: 36,
-    width: 36,
+  fabCreate: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#0B6E4F',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9999,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0B6E4F40',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
-  buttonEnabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  fabJoin: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#062E22',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#062E2240',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
-  buttonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  hashText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  textEnabled: {
-    color: '#FFFFFF',
-  },
-  textDisabled: {
-    color: 'rgba(255, 255, 255, 0.4)',
+  fabPressed: {
+    opacity: 0.7,
   },
 });
