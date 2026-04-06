@@ -12,7 +12,7 @@
  */
 
 import { useCallback } from 'react';
-import { View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,13 +44,9 @@ const SHARED_QUERY_KEYS: readonly (readonly string[])[] = [
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-/** Small dot rendered below the active tab icon. */
+/** Small dot rendered below the active tab label. */
 function ActiveDot() {
-  return (
-    <View
-      className="mt-1 h-1 w-1 rounded-full bg-primary"
-    />
-  );
+  return <View style={styles.activeDot} />;
 }
 
 // ─── Main Layout ────────────────────────────────────────────────────────────
@@ -93,32 +89,19 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary.DEFAULT,
         tabBarInactiveTintColor: '#94A3B8',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-          elevation: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarStyle: styles.tabBar,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              <GlobeIcon size={24} color={color} />
+          tabBarIcon: ({ color }) => <GlobeIcon size={24} color={color} />,
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Inicio
+              </Text>
               {focused && <ActiveDot />}
             </View>
           ),
@@ -131,9 +114,12 @@ export default function TabLayout() {
         name="tournaments"
         options={{
           title: 'Torneos',
-          tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              <TrophyIcon size={24} color={color} />
+          tabBarIcon: ({ color }) => <TrophyIcon size={24} color={color} />,
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Torneos
+              </Text>
               {focused && <ActiveDot />}
             </View>
           ),
@@ -146,9 +132,12 @@ export default function TabLayout() {
         name="groups"
         options={{
           title: 'Grupos',
-          tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              <GroupIcon size={24} color={color} />
+          tabBarIcon: ({ color }) => <GroupIcon size={24} color={color} />,
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Grupos
+              </Text>
               {focused && <ActiveDot />}
             </View>
           ),
@@ -162,12 +151,17 @@ export default function TabLayout() {
         options={{
           title: 'Ranking',
           tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              <Ionicons
-                name={focused ? 'stats-chart' : 'stats-chart-outline'}
-                size={24}
-                color={color}
-              />
+            <Ionicons
+              name={focused ? 'stats-chart' : 'stats-chart-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Ranking
+              </Text>
               {focused && <ActiveDot />}
             </View>
           ),
@@ -181,20 +175,69 @@ export default function TabLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, focused }) => (
-            <View className="items-center">
-              <Ionicons
-                name={focused ? 'person' : 'person-outline'}
-                size={24}
-                color={color}
-              />
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Perfil
+              </Text>
               {focused && <ActiveDot />}
             </View>
           ),
         }}
         listeners={{
           tabPress: createTabPressHandler('profile'),
-        }}
+         }}
       />
     </Tabs>
   );
 }
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    height: Platform.select({ ios: 84, android: 72 }),
+    paddingBottom: Platform.select({ ios: 20, android: 12 }),
+    paddingTop: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  activeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#0B6E4F',
+    marginTop: 2,
+  },
+  labelContainer: {
+    alignItems: 'center',
+  },
+  labelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  labelTextActive: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0B6E4F',
+  },
+});

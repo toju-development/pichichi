@@ -172,14 +172,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     paddingBottom: 40,
+    gap: 24,
   },
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
-  skeletonContainer: {
-    marginBottom: 20,
-  },
+  skeletonContainer: {},
   skeletonTitleBar: {
     width: 160,
     height: 18,
@@ -217,7 +217,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    marginBottom: 20,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: COLORS.border,
   },

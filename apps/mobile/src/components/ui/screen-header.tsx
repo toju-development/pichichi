@@ -71,7 +71,7 @@ export function ScreenHeader({
 
   if (gradient) {
     return (
-      <GradientBackground colors={['#084a36', '#0B6E4F'] as const}>
+      <GradientBackground colors={['#062E22', '#0B6E4F'] as const}>
         {content}
       </GradientBackground>
     );
@@ -94,7 +94,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   titleLight: {
     color: '#FFFFFF',
@@ -104,10 +105,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 2,
-    fontSize: 14,
+    fontSize: 10,
+    textTransform: 'uppercase',
   },
   subtitleLight: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#FFFFFF80',
   },
   subtitleDark: {
     color: COLORS.text.secondary,

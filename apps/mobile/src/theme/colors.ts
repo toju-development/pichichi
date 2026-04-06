@@ -10,6 +10,7 @@
 export const COLORS = {
   primary: {
     DEFAULT: "#0B6E4F",
+    darker: "#062E22",
     dark: "#094D38",
     light: "#E8F5EE",
   },

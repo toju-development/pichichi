@@ -1,8 +1,8 @@
 /**
  * User stats section for the home dashboard.
  *
- * Compact card showing aggregated statistics: total points, accuracy %,
- * total predictions, and exact prediction count.
+ * Flat 4-column card showing aggregated statistics: total points, predictions,
+ * accuracy %, and exact prediction count — all with equal visual weight.
  *
  * Pure presentational — receives typed props, no hooks or data fetching.
  *
@@ -14,10 +14,9 @@
 
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { DashboardUserStatsDto } from '@pichichi/shared';
+import { CircleCheck, Star, Target, Timer, Trophy } from 'lucide-react-native';
 
-import { PointsIcon, PredictionIcon, TrophyIcon } from '@/components/brand/icons';
-import { COLORS } from '@/theme/colors';
+import type { DashboardUserStatsDto } from '@pichichi/shared';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -49,43 +48,38 @@ function StatItem({
 
 export function UserStatsSection({ stats }: UserStatsSectionProps) {
   return (
-    <View style={styles.section}>
+    <View style={styles.card}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <PointsIcon size={18} color={COLORS.primary.DEFAULT} />
-          <Text style={styles.headerTitle}>Tus Estadísticas</Text>
-        </View>
+        <Timer size={16} color="#0B6E4F" />
+        <Text style={styles.headerTitle}>Tus Estadísticas</Text>
       </View>
 
-      {/* Stats card */}
-      <View style={styles.card}>
-        {/* Main stat — total points (prominent) */}
-        <View style={styles.mainStat}>
-          <Text style={styles.mainStatValue}>{stats.totalPoints}</Text>
-          <Text style={styles.mainStatLabel}>puntos totales</Text>
-        </View>
-
-        {/* Secondary stats row */}
-        <View style={styles.secondaryRow}>
-          <StatItem
-            icon={<PredictionIcon size={14} color={COLORS.primary.DEFAULT} />}
-            value={String(stats.totalPredictions)}
-            label="Pronósticos"
-          />
-          <View style={styles.statDivider} />
-          <StatItem
-            icon={<TrophyIcon size={14} color={COLORS.success} />}
-            value={`${Math.round(stats.accuracy)}%`}
-            label="Precisión"
-          />
-          <View style={styles.statDivider} />
-          <StatItem
-            icon={<Text style={styles.exactIcon}>{'\u2713'}</Text>}
-            value={String(stats.exactCount)}
-            label="Exactos"
-          />
-        </View>
+      {/* Flat 4-column stats row */}
+      <View style={styles.statsRow}>
+        <StatItem
+          icon={<Star size={16} color="#FFD166" />}
+          value={String(stats.totalPoints)}
+          label="Puntos"
+        />
+        <View style={styles.statDivider} />
+        <StatItem
+          icon={<Target size={16} color="#0B6E4F" />}
+          value={String(stats.totalPredictions)}
+          label="Pronósticos"
+        />
+        <View style={styles.statDivider} />
+        <StatItem
+          icon={<Trophy size={16} color="#FFD166" />}
+          value={`${Math.round(stats.accuracy)}%`}
+          label="Precisión"
+        />
+        <View style={styles.statDivider} />
+        <StatItem
+          icon={<CircleCheck size={16} color="#10B981" />}
+          value={String(stats.exactCount)}
+          label="Exactos"
+        />
       </View>
     </View>
   );
@@ -94,32 +88,12 @@ export function UserStatsSection({ stats }: UserStatsSectionProps) {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 20,
-  },
-
-  // ── Header ──────────────────────────────────────────────────────────────
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text.primary,
-  },
-
   // ── Card ────────────────────────────────────────────────────────────────
   card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -127,55 +101,41 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  // ── Main stat ───────────────────────────────────────────────────────────
-  mainStat: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  mainStatValue: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: COLORS.primary.DEFAULT,
-    letterSpacing: -1,
-  },
-  mainStatLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
-    marginTop: 2,
-  },
-
-  // ── Secondary row ───────────────────────────────────────────────────────
-  secondaryRow: {
+  // ── Header ──────────────────────────────────────────────────────────────
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    gap: 6,
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A2E',
+  },
+
+  // ── Stats row ───────────────────────────────────────────────────────────
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statItem: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
     gap: 4,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text.primary,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1A2E',
   },
   statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.text.muted,
+    fontSize: 10,
+    color: '#6B7280',
   },
   statDivider: {
     width: StyleSheet.hairlineWidth,
     height: 32,
-    backgroundColor: COLORS.border,
-  },
-
-  // ── Exact icon ──────────────────────────────────────────────────────────
-  exactIcon: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.success,
+    backgroundColor: '#E5E7EB',
   },
 });

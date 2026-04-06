@@ -1,9 +1,9 @@
 /**
  * Bell icon with unread-count badge for the navigation header.
  *
- * Renders a bell icon (Ionicons `notifications-outline`) with an optional
- * red circle badge showing the unread notification count. Pressing the
- * bell navigates to the notifications screen.
+ * Renders a bell icon (lucide-react-native) inside a translucent circle
+ * with an optional red circle badge showing the unread notification count.
+ * Pressing the bell navigates to the notifications screen.
  *
  * IMPORTANT — NativeWind v4 first-frame fix:
  * Uses StyleSheet for all visual properties to guarantee rendering
@@ -11,7 +11,7 @@
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Bell } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { useUnreadCount } from '@/hooks/use-notifications';
@@ -30,7 +30,6 @@ export function NotificationBell({ tintColor = '#FFFFFF' }: NotificationBellProp
   return (
     <Pressable
       onPress={() => router.push('/notifications' as never)}
-      style={styles.container}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={
@@ -39,13 +38,15 @@ export function NotificationBell({ tintColor = '#FFFFFF' }: NotificationBellProp
           : 'Notificaciones'
       }
     >
-      <Ionicons name="notifications-outline" size={24} color={tintColor} />
+      <View style={styles.circleContainer}>
+        <Bell size={20} color={tintColor} />
 
-      {count > 0 ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{label}</Text>
-        </View>
-      ) : null}
+        {count > 0 ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{label}</Text>
+          </View>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -53,10 +54,12 @@ export function NotificationBell({ tintColor = '#FFFFFF' }: NotificationBellProp
 const BADGE_SIZE = 18;
 
 const styles = StyleSheet.create({
-  container: {
+  circleContainer: {
     position: 'relative',
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF15',
     alignItems: 'center',
     justifyContent: 'center',
   },

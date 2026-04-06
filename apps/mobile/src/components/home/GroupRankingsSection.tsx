@@ -1,8 +1,8 @@
 /**
  * Group rankings section for the home dashboard.
  *
- * Shows the user's groups (max 2) with a mini leaderboard (top 3 +
- * user position if not in top 3). User row is highlighted.
+ * Shows the user's groups (max 2) as simple card rows with
+ * group name, member count, and user points.
  *
  * Pure presentational — receives typed props, no hooks or data fetching.
  *
@@ -14,10 +14,10 @@
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Users } from 'lucide-react-native';
 
 import type { DashboardGroupRankingDto } from '@pichichi/shared';
 
-import { GroupIcon } from '@/components/brand/icons';
 import { Button } from '@/components/ui/button';
 import { COLORS } from '@/theme/colors';
 
@@ -27,104 +27,32 @@ interface GroupRankingsSectionProps {
   groups: DashboardGroupRankingDto[];
 }
 
-// ─── Medal config ───────────────────────────────────────────────────────────
-
-const MEDALS: Record<number, string> = {
-  1: '\uD83C\uDFC6',
-  2: '\uD83E\uDD48',
-  3: '\uD83E\uDD49',
-};
-
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function PositionBadge({ position }: { position: number }) {
-  const medal = MEDALS[position];
-  return (
-    <View style={styles.positionContainer}>
-      {medal ? (
-        <Text style={styles.medalEmoji}>{medal}</Text>
-      ) : (
-        <Text style={styles.positionText}>#{position}</Text>
-      )}
-    </View>
-  );
-}
-
-function LeaderboardRow({
-  position,
-  displayName,
-  totalPoints,
-  isUser,
-}: {
-  position: number;
-  displayName: string;
-  totalPoints: number;
-  isUser: boolean;
-}) {
-  return (
-    <View style={[styles.leaderboardRow, isUser && styles.leaderboardRowHighlighted]}>
-      <PositionBadge position={position} />
-      <Text
-        style={[styles.rowName, isUser && styles.rowNameBold]}
-        numberOfLines={1}
-      >
-        {displayName}
-      </Text>
-      <Text style={[styles.rowPoints, isUser && styles.rowPointsBold]}>
-        {totalPoints}pts
-      </Text>
-    </View>
-  );
-}
-
 function GroupCard({ group }: { group: DashboardGroupRankingDto }) {
-  const userInTop3 = group.topEntries.some(
-    (entry) => entry.position === group.userPosition,
-  );
-
   return (
-    <Pressable
-      onPress={() => router.push(`/(tabs)/groups/${group.groupId}`)}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    >
-      {/* Group name + member count */}
-      <View style={styles.groupHeaderRow}>
-        <Text style={styles.groupName} numberOfLines={1}>
-          {group.groupName}
-        </Text>
-        <Text style={styles.memberCount}>
-          {group.totalMembers} {group.totalMembers === 1 ? 'miembro' : 'miembros'}
-        </Text>
-      </View>
-
-      {/* Mini leaderboard */}
-      <View style={styles.miniLeaderboard}>
-        {group.topEntries.map((entry) => (
-          <LeaderboardRow
-            key={`${group.groupId}-${entry.userId}`}
-            position={entry.position}
-            displayName={entry.displayName}
-            totalPoints={entry.totalPoints}
-            isUser={entry.position === group.userPosition}
-          />
-        ))}
-
-        {/* User row if not in top 3 */}
-        {!userInTop3 ? (
-          <>
-            <View style={styles.separator}>
-              <Text style={styles.separatorDots}>{'\u22EF'}</Text>
-            </View>
-            <LeaderboardRow
-              position={group.userPosition}
-              displayName="Vos"
-              totalPoints={group.userPoints}
-              isUser
-            />
-          </>
-        ) : null}
-      </View>
-    </Pressable>
+    <View style={styles.card}>
+      <Pressable
+        onPress={() => router.push(`/(tabs)/groups/${group.groupId}`)}
+        style={({ pressed }) => [pressed && styles.cardPressed]}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.cardLeft}>
+            <Text style={styles.groupName} numberOfLines={1}>
+              {group.groupName}
+            </Text>
+            <Text style={styles.memberCount}>
+              {group.totalMembers}{' '}
+              {group.totalMembers === 1 ? 'miembro' : 'miembros'}
+            </Text>
+          </View>
+          <View style={styles.cardRight}>
+            <Text style={styles.userPoints}>{group.userPoints}</Text>
+            <Text style={styles.ptsLabel}>pts</Text>
+          </View>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -139,7 +67,7 @@ export function GroupRankingsSection({ groups }: GroupRankingsSectionProps) {
           <Text style={styles.headerTitle}>Mis Grupos</Text>
         </View>
         <View style={styles.emptyContainer}>
-          <GroupIcon size={32} color={COLORS.text.muted} />
+          <Users size={32} color={COLORS.text.muted} />
           <Text style={styles.emptyText}>No estás en ningún grupo</Text>
           <View style={styles.emptyAction}>
             <Button
@@ -158,7 +86,7 @@ export function GroupRankingsSection({ groups }: GroupRankingsSectionProps) {
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <GroupIcon size={18} color={COLORS.primary.DEFAULT} />
+          <Users size={18} color={COLORS.primary.DEFAULT} />
           <Text style={styles.headerTitle}>Mis Grupos</Text>
         </View>
         <Pressable onPress={() => router.push('/(tabs)/groups')}>
@@ -204,100 +132,58 @@ const styles = StyleSheet.create({
     color: COLORS.primary.DEFAULT,
   },
 
-  // ── Card ────────────────────────────────────────────────────────────────
+  // ── Card (outer View for Android shadow/border reliability) ─────────────
   card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardPressed: {
     opacity: 0.7,
   },
-
-  // ── Group header ────────────────────────────────────────────────────────
-  groupHeaderRow: {
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
+  cardLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  cardRight: {
+    alignItems: 'flex-end',
+  },
+
+  // ── Text styles ─────────────────────────────────────────────────────────
   groupName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.text.primary,
-    flex: 1,
-    marginRight: 8,
   },
   memberCount: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    color: COLORS.text.muted,
+    color: '#6B7280',
+    marginTop: 2,
   },
-
-  // ── Mini leaderboard ────────────────────────────────────────────────────
-  miniLeaderboard: {
-    gap: 2,
-  },
-  leaderboardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  leaderboardRowHighlighted: {
-    backgroundColor: COLORS.primary.light,
-  },
-
-  // ── Position ────────────────────────────────────────────────────────────
-  positionContainer: {
-    width: 30,
-    alignItems: 'center',
-  },
-  positionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
-  },
-  medalEmoji: {
-    fontSize: 16,
-  },
-
-  // ── Row content ─────────────────────────────────────────────────────────
-  rowName: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text.primary,
-    marginLeft: 8,
-  },
-  rowNameBold: {
-    fontWeight: '700',
-  },
-  rowPoints: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary.DEFAULT,
-    marginLeft: 8,
-  },
-  rowPointsBold: {
+  userPoints: {
+    fontSize: 18,
     fontWeight: '800',
+    color: '#0B6E4F',
   },
-
-  // ── Separator ───────────────────────────────────────────────────────────
-  separator: {
-    alignItems: 'center',
-    paddingVertical: 2,
-  },
-  separatorDots: {
-    fontSize: 16,
-    color: COLORS.text.muted,
+  ptsLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
   },
 
   // ── Empty state ─────────────────────────────────────────────────────────

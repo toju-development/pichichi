@@ -13,29 +13,18 @@
  * Never mix `style` and `className` on the same element.
  */
 
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Check, Globe } from 'lucide-react-native';
 
 import type { DashboardTodayMatchDto } from '@pichichi/shared';
 
-import { GlobeIcon } from '@/components/brand/icons';
 import { COLORS } from '@/theme/colors';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type TodayTeam = DashboardTodayMatchDto['homeTeam'];
-
-// ─── Phase labels (Spanish) ─────────────────────────────────────────────────
-
-const PHASE_LABELS: Record<string, string> = {
-  GROUP_STAGE: 'Fase de Grupos',
-  ROUND_OF_32: '32avos',
-  ROUND_OF_16: 'Octavos',
-  QUARTER_FINAL: 'Cuartos',
-  SEMI_FINAL: 'Semifinal',
-  THIRD_PLACE: '3er Puesto',
-  FINAL: 'Final',
-};
 
 // ─── Time formatting ────────────────────────────────────────────────────────
 
@@ -83,6 +72,18 @@ interface TodayMatchesSectionProps {
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function TeamAvatar({ team }: { team: NonNullable<TodayTeam> }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (team.logoUrl && !imageError) {
+    return (
+      <Image
+        source={{ uri: team.logoUrl }}
+        style={styles.avatarImage}
+        onError={() => setImageError(true)}
+      />
+    );
+  }
+
   return (
     <View style={styles.avatar}>
       <Text style={styles.avatarText}>
@@ -156,8 +157,9 @@ function PredictionIndicator({ match }: { match: DashboardTodayMatchDto }) {
     if (match.hasPrediction) {
       return (
         <View style={styles.predictionSubmitted}>
+          <Check size={14} color="#0B6E4F" strokeWidth={2.5} />
           <Text style={styles.predictionSubmittedText}>
-            {'\u2705'} {match.predictedHome} - {match.predictedAway}
+            {match.predictedHome} - {match.predictedAway}
           </Text>
         </View>
       );
@@ -169,8 +171,9 @@ function PredictionIndicator({ match }: { match: DashboardTodayMatchDto }) {
   if (match.hasPrediction) {
     return (
       <View style={styles.predictionSubmitted}>
+        <Check size={14} color="#0B6E4F" strokeWidth={2.5} />
         <Text style={styles.predictionSubmittedText}>
-          {'\u2705'} {match.predictedHome} - {match.predictedAway}
+          {match.predictedHome} - {match.predictedAway}
         </Text>
       </View>
     );
@@ -185,7 +188,6 @@ function PredictionIndicator({ match }: { match: DashboardTodayMatchDto }) {
 }
 
 function TodayMatchCard({ match }: { match: DashboardTodayMatchDto }) {
-  const phaseLabel = PHASE_LABELS[match.phase] ?? match.phase;
   const isLive = match.isLocked && match.status !== 'FINISHED';
   const canNavigate = !isLive;
 
@@ -201,47 +203,45 @@ function TodayMatchCard({ match }: { match: DashboardTodayMatchDto }) {
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      disabled={!canNavigate}
-      style={({ pressed }) => [
-        styles.matchCard,
-        !match.hasPrediction && !match.isLocked && styles.matchCardHighlight,
-        isLive && styles.matchCardLive,
-        pressed && canNavigate && styles.matchCardPressed,
-      ]}
-    >
-      {/* Live indicator */}
-      {isLive ? (
-        <View style={styles.liveRow}>
-          <View style={styles.liveDotPulse} />
-          <Text style={styles.liveLabel}>EN VIVO</Text>
+    <View style={[styles.matchCard, isLive && styles.matchCardLive]}>
+      <Pressable
+        onPress={handlePress}
+        disabled={!canNavigate}
+        style={({ pressed }) => [
+          pressed && canNavigate && styles.matchCardPressed,
+        ]}
+      >
+        {/* Live indicator */}
+        {isLive ? (
+          <View style={styles.liveRow}>
+            <View style={styles.liveDotPulse} />
+            <Text style={styles.liveLabel}>EN VIVO</Text>
+          </View>
+        ) : null}
+
+        {/* Teams + score/time */}
+        <View style={styles.teamsRow}>
+          <TeamSide team={match.homeTeam} placeholder={match.homePlaceholder} />
+          <CenterBlock match={match} />
+          <TeamSide team={match.awayTeam} placeholder={match.awayPlaceholder} reverse />
         </View>
-      ) : null}
 
-      {/* Teams + score/time */}
-      <View style={styles.teamsRow}>
-        <TeamSide team={match.homeTeam} placeholder={match.homePlaceholder} />
-        <CenterBlock match={match} />
-        <TeamSide team={match.awayTeam} placeholder={match.awayPlaceholder} reverse />
-      </View>
-
-      {/* Footer: meta + prediction state */}
-      <View style={styles.cardFooter}>
-        <View style={styles.metaColumn}>
-          <Text style={styles.phaseText}>{phaseLabel}</Text>
-          {match.tournamentName ? (
-            <Text style={styles.tournamentText} numberOfLines={1}>
-              {match.tournamentName}
+        {/* Footer: meta + prediction state */}
+        <View style={styles.cardFooter}>
+          <View style={styles.metaColumn}>
+            {match.tournamentName ? (
+              <Text style={styles.tournamentText} numberOfLines={1}>
+                {match.tournamentName}
+              </Text>
+            ) : null}
+            <Text style={styles.groupText} numberOfLines={1}>
+              {match.groupName}
             </Text>
-          ) : null}
-          <Text style={styles.groupText} numberOfLines={1}>
-            {match.groupName}
-          </Text>
+          </View>
+          <PredictionIndicator match={match} />
         </View>
-        <PredictionIndicator match={match} />
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -272,7 +272,7 @@ export function TodayMatchesSection({ matches }: TodayMatchesSectionProps) {
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <GlobeIcon size={18} color={COLORS.primary.DEFAULT} />
+          <Globe size={18} color={COLORS.primary.DEFAULT} />
           <Text style={styles.headerTitle}>Partidos del D{'\u00ED'}a</Text>
         </View>
         <View style={styles.matchCountBadge}>
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -328,19 +328,17 @@ const styles = StyleSheet.create({
 
   // ── Match card ──────────────────────────────────────────────────────────
   matchCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
-  },
-  matchCardHighlight: {
-    borderWidth: 1.5,
-    borderColor: COLORS.primary.DEFAULT,
   },
   matchCardLive: {
     borderWidth: 1.5,
@@ -388,27 +386,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   teamName: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.text.primary,
-    flexShrink: 1,
+    width: 90,
   },
   placeholderName: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '500',
     fontStyle: 'italic',
     color: COLORS.text.muted,
-    flexShrink: 1,
+    width: 90,
   },
 
   // ── Avatar ──────────────────────────────────────────────────────────────
   avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   avatarText: {
     fontSize: 11,
@@ -419,7 +422,7 @@ const styles = StyleSheet.create({
   // ── Time / Score blocks ─────────────────────────────────────────────────
   timeBlock: {
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     minWidth: 56,
   },
   timeText: {
@@ -429,14 +432,14 @@ const styles = StyleSheet.create({
   },
   scoreBlock: {
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     minWidth: 56,
     flexDirection: 'row',
     gap: 4,
   },
   scoreText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '900',
     color: COLORS.text.primary,
   },
   liveDot: {
@@ -457,33 +460,33 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  phaseText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: COLORS.text.muted,
-  },
   tournamentText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
-    color: COLORS.text.secondary,
+    color: '#9CA3AF',
     marginTop: 2,
   },
   groupText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.primary.DEFAULT,
+    fontWeight: '700',
+    color: '#0B6E4F',
     marginTop: 2,
   },
 
   // ── Prediction indicators ───────────────────────────────────────────────
   predictionSubmitted: {
+    backgroundColor: '#E8F5EE',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   predictionSubmittedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.success,
+    color: '#0B6E4F',
   },
   predictBadge: {
     backgroundColor: '#FFF3E0',
