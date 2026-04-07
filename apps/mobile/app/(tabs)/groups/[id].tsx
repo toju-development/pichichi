@@ -4,25 +4,28 @@
  * Shows group info (invite code for admin, members list, tournaments) with admin
  * actions for member management, editing, and deletion. Handles loading, error,
  * and empty states.
+ *
+ * IMPORTANT — NativeWind v4 ghost-card fix:
+ * ALL visual properties use StyleSheet.create(). Never mix `style` + `className`.
+ * Shadows use Platform.select for iOS/Android.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import type { AxiosError } from 'axios';
+import { ArrowLeft, LogOut, Pencil, Trash2, UserPlus, Users } from 'lucide-react-native';
 
 import type { GroupMemberRole, TournamentDto } from '@pichichi/shared';
-import { Ionicons } from '@expo/vector-icons';
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { AddTournamentModal } from '@/components/groups/add-tournament-modal';
 import { EditGroupModal } from '@/components/groups/edit-group-modal';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { GradientBackground } from '@/components/ui/gradient-bg';
 import { LoadingScreen } from '@/components/ui/loading-screen';
-import { ScreenHeader } from '@/components/ui/screen-header';
 import { checkRemoveTournament } from '@/api/groups';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '@/utils/match-helpers';
 import {
@@ -34,9 +37,41 @@ import {
   useRemoveMember,
   useRemoveTournament,
 } from '@/hooks/use-groups';
+import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { queryKeys } from '@/hooks/query-keys';
 import { useAuthStore } from '@/stores/auth-store';
-import { COLORS } from '@/theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** Deterministic avatar colors based on member index. */
+const AVATAR_COLORS = [
+  '#0B6E4F', '#10B981', '#FFD166', '#6366F1',
+  '#F59E0B', '#E63946', '#8B5CF6', '#EC4899',
+] as const;
+
+/** Tournament type → tag color mapping. */
+const TOURNAMENT_TAG_COLORS: Record<string, { bg: string; text: string }> = {
+  WORLD_CUP: { bg: '#FFF3E0', text: '#E65100' },
+  COPA_AMERICA: { bg: '#FFF3E0', text: '#E65100' },
+  EURO: { bg: '#FFF3E0', text: '#E65100' },
+  CHAMPIONS_LEAGUE: { bg: '#FFF3E0', text: '#E65100' },
+  CUSTOM: { bg: '#E8F5EE', text: '#0B6E4F' },
+};
+
+const DEFAULT_TAG_COLOR = { bg: '#E8F5EE', text: '#0B6E4F' };
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getAvatarColor(index: number): string {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
+
+function getTagColors(tournamentType: string) {
+  return TOURNAMENT_TAG_COLORS[tournamentType] ?? DEFAULT_TAG_COLOR;
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 /** Role badge shown next to each member name. */
 function RoleBadge({ role }: { role: GroupMemberRole }) {
@@ -45,37 +80,28 @@ function RoleBadge({ role }: { role: GroupMemberRole }) {
   return (
     <View
       style={[
-        detailStyles.badge,
-        isAdmin ? detailStyles.badgeAdmin : detailStyles.badgeMember,
+        s.roleBadge,
+        isAdmin ? s.roleBadgeAdmin : s.roleBadgeMember,
       ]}
     >
       <Text
         style={[
-          detailStyles.badgeText,
-          isAdmin ? detailStyles.badgeTextAdmin : detailStyles.badgeTextMember,
+          s.roleBadgeText,
+          isAdmin ? s.roleBadgeTextAdmin : s.roleBadgeTextMember,
         ]}
       >
-        {isAdmin ? 'Admin' : 'Miembro'}
+        {isAdmin ? 'ADMIN' : 'MIEMBRO'}
       </Text>
     </View>
   );
 }
 
-/** Back button rendered inside ScreenHeader children (below title, in gradient). */
-function BackButton() {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      style={detailStyles.backButton}
-    >
-      <Text style={detailStyles.backText}>{'\u2190'} Volver</Text>
-    </Pressable>
-  );
-}
+// ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const qc = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   // Flag to disable all queries and show loading state during delete/leave.
   // Set to true BEFORE calling mutate() so the next render disables observers
@@ -85,6 +111,7 @@ export default function GroupDetailScreen() {
   const { data: group, isLoading, error, refetch, isRefetching } = useGroup(id!, !isGroupRemoved);
   const { data: members, refetch: refetchMembers, isRefetching: isRefetchingMembers } = useGroupMembers(id!, !isGroupRemoved);
   const { data: tournaments, refetch: refetchTournaments, isRefetching: isRefetchingTournaments } = useGroupTournaments(id!, !isGroupRemoved);
+  const { data: leaderboard } = useLeaderboard(id!);
   const leaveGroupMutation = useLeaveGroup();
   const removeMemberMutation = useRemoveMember();
   const deleteGroupMutation = useDeleteGroup();
@@ -96,8 +123,17 @@ export default function GroupDetailScreen() {
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [addTournamentVisible, setAddTournamentVisible] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const isAnyRefreshing = isRefetching || isRefetchingMembers || isRefetchingTournaments;
+
+  // Build a quick lookup: userId → totalPoints from leaderboard
+  const pointsByUser = new Map<string, number>();
+  if (leaderboard?.entries) {
+    for (const entry of leaderboard.entries) {
+      pointsByUser.set(entry.userId, entry.totalPoints);
+    }
+  }
 
   // ── Auto-navigate on 404 (group deleted/removed by someone else) ────────
   // Uses a ref to prevent the Alert from firing more than once.
@@ -162,9 +198,11 @@ export default function GroupDetailScreen() {
   function handleShareInviteCode() {
     if (!group?.inviteCode) return;
 
-    Share.share({
-      message: `Unite a mi grupo "${group.name}" en Pichichi! Código: ${group.inviteCode}`,
-    });
+    void Clipboard.setStringAsync(group.inviteCode);
+    Alert.alert(
+      'Código copiado',
+      `Código de invitación: ${group.inviteCode}\n\nCompartilo con tus amigos para que se unan al grupo.`,
+    );
   }
 
   function handleLeaveGroup() {
@@ -330,239 +368,284 @@ export default function GroupDetailScreen() {
 
   if (error || !group) {
     return (
-      <View style={detailStyles.screen}>
-        <ScreenHeader title="Grupo" gradient>
-          <BackButton />
-        </ScreenHeader>
+      <View style={s.screen}>
+        <GradientBackground colors={['#062E22', '#0B6E4F'] as const}>
+          <View style={[s.headerContainer, { paddingTop: insets.top + 16 }]}>
+            <View style={s.headerRow}>
+              <Pressable onPress={() => router.back()} style={s.headerBackPressable}>
+                <ArrowLeft size={20} color="#FFFFFF" />
+              </Pressable>
+              <View style={s.headerTitleCol}>
+                <Text style={s.headerTitle}>Grupo</Text>
+              </View>
+            </View>
+          </View>
+        </GradientBackground>
 
-        <View style={detailStyles.errorContainer}>
-          <Text style={detailStyles.errorText}>
+        <View style={s.errorContainer}>
+          <Text style={s.errorText}>
             No se pudo cargar el grupo.
           </Text>
           <Button title="Volver" variant="outline" onPress={() => router.back()} />
         </View>
-    </View>
-  );
-}
+      </View>
+    );
+  }
 
   // ── Loaded state ──────────────────────────────────────────────────────────
 
   return (
-    <View style={detailStyles.screen}>
-      <ScreenHeader
-        title={group.name}
-        subtitle={group.description || 'Grupo de predicciones'}
-        gradient
-      >
-        <BackButton />
-      </ScreenHeader>
+    <View style={s.screen}>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <GradientBackground colors={['#062E22', '#0B6E4F'] as const}>
+        <View style={[s.headerContainer, { paddingTop: insets.top + 16 }]}>
+          <View style={s.headerRow}>
+            {/* Left: back + title */}
+            <Pressable onPress={() => router.back()} style={s.headerBackPressable}>
+              <ArrowLeft size={20} color="#FFFFFF" />
+            </Pressable>
+            <View style={s.headerTitleCol}>
+              <Text style={s.headerTitle} numberOfLines={1}>
+                {group.name}
+              </Text>
+              <Text style={s.headerSubtitle} numberOfLines={1}>
+                {group.description || 'Grupo de predicciones'}
+              </Text>
+            </View>
 
+            {/* Right: Edit button (admin only) */}
+            {isAdmin ? (
+              <Pressable
+                onPress={() => setEditModalVisible(true)}
+                style={s.headerEditBtn}
+              >
+                <Pencil size={14} color="#FFFFFF" />
+                <Text style={s.headerEditText}>Editar</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </GradientBackground>
+
+      {/* ── Scrollable Content ─────────────────────────────────────────── */}
       <ScrollView
-        style={detailStyles.scrollView}
-        contentContainerStyle={detailStyles.scrollContent}
+        style={s.scrollView}
+        contentContainerStyle={s.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={isAnyRefreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primary.DEFAULT}
-            colors={[COLORS.primary.DEFAULT]}
+            tintColor="#0B6E4F"
+            colors={['#0B6E4F']}
           />
         }
       >
-       <View style={detailStyles.sections}>
-        {/* ── Invite Code Card (admin only) ───────────────────────────── */}
-        {isAdmin && group.inviteCode ? (
-          <Card accent>
-            <Text style={detailStyles.sectionLabel}>
-              Código de invitación
-            </Text>
-            <Pressable onPress={handleCopyInviteCode} style={detailStyles.inviteCodeTouchable}>
-              <Text style={detailStyles.inviteCode}>
-                {group.inviteCode}
-              </Text>
-              <Text style={[
-                detailStyles.inviteCodeHint,
-                codeCopied && detailStyles.inviteCodeHintCopied,
-              ]}>
-                {codeCopied ? '¡Copiado!' : 'Tocá para copiar'}
-              </Text>
-            </Pressable>
-            <Button title="Compartir" variant="outline" onPress={handleShareInviteCode} />
-          </Card>
-        ) : null}
-
-        {/* ── Group Info Card ──────────────────────────────────────────── */}
-        <Card>
-          <View style={detailStyles.infoRow}>
-            <Text style={detailStyles.infoText}>
-              Miembros: {members?.length ?? group.memberCount} / {group.maxMembers}
-            </Text>
-            {isAdmin ? (
-              <Pressable
-                onPress={() => setEditModalVisible(true)}
-                style={detailStyles.editButton}
-              >
-                <Text style={detailStyles.editButtonText}>Editar</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </Card>
-
-        {/* ── Members Section ──────────────────────────────────────────── */}
+        {/* ── Section 1: Torneos ────────────────────────────────────────── */}
         <View>
-          <Text style={detailStyles.sectionTitle}>
-            Miembros ({members?.length ?? group.memberCount})
-          </Text>
-
-          {members?.map((member) => {
-            const initial = member.displayName.charAt(0).toUpperCase();
-            const isCurrentUser = member.userId === currentUserId;
-            const canManage = isAdmin && !isCurrentUser;
-
-            return (
-              <Card
-                key={member.id}
-                className="mb-3"
-                onPress={canManage ? () => handleMemberAction(member) : undefined}
-              >
-                <View style={detailStyles.memberRow}>
-                  {/* Avatar circle */}
-                  <View style={detailStyles.avatar}>
-                    <Text style={detailStyles.avatarText}>{initial}</Text>
-                  </View>
-
-                  {/* Name */}
-                  <View style={detailStyles.memberInfo}>
-                    <Text style={detailStyles.memberName}>
-                      {member.displayName}
-                      {isCurrentUser ? ' (Vos)' : ''}
-                    </Text>
-                    <Text style={detailStyles.memberUsername}>
-                      @{member.username}
-                    </Text>
-                  </View>
-
-                  {/* Role badge */}
-                  <RoleBadge role={member.role} />
-                </View>
-              </Card>
-            );
-          })}
-        </View>
-
-        {/* ── Tournaments Section ──────────────────────────────────────── */}
-        <View>
-          <Text style={detailStyles.sectionTitle}>Torneos</Text>
-
-          {!tournaments || tournaments.length === 0 ? (
-            <Card>
-              <View style={detailStyles.tournamentRow}>
-                <TrophyIcon size={20} color={COLORS.text.muted} />
-                <Text style={detailStyles.tournamentEmpty}>
-                  No hay torneos asociados
+          {/* Section header */}
+          <View style={s.sectionHeader}>
+            <View style={s.sectionHeaderLeft}>
+              <TrophyIcon size={20} color="#0B6E4F" />
+              <Text style={s.sectionTitle}>Torneos</Text>
+            </View>
+            <View style={s.sectionHeaderRight}>
+              <View style={s.countBadgeCircle}>
+                <Text style={s.countBadgeText}>
+                  {tournaments?.length ?? 0}
                 </Text>
               </View>
-            </Card>
-          ) : (
-            tournaments.map((tournament) => {
-              const canRemove =
-                isAdmin &&
-                (tournament.status === 'DRAFT' || tournament.status === 'UPCOMING');
+              {isAdmin ? (
+                <Pressable onPress={() => setAddTournamentVisible(true)}>
+                  <Text style={s.sectionActionText}>Agregar</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Tournament cards */}
+          <View style={s.cardList}>
+            {!tournaments || tournaments.length === 0 ? (
+              <View style={[s.card, s.cardShadow]}>
+                <View style={s.tournamentCardRow}>
+                  <View style={s.tournamentIconCircle}>
+                    <TrophyIcon size={18} color="#0B6E4F" />
+                  </View>
+                  <Text style={s.emptyText}>No hay torneos asociados</Text>
+                </View>
+              </View>
+            ) : (
+              tournaments.map((tournament) => {
+                const canRemove =
+                  isAdmin &&
+                  (tournament.status === 'DRAFT' || tournament.status === 'UPCOMING');
+                const tagColors = getTagColors(tournament.type);
+
+                return (
+                  <View key={tournament.id} style={[s.card, s.cardShadow]}>
+                    <Pressable
+                      onPress={() => router.push({
+                        pathname: '/(tabs)/groups/tournament/[slug]',
+                        params: { slug: tournament.slug, groupId: id },
+                      })}
+                      style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
+                    >
+                      <View style={s.tournamentCardRow}>
+                        {/* Trophy icon circle */}
+                        <View style={s.tournamentIconCircle}>
+                          <TrophyIcon size={18} color="#0B6E4F" />
+                        </View>
+
+                        {/* Text column */}
+                        <View style={s.tournamentTextCol}>
+                          <Text style={s.tournamentName} numberOfLines={1}>
+                            {tournament.name}
+                          </Text>
+                          <View style={s.tournamentTagsRow}>
+                            <View style={[s.tournamentTag, { backgroundColor: tagColors.bg }]}>
+                              <Text style={[s.tournamentTagText, { color: tagColors.text }]}>
+                                {TOURNAMENT_TYPE_LABELS[tournament.type] ?? tournament.type}
+                              </Text>
+                            </View>
+                            <Text style={s.tournamentStatus}>
+                              {TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Remove button (admin only) */}
+                        {canRemove ? (
+                          <Pressable
+                            onPress={() => handleRemoveTournament(tournament)}
+                            hitSlop={8}
+                            style={s.removeBtn}
+                          >
+                            <Trash2 size={16} color="#E63946" />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </View>
+
+        {/* ── Section 2: Miembros ──────────────────────────────────────── */}
+        <View>
+          {/* Section header */}
+          <View style={s.sectionHeader}>
+            <View style={s.sectionHeaderLeft}>
+              <Users size={18} color="#0B6E4F" />
+              <Text style={s.sectionTitle}>Miembros</Text>
+            </View>
+            <View style={s.sectionHeaderRight}>
+              <View style={s.memberCountBadge}>
+                <Text style={s.memberCountText}>
+                  {members?.length ?? group.memberCount}
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowMembersModal(true)}>
+                <Text style={s.sectionActionText}>Ver todos</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Member cards (max 5 inline) */}
+          <View style={s.cardList}>
+            {members?.slice(0, 5).map((member, index) => {
+              const initial = member.displayName.charAt(0).toUpperCase();
+              const isCurrentUser = member.userId === currentUserId;
+              const canManage = isAdmin && !isCurrentUser;
+              const avatarBg = getAvatarColor(index);
+              const pts = pointsByUser.get(member.userId) ?? 0;
 
               return (
-                <Card
-                  key={tournament.id}
-                  className="mb-3"
-                  onPress={() => router.push({
-                    pathname: '/(tabs)/groups/tournament/[slug]',
-                    params: { slug: tournament.slug, groupId: id },
-                  })}
-                >
-                  <View style={detailStyles.tournamentRow}>
-                    <TrophyIcon size={22} color={COLORS.primary.DEFAULT} />
-                    <View style={detailStyles.tournamentInfo}>
-                      <Text style={detailStyles.tournamentName}>
-                        {tournament.name}
-                      </Text>
-                      <View style={detailStyles.tournamentMeta}>
-                        <View style={detailStyles.tournamentTypeBadge}>
-                          <Text style={detailStyles.tournamentTypeText}>
-                            {TOURNAMENT_TYPE_LABELS[tournament.type] ?? tournament.type}
-                          </Text>
-                        </View>
-                        <Text style={detailStyles.tournamentStatus}>
-                          {TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}
+                <View key={member.id} style={[s.card, s.cardShadow]}>
+                  <Pressable
+                    onPress={canManage ? () => handleMemberAction(member) : undefined}
+                    style={({ pressed }) => (pressed && canManage) ? s.pressedOpacity : undefined}
+                  >
+                    <View style={s.memberCardRow}>
+                      {/* Avatar */}
+                      <View style={[s.memberAvatar, { backgroundColor: avatarBg }]}>
+                        <Text style={s.memberAvatarText}>{initial}</Text>
+                        {member.avatarUrl ? (
+                          <Image
+                            source={{ uri: member.avatarUrl }}
+                            style={s.memberAvatarImage}
+                          />
+                        ) : null}
+                      </View>
+
+                      {/* Name + role */}
+                      <View style={s.memberTextCol}>
+                        <Text style={s.memberName} numberOfLines={1}>
+                          {member.displayName}
+                          {isCurrentUser ? ' (Vos)' : ''}
                         </Text>
+                        <RoleBadge role={member.role} />
+                      </View>
+
+                      {/* Points */}
+                      <View style={s.memberPointsCol}>
+                        <Text style={s.memberPointsValue}>{pts}</Text>
+                        <Text style={s.memberPointsLabel}>pts</Text>
                       </View>
                     </View>
-                    {canRemove ? (
-                      <Pressable
-                        onPress={() => handleRemoveTournament(tournament)}
-                        hitSlop={8}
-                        style={detailStyles.removeTournamentButton}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={22}
-                          color={COLORS.error}
-                        />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </Card>
+                  </Pressable>
+                </View>
               );
-            })
-          )}
-
-          {isAdmin ? (
-            <View style={detailStyles.addTournamentWrapper}>
-              <Button
-                title="Agregar torneo"
-                variant="outline"
-                onPress={() => setAddTournamentVisible(true)}
-              />
-            </View>
-          ) : null}
+            })}
+          </View>
         </View>
 
-        {/* ── Actions Section ──────────────────────────────────────────── */}
-        <View style={detailStyles.actionsSection}>
-          {/* Leave group */}
-          <Card onPress={leaveGroupMutation.isPending ? undefined : handleLeaveGroup}>
-            <View style={detailStyles.actionRow}>
-              <Text
-                style={[
-                  detailStyles.actionText,
-                  leaveGroupMutation.isPending
-                    ? detailStyles.actionTextDisabled
-                    : detailStyles.actionTextDanger,
-                ]}
-              >
-                {leaveGroupMutation.isPending ? 'Saliendo...' : 'Salir del grupo'}
-              </Text>
-            </View>
-          </Card>
+        {/* Spacer — pushes danger zone to bottom when content is short */}
+        <View style={s.dangerZoneSpacer} />
 
-          {/* Delete group (admin only) */}
-          {isAdmin ? (
-            <Card onPress={deleteGroupMutation.isPending ? undefined : handleDeleteGroup}>
-              <View style={detailStyles.actionRow}>
-              <Text
-                style={[
-                  detailStyles.actionText,
-                  deleteGroupMutation.isPending
-                    ? detailStyles.actionTextDisabled
-                    : detailStyles.actionTextDanger,
-                ]}
-              >
-                {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
-              </Text>
+        {/* ── Section 3: Danger Zone ───────────────────────────────────── */}
+        <View>
+          <View style={[s.dangerButton, s.dangerButtonBorder]}>
+            <Pressable
+              onPress={leaveGroupMutation.isPending ? undefined : handleLeaveGroup}
+              style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
+            >
+              <View style={s.dangerButtonRow}>
+                <LogOut size={18} color="#E63946" />
+                <Text style={s.dangerButtonText}>
+                  {leaveGroupMutation.isPending ? 'Saliendo...' : 'Salir del grupo'}
+                </Text>
               </View>
-            </Card>
+            </Pressable>
+          </View>
+
+          {/* Delete group — admin only, kept as hidden alert trigger */}
+          {isAdmin ? (
+            <View style={s.deleteGroupWrapper}>
+              <Pressable
+                onPress={deleteGroupMutation.isPending ? undefined : handleDeleteGroup}
+                style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
+              >
+                <Text style={s.deleteGroupText}>
+                  {deleteGroupMutation.isPending ? 'Eliminando...' : 'Eliminar grupo'}
+                </Text>
+              </Pressable>
+            </View>
           ) : null}
         </View>
-       </View>
       </ScrollView>
+
+      {/* ── FAB: Invite (admin only) ───────────────────────────────────── */}
+      {isAdmin && group.inviteCode ? (
+        <View style={[s.fab, s.fabShadow, { bottom: insets.bottom + 24 }]}>
+          <Pressable
+            onPress={codeCopied ? undefined : handleShareInviteCode}
+            style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
+          >
+            <UserPlus size={22} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* ── Edit Group Modal ───────────────────────────────────────────── */}
       {isAdmin ? (
@@ -582,26 +665,135 @@ export default function GroupDetailScreen() {
           onClose={() => setAddTournamentVisible(false)}
         />
       ) : null}
+
+      {/* ── Members Modal ──────────────────────────────────────────────── */}
+      <Modal
+        visible={showMembersModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowMembersModal(false)}
+      >
+        <View style={s.modalContainer}>
+          {/* Handle bar */}
+          <View style={s.modalHandleBarRow}>
+            <View style={s.modalHandleBar} />
+          </View>
+
+          {/* Header */}
+          <View style={s.modalHeader}>
+            <Text style={s.modalHeaderTitle}>Miembros</Text>
+            <Pressable onPress={() => setShowMembersModal(false)}>
+              <Text style={s.modalHeaderClose}>Cerrar</Text>
+            </Pressable>
+          </View>
+
+          {/* Members list */}
+          <FlatList
+            data={members ?? []}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={s.modalListContent}
+            renderItem={({ item: member, index }) => {
+              const initial = member.displayName.charAt(0).toUpperCase();
+              const isCurrentUser = member.userId === currentUserId;
+              const canManage = isAdmin && !isCurrentUser;
+              const avatarBg = getAvatarColor(index);
+              const pts = pointsByUser.get(member.userId) ?? 0;
+
+              return (
+                <View style={[s.card, s.cardShadow]}>
+                  <Pressable
+                    onPress={canManage ? () => handleMemberAction(member) : undefined}
+                    style={({ pressed }) => (pressed && canManage) ? s.pressedOpacity : undefined}
+                  >
+                    <View style={s.memberCardRow}>
+                      {/* Avatar */}
+                      <View style={[s.memberAvatar, { backgroundColor: avatarBg }]}>
+                        <Text style={s.memberAvatarText}>{initial}</Text>
+                        {member.avatarUrl ? (
+                          <Image
+                            source={{ uri: member.avatarUrl }}
+                            style={s.memberAvatarImage}
+                          />
+                        ) : null}
+                      </View>
+
+                      {/* Name + role */}
+                      <View style={s.memberTextCol}>
+                        <Text style={s.memberName} numberOfLines={1}>
+                          {member.displayName}
+                          {isCurrentUser ? ' (Vos)' : ''}
+                        </Text>
+                        <RoleBadge role={member.role} />
+                      </View>
+
+                      {/* Points */}
+                      <View style={s.memberPointsCol}>
+                        <Text style={s.memberPointsValue}>{pts}</Text>
+                        <Text style={s.memberPointsLabel}>pts</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                </View>
+              );
+            }}
+          />
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const detailStyles = StyleSheet.create({
+// ── Styles ──────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  // ── Screen
   screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0FAF4',
   },
-  scrollView: {
-    flex: 1,
+
+  // ── Header
+  headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingBottom: 16,
   },
-  scrollContent: {
-    paddingBottom: 32,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  sections: {
-    gap: 16,
+  headerBackPressable: {
+    marginRight: 10,
   },
+  headerTitleCol: {
+    flex: 1,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  headerSubtitle: {
+    color: '#FFFFFF60',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  headerEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF20',
+    borderRadius: 10,
+    height: 34,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  headerEditText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // ── Error state
   errorContainer: {
     flex: 1,
     alignItems: 'center',
@@ -612,208 +804,328 @@ const detailStyles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
     fontSize: 16,
-    color: COLORS.text.secondary,
+    color: '#6B7280',
   },
 
-  // Badge
-  badge: {
-    borderRadius: 9999,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
+  // ── Scroll
+  scrollView: {
+    flex: 1,
   },
-  badgeAdmin: {
-    backgroundColor: 'rgba(11, 110, 79, 0.15)',
-  },
-  badgeMember: {
-    backgroundColor: '#F3F4F6',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  badgeTextAdmin: {
-    color: COLORS.primary.DEFAULT,
-  },
-  badgeTextMember: {
-    color: COLORS.text.muted,
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
+    gap: 24,
+    paddingBottom: 100, // space for FAB
   },
 
-  // Back button
-  backButton: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-
-  // Invite code card
-  sectionLabel: {
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text.secondary,
-  },
-  inviteCode: {
-    textAlign: 'center',
-    fontFamily: 'monospace',
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 4,
-    color: COLORS.primary.DEFAULT,
-  },
-  inviteCodeTouchable: {
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary.light,
-  },
-  inviteCodeHint: {
-    marginTop: 4,
-    fontSize: 12,
-    color: COLORS.text.muted,
-  },
-  inviteCodeHintCopied: {
-    color: COLORS.success,
-    fontWeight: '600',
-  },
-
-  // Group info card
-  infoRow: {
+  // ── Section headers
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  infoText: {
-    fontSize: 14,
-    color: COLORS.text.muted,
-  },
-  editButton: {
-    borderRadius: 8,
-    backgroundColor: 'rgba(11, 110, 79, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary.DEFAULT,
-  },
-
-  // Section titles
-  sectionTitle: {
     marginBottom: 12,
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text.primary,
   },
-
-  // Members
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    marginRight: 12,
-    height: 40,
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9999,
-    backgroundColor: 'rgba(11, 110, 79, 0.15)',
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.primary.DEFAULT,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  memberUsername: {
-    marginTop: 2,
-    fontSize: 12,
-    color: COLORS.text.muted,
-  },
-
-  // Tournaments
-  tournamentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  tournamentEmpty: {
-    fontSize: 14,
-    color: COLORS.text.muted,
-  },
-  tournamentInfo: {
-    flex: 1,
-  },
-  tournamentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  tournamentMeta: {
-    marginTop: 4,
+  sectionHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  tournamentTypeBadge: {
-    borderRadius: 9999,
-    backgroundColor: 'rgba(11, 110, 79, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A2E',
   },
-  tournamentTypeText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.primary.DEFAULT,
-  },
-  tournamentStatus: {
-    fontSize: 12,
-    color: COLORS.text.muted,
-  },
-  removeTournamentButton: {
-    marginLeft: 8,
-    padding: 4,
-  },
-
-  // Add tournament
-  addTournamentWrapper: {
-    marginTop: 8,
-  },
-
-  // Actions
-  actionsSection: {
-    marginTop: 16,
-    gap: 12,
-  },
-  actionRow: {
+  sectionHeaderRight: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionActionText: {
+    color: '#0B6E4F',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // ── Count badges
+  countBadgeCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E8F5EE',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionText: {
-    fontSize: 16,
+  countBadgeText: {
+    color: '#0B6E4F',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  memberCountBadge: {
+    borderRadius: 10,
+    backgroundColor: '#E8F5EE',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  memberCountText: {
+    color: '#0B6E4F',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // ── Card list & card base
+  cardList: {
+    gap: 10,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+  },
+  cardShadow: Platform.select({
+    ios: {
+      shadowColor: '#0000000A',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 1,
+      shadowRadius: 4,
+    },
+    android: {
+      elevation: 1,
+    },
+  }) as object,
+  pressedOpacity: {
+    opacity: 0.7,
+  },
+
+  // ── Tournament card
+  tournamentCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  tournamentIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tournamentTextCol: {
+    flex: 1,
+    marginLeft: 12,
+    gap: 2,
+  },
+  tournamentName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  tournamentTagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tournamentTag: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  tournamentTagText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  tournamentStatus: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  removeBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 12,
+  },
+
+  // ── Member card
+  memberCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  memberAvatarImage: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  memberAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  memberTextCol: {
+    flex: 1,
+    marginLeft: 12,
+    gap: 2,
+  },
+  memberName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A2E',
+  },
+  memberPointsCol: {
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  memberPointsValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0B6E4F',
+  },
+  memberPointsLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+
+  // ── Role badge
+  roleBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  roleBadgeAdmin: {
+    backgroundColor: '#062E22',
+  },
+  roleBadgeMember: {
+    backgroundColor: '#F0FAF4',
+  },
+  roleBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  roleBadgeTextAdmin: {
+    color: '#FFD166',
+  },
+  roleBadgeTextMember: {
+    color: '#0B6E4F',
+  },
+
+  // ── Danger zone
+  dangerZoneSpacer: {
+    flexGrow: 1,
+  },
+  dangerButton: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  dangerButtonBorder: {
+    borderWidth: 1,
+    borderColor: '#E63946',
+  },
+  dangerButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  dangerButtonText: {
+    color: '#E63946',
+    fontSize: 14,
     fontWeight: '600',
   },
-  actionTextDanger: {
-    color: COLORS.error,
+  deleteGroupWrapper: {
+    marginTop: 12,
+    alignItems: 'center',
   },
-  actionTextDisabled: {
-    color: COLORS.text.muted,
+  deleteGroupText: {
+    color: '#E63946',
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
+  // ── FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#0B6E4F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabShadow: Platform.select({
+    ios: {
+      shadowColor: '#0B6E4F40',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 12,
+    },
+    android: {
+      elevation: 8,
+    },
+  }) as object,
+
+  // ── Members modal
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHandleBarRow: {
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHandleBar: {
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#D1D5DB',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1A2E',
+  },
+  modalHeaderClose: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0B6E4F',
+  },
+  modalListContent: {
+    padding: 20,
+    gap: 10,
   },
 });
