@@ -7,16 +7,28 @@
  * IMPORTANT — NativeWind v4 ghost-card fix:
  * TournamentCard uses StyleSheet for ALL visual properties (color, font,
  * padding, bg) to guarantee first-frame rendering. NativeWind className is
- * only used for external spacing wrappers (e.g. mb-3).
+ * NOT used anywhere — all styles are in StyleSheet.create().
+ *
+ * Card accent bar uses INSET positioning (left:8) to avoid the
+ * border clipping issue with overflow:hidden + borderRadius.
  */
 
 import { useCallback } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import type { TournamentDto, TournamentStatus, TournamentType } from '@pichichi/shared';
+import { Calendar, ChevronRight, Shield } from 'lucide-react-native';
 
 import { TrophyIcon } from '@/components/brand/icons';
-import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { NotificationBell } from '@/components/ui/notification-bell';
@@ -24,6 +36,11 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { useTournaments } from '@/hooks/use-tournaments';
 import { COLORS } from '@/theme/colors';
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const GREEN = '#0B6E4F';
+const GREEN_BG = '#E8F5EE';
 
 // ─── Label maps ──────────────────────────────────────────────────────────────
 
@@ -43,14 +60,14 @@ const TYPE_LABELS: Record<TournamentType, string> = {
   CUSTOM: 'Personalizado',
 };
 
-// ─── Date formatting ─────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const SHORT_MONTHS = [
   'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
 ];
 
-/** Formats a date range like "11 Jun - 19 Jul 2026". */
+/** Formats a date range like "25 Ene - 8 Nov 2026". */
 function formatDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -64,98 +81,203 @@ function formatDateRange(startDate: string, endDate: string): string {
   return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${endYear}`;
 }
 
+/** Get status pill styling. */
+function getStatusStyle(status: TournamentStatus) {
+  if (status === 'IN_PROGRESS') {
+    return { color: '#16A34A', bg: '#DCFCE7' };
+  }
+  // UPCOMING, DRAFT, FINISHED, CANCELLED → gray
+  return { color: '#6B7280', bg: '#F3F4F6' };
+}
+
 // ─── Tournament Card ─────────────────────────────────────────────────────────
 
 function TournamentCard({ tournament }: { tournament: TournamentDto }) {
-  const statusLabel = STATUS_LABELS[tournament.status] ?? tournament.status;
+  const statusLabel = STATUS_LABELS[tournament.status] ?? 'Próximamente';
   const typeLabel = TYPE_LABELS[tournament.type] ?? tournament.type;
   const dateRange = formatDateRange(tournament.startDate, tournament.endDate);
   const teamCount = tournament.teamCount;
 
+  const statusStyle = getStatusStyle(tournament.status);
+
   return (
-    <Card
-      accent
-      onPress={() => router.push(`/(tabs)/tournaments/${tournament.slug}`)}
-      className="mb-3"
-    >
-      <View style={cardStyles.content}>
-        {/* Title row: icon + name */}
-        <View style={cardStyles.titleRow}>
-          <TrophyIcon size={20} color={COLORS.primary.DEFAULT} />
-          <Text style={cardStyles.name}>{tournament.name}</Text>
-        </View>
+    <View style={cardStyles.cardWrapper}>
+      {/* Visual card container — bg, border, shadow, borderRadius */}
+      <View style={cardStyles.cardSurface}>
+        {/* Accent bar — inset left to avoid overflow:hidden clipping */}
+        <View style={[cardStyles.accentBar, { backgroundColor: GREEN }]} />
 
-        {/* Type · Status */}
-        <View style={cardStyles.metaRow}>
-          <Text style={cardStyles.typeLabel}>{typeLabel}</Text>
-          <Text style={cardStyles.separator}>·</Text>
-          <Text style={cardStyles.statusLabel}>{statusLabel}</Text>
-        </View>
+        {/* Pressable inside only handles opacity feedback */}
+        <Pressable
+          onPress={() => router.push(`/(tabs)/tournaments/${tournament.slug}`)}
+          style={({ pressed }) => pressed ? cardStyles.pressed : undefined}
+        >
+          <View style={cardStyles.body}>
+            {/* Row 1: Logo/Icon + Name + Chevron */}
+            <View style={cardStyles.topRow}>
+              <View style={cardStyles.topRowLeft}>
+                {/* Icon circle with optional logo overlay */}
+                <View style={[cardStyles.iconCircle, { backgroundColor: GREEN_BG }]}>
+                  <TrophyIcon size={16} color={GREEN} />
+                  {tournament.logoUrl ? (
+                    <Image
+                      source={{ uri: tournament.logoUrl }}
+                      style={cardStyles.logoImage}
+                    />
+                  ) : null}
+                </View>
+                <Text style={cardStyles.name} numberOfLines={1}>
+                  {tournament.name}
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#9CA3AF" />
+            </View>
 
-        {/* Date range · Team count */}
-        <View style={cardStyles.bottomRow}>
-          <Text style={cardStyles.dateText}>{dateRange}</Text>
-          {teamCount != null ? (
-            <>
-              <Text style={cardStyles.separator}>·</Text>
-              <Text style={cardStyles.teamCount}>
-                {teamCount} {teamCount === 1 ? 'equipo' : 'equipos'}
-              </Text>
-            </>
-          ) : null}
-        </View>
+            {/* Row 2: Type pill + Status pill */}
+            <View style={cardStyles.pillRow}>
+              <View style={[cardStyles.pill, { backgroundColor: GREEN_BG }]}>
+                <Text style={[cardStyles.pillText, { color: GREEN }]}>
+                  {typeLabel}
+                </Text>
+              </View>
+              <View style={[cardStyles.pill, { backgroundColor: statusStyle.bg }]}>
+                <Text style={[cardStyles.pillText, { color: statusStyle.color }]}>
+                  {statusLabel}
+                </Text>
+              </View>
+            </View>
+
+            {/* Row 3: Date range + Team count */}
+            <View style={cardStyles.metaRow}>
+              <View style={cardStyles.metaItem}>
+                <Calendar size={13} color="#9CA3AF" />
+                <Text style={cardStyles.metaText}>{dateRange}</Text>
+              </View>
+              {teamCount != null ? (
+                <View style={cardStyles.metaItem}>
+                  <Shield size={13} color="#9CA3AF" />
+                  <Text style={cardStyles.metaText}>
+                    {teamCount} {teamCount === 1 ? 'equipo' : 'equipos'}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </Pressable>
       </View>
-    </Card>
+    </View>
   );
 }
 
 const cardStyles = StyleSheet.create({
-  content: {
-    paddingLeft: 12,
+  cardWrapper: {
+    marginBottom: 12,
   },
-  titleRow: {
+  cardSurface: {
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  accentBar: {
+    position: 'absolute',
+    left: 8,
+    top: 14,
+    bottom: 14,
+    width: 4,
+    borderRadius: 2,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  body: {
+    paddingTop: 14,
+    paddingRight: 16,
+    paddingBottom: 14,
+    paddingLeft: 20,
+    gap: 8,
+  },
+
+  // Row 1: top
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+  },
+  topRowLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginRight: 8,
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   name: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: COLORS.text.primary,
+    color: '#1F2937',
   },
-  metaRow: {
-    marginTop: 6,
+
+  // Row 2: pills
+  pillRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  typeLabel: {
-    fontSize: 12,
+  pill: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  pillText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: COLORS.primary.DEFAULT,
   },
-  separator: {
-    fontSize: 12,
-    color: COLORS.text.muted,
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: COLORS.text.muted,
-  },
-  bottomRow: {
-    marginTop: 4,
+
+  // Row 3: meta
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
   },
-  dateText: {
-    fontSize: 12,
-    color: COLORS.text.secondary,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  teamCount: {
-    fontSize: 12,
-    color: COLORS.text.secondary,
+  metaText: {
+    fontSize: 11,
+    color: '#6B7280',
   },
 });
 
@@ -260,7 +382,7 @@ export default function TournamentsScreen() {
 const screenStyles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F0FAF4',
   },
   fill: {
     flex: 1,

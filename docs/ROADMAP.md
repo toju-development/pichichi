@@ -214,6 +214,30 @@ Polish and UX improvements.
 | Apple Sign In not testable | Medium | Requires Apple Developer Program ($99/year). Google OAuth verified and working. |
 | iOS "Mis Grupos" section in tournament detail | Low | Navigation from standalone tournament detail to group detail may have edge cases on iOS. Deferred. |
 | Navigation cross-tab state | Low | Deep-linking across tabs (e.g., tournament → group) may not preserve back stack in all scenarios. Deferred. |
+| Match filtering gaps — invisible matches | Medium | SCHEDULED+locked, POSTPONED, and CANCELLED matches are invisible (not in any tab). LIVE matches correctly show in Pronósticos, NOT Resultados. See truth table below. Not blocking for MVP but needs fix before World Cup. |
+
+### Match Filtering Truth Table (GroupTournamentScreen)
+
+Discovered 2026-04-07. The client-side filtering in `[slug].tsx` has gaps where certain match states are invisible to the user.
+
+| Match Status | `isMatchLocked()` | Pronósticos tab | Resultados tab | Visible? |
+|---|---|---|---|---|
+| SCHEDULED | `false` (>5min to kickoff) | ✅ Predictable section | ❌ | ✅ |
+| SCHEDULED | `true` (≤5min to kickoff) | ❌ Excluded by `!isMatchLocked(m)` | ❌ Not FINISHED | ❌ **INVISIBLE** |
+| LIVE | `true` (always) | ✅ "En vivo 🔴" section | ❌ | ✅ |
+| FINISHED | `true` (always) | ❌ | ✅ | ✅ |
+| POSTPONED | `true` (always) | ❌ Not SCHEDULED | ❌ Not FINISHED | ❌ **INVISIBLE** |
+| CANCELLED | `true` (always) | ❌ Not SCHEDULED | ❌ Not FINISHED | ❌ **INVISIBLE** |
+
+**Key findings:**
+1. **LIVE matches show in Pronósticos, NOT Resultados** — User hypothesis was wrong. `getLiveMatches()` feeds into `pronosticosSections` (line 242-256). Resultados only shows `FINISHED`.
+2. **SCHEDULED+locked gap** — A match within 5 minutes of kickoff but not yet LIVE disappears from both tabs. This window is small (≤5 min) but real. It reappears once the backend updates status to LIVE.
+3. **POSTPONED/CANCELLED are invisible** — No tab handles these statuses. During the World Cup, postponed matches would vanish entirely.
+
+**Recommended fix (future):**
+- Add SCHEDULED+locked matches to Pronósticos as a "Próximos a empezar 🔒" section (locked, non-editable)
+- Add POSTPONED matches to a new section or to Resultados with a "Postergado" badge
+- CANCELLED matches could go to Resultados with a "Cancelado" badge or be filtered with explanation
 
 ## Technical Debt
 
