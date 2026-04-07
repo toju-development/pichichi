@@ -490,9 +490,15 @@ export default function GroupDetailScreen() {
                       style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
                     >
                       <View style={s.tournamentCardRow}>
-                        {/* Trophy icon circle */}
+                        {/* Trophy icon circle / tournament logo */}
                         <View style={s.tournamentIconCircle}>
                           <TrophyIcon size={18} color="#0B6E4F" />
+                          {tournament.logoUrl ? (
+                            <Image
+                              source={{ uri: tournament.logoUrl }}
+                              style={s.tournamentLogoImage}
+                            />
+                          ) : null}
                         </View>
 
                         {/* Text column */}
@@ -913,6 +919,13 @@ const s = StyleSheet.create({
     backgroundColor: '#E8F5EE',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  tournamentLogoImage: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   tournamentTextCol: {
     flex: 1,

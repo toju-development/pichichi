@@ -4,13 +4,17 @@
  * Shows available tournaments (those NOT already associated) and lets
  * the admin tap "Agregar" to link one to the group.
  * Handles 403 plan-limit errors with a friendly message.
+ *
+ * IMPORTANT — NativeWind v4 ghost-card fix:
+ * ALL visual properties use StyleSheet to guarantee rendering on the first
+ * frame. className is NEVER used for visual props.
  */
 
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -20,7 +24,6 @@ import {
 } from 'react-native';
 
 import { TrophyIcon } from '@/components/brand/icons';
-import { Button } from '@/components/ui/button';
 import { useAddTournament } from '@/hooks/use-groups';
 import { useTournaments } from '@/hooks/use-tournaments';
 import { COLORS } from '@/theme/colors';
@@ -95,29 +98,48 @@ export function AddTournamentModal({
   function renderTournamentRow({ item }: { item: TournamentDto }) {
     const typeLabel = TOURNAMENT_TYPE_LABELS[item.type] ?? item.type;
     const statusLabel = TOURNAMENT_STATUS_LABELS[item.status] ?? item.status;
+    const isAdding = addTournament.isPending;
 
     return (
-      <View style={styles.row}>
-        <View style={styles.rowIcon}>
-          <TrophyIcon size={28} color={COLORS.primary.DEFAULT} />
+      <View style={s.card}>
+        {/* Left: icon circle + text column */}
+        <View style={s.cardLeft}>
+          <View style={s.iconCircle}>
+            <TrophyIcon size={20} color="#0B6E4F" />
+            {item.logoUrl ? (
+              <Image
+                source={{ uri: item.logoUrl }}
+                style={s.tournamentLogoImage}
+              />
+            ) : null}
+          </View>
+
+          <View style={s.cardTextCol}>
+            <Text style={s.cardName} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={s.cardMeta} numberOfLines={1}>
+              {typeLabel} · {statusLabel}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.rowContent}>
-          <Text style={styles.rowName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.rowMeta} numberOfLines={1}>
-            {typeLabel} · {statusLabel}
-          </Text>
+        {/* Right: "Agregar" outlined button */}
+        <View style={[s.addBtnOuter, isAdding && s.addBtnDisabled]}>
+          <Pressable
+            onPress={() => handleAdd(item.id)}
+            disabled={isAdding}
+            style={({ pressed }) =>
+              pressed ? { opacity: 0.7 } : undefined
+            }
+          >
+            {isAdding ? (
+              <ActivityIndicator size="small" color="#0B6E4F" />
+            ) : (
+              <Text style={s.addBtnText}>Agregar</Text>
+            )}
+          </Pressable>
         </View>
-
-        <Button
-          title="Agregar"
-          variant="outline"
-          loading={addTournament.isPending}
-          disabled={addTournament.isPending}
-          onPress={() => handleAdd(item.id)}
-        />
       </View>
     );
   }
@@ -129,32 +151,35 @@ export function AddTournamentModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 bg-background"
-      >
-        {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border px-5 pb-4 pt-5">
-          <Text className="text-xl font-bold text-text-primary">
-            Agregar torneo
-          </Text>
-          <Pressable onPress={onClose} className="active:opacity-70">
-            <Text className="text-base font-medium text-primary">
-              Cancelar
-            </Text>
+      <View style={s.root}>
+        {/* ─── Native drag handle ────────────────────────── */}
+        <View style={s.handleContainer}>
+          <View style={s.handlePill} />
+        </View>
+
+        {/* ─── Header ───────────────────────────────────── */}
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Agregar torneo</Text>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) =>
+              pressed ? { opacity: 0.7 } : undefined
+            }
+          >
+            <Text style={s.headerCancel}>Cancelar</Text>
           </Pressable>
         </View>
 
-        {/* Content */}
+        {/* ─── Content ──────────────────────────────────── */}
         {isLoading ? (
-          <View style={styles.centered}>
+          <View style={s.centered}>
             <ActivityIndicator size="large" color={COLORS.primary.DEFAULT} />
           </View>
         ) : availableTournaments.length === 0 ? (
-          <View style={styles.centered}>
+          <View style={s.centered}>
             <TrophyIcon size={48} color={COLORS.text.muted} />
-            <Text style={styles.emptyTitle}>No hay torneos disponibles</Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={s.emptyTitle}>No hay torneos disponibles</Text>
+            <Text style={s.emptySubtitle}>
               Todos los torneos ya están agregados a este grupo.
             </Text>
           </View>
@@ -163,24 +188,63 @@ export function AddTournamentModal({
             data={availableTournaments}
             keyExtractor={(item) => item.id}
             renderItem={renderTournamentRow}
-            contentContainerStyle={styles.list}
-            ItemSeparatorComponent={Separator}
+            contentContainerStyle={s.list}
+            showsVerticalScrollIndicator={false}
           />
         )}
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
-// ─── Separator ──────────────────────────────────────────────────────────────
-
-function Separator() {
-  return <View style={styles.separator} />;
-}
-
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#F0FAF4',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    overflow: 'hidden',
+  },
+
+  // Native drag handle
+  handleContainer: {
+    paddingTop: 8,
+    paddingBottom: 4,
+    alignItems: 'center',
+    backgroundColor: '#F0FAF4',
+  },
+  handlePill: {
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#D1D5DB',
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#F0FAF4',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1A1A2E',
+  },
+  headerCancel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0B6E4F',
+  },
+
+  // Content
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -188,53 +252,100 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   list: {
+    paddingTop: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 32,
+    gap: 10,
   },
-  row: {
+
+  // Tournament card
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 14,
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0000000A',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
-  rowIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary.light,
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5EE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    overflow: 'hidden',
   },
-  rowContent: {
+  tournamentLogoImage: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  cardTextCol: {
     flex: 1,
-    marginRight: 12,
+    gap: 2,
   },
-  rowName: {
-    fontSize: 16,
+  cardName: {
+    fontSize: 14,
     fontWeight: '600',
-    color: COLORS.text.primary,
-    marginBottom: 2,
+    color: '#1A1A2E',
   },
-  rowMeta: {
-    fontSize: 13,
-    color: COLORS.text.secondary,
+  cardMeta: {
+    fontSize: 11,
+    color: '#6B7280',
   },
-  separator: {
-    height: 10,
+
+  // "Agregar" outlined button
+  addBtnOuter: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#0B6E4F',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addBtnDisabled: {
+    opacity: 0.5,
+  },
+  addBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0B6E4F',
+  },
+
+  // Empty state
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.text.primary,
+    color: '#1A1A2E',
     marginTop: 16,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: COLORS.text.secondary,
+    color: '#6B7280',
     marginTop: 6,
     textAlign: 'center',
   },
