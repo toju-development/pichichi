@@ -12,7 +12,8 @@
  * same element.
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import type { MatchDto, MatchTeamDto } from '@pichichi/shared';
 
@@ -65,6 +66,8 @@ interface MatchCardProps {
   hasPrediction?: boolean;
   /** Show the phase/group badge line at the top. */
   showPhaseInfo?: boolean;
+  /** Show the prediction indicator row (default: true). Set to false for standalone tournament screens. */
+  showPrediction?: boolean;
   /** Optional custom content to render in the bottom-right area (replaces default prediction indicator). */
   bottomRight?: React.ReactNode;
   /** Optional content rendered centered below the match info (e.g. prediction badge). */
@@ -77,8 +80,22 @@ interface MatchCardProps {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-/** Team avatar — colored circle with the short name initial. */
+/** Team avatar — shows logo if available, otherwise colored circle with initial. */
 function TeamAvatar({ team }: { team: MatchTeamDto }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (team.logoUrl && !imageError) {
+    return (
+      <View style={styles.avatar}>
+        <Image
+          source={{ uri: team.logoUrl }}
+          style={styles.avatarImage}
+          onError={() => setImageError(true)}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.avatar}>
       <Text style={styles.avatarText}>
@@ -140,22 +157,32 @@ function ScoreBlock({
   isExtraTime,
   homeScorePenalties,
   awayScorePenalties,
+  isFinished,
 }: {
   homeScore: number;
   awayScore: number;
   isExtraTime: boolean;
   homeScorePenalties: number | null;
   awayScorePenalties: number | null;
+  isFinished: boolean;
 }) {
   const hasPenalties =
     homeScorePenalties != null && awayScorePenalties != null;
 
+  // Determine winner/loser coloring for finished matches
+  const homeScoreStyle = isFinished && homeScore !== awayScore
+    ? (homeScore > awayScore ? styles.scoreWinner : styles.scoreLoser)
+    : undefined;
+  const awayScoreStyle = isFinished && homeScore !== awayScore
+    ? (awayScore > homeScore ? styles.scoreWinner : styles.scoreLoser)
+    : undefined;
+
   return (
     <View style={styles.scoreBlock}>
       <View style={styles.scoreRow}>
-        <Text style={styles.scoreText}>{homeScore}</Text>
+        <Text style={[styles.scoreText, homeScoreStyle]}>{homeScore}</Text>
         <Text style={styles.scoreDash}>-</Text>
-        <Text style={styles.scoreText}>{awayScore}</Text>
+        <Text style={[styles.scoreText, awayScoreStyle]}>{awayScore}</Text>
       </View>
 
       {isExtraTime && !hasPenalties ? (
@@ -198,6 +225,7 @@ export function MatchCard({
   match,
   hasPrediction = false,
   showPhaseInfo = false,
+  showPrediction = true,
   bottomRight,
   footer,
   onPress,
@@ -273,6 +301,7 @@ export function MatchCard({
               isExtraTime={isExtraTime}
               homeScorePenalties={homeScorePenalties}
               awayScorePenalties={awayScorePenalties}
+              isFinished={isFinished}
             />
           ) : isMuted ? (
             <StatusBadge status={status} />
@@ -299,10 +328,10 @@ export function MatchCard({
           ) : null}
         </View>
 
-        {/* Prediction indicator row (suppressed when a footer badge is provided) */}
-        {footer == null && bottomRight != null ? (
+        {/* Prediction indicator row (suppressed when a footer badge is provided or showPrediction is false) */}
+        {showPrediction && footer == null && bottomRight != null ? (
           <View style={styles.predictionIndicatorRow}>{bottomRight}</View>
-        ) : footer == null && showPredictionIndicator ? (
+        ) : showPrediction && footer == null && showPredictionIndicator ? (
           hasPrediction ? (
             <View style={styles.predictionIndicatorRow}>
               <View style={styles.predictionRow}>
@@ -402,17 +431,23 @@ const styles = StyleSheet.create({
 
   // ── Avatar ───────────────────────────────────────────────────────────────
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: COLORS.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     color: COLORS.primary.DEFAULT,
+  },
+  avatarImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    position: 'absolute',
   },
   avatarSpacer: {
     marginHorizontal: 8,
@@ -430,8 +465,14 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.text.primary,
+  },
+  scoreWinner: {
+    color: COLORS.primary.DEFAULT,
+  },
+  scoreLoser: {
+    color: '#6B7280',
   },
   scoreDash: {
     fontSize: 18,

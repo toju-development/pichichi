@@ -25,8 +25,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft, Users } from 'lucide-react-native';
 
 import type { MatchDto, MatchPhase, TournamentPhaseDto } from '@pichichi/shared';
 
@@ -134,7 +134,8 @@ function BackButton() {
       onPress={() => router.back()}
       style={styles.backButton}
     >
-      <Text style={styles.backText}>{'\u2190'} Volver</Text>
+      <ChevronLeft size={18} color="rgba(255, 255, 255, 0.8)" strokeWidth={2.5} />
+      <Text style={styles.backText}>Volver</Text>
     </Pressable>
   );
 }
@@ -211,17 +212,11 @@ function MisGruposSection({ tournamentId, tournamentSlug }: { tournamentId: stri
             })}
           >
             <View style={styles.misGruposCardIcon}>
-              <Ionicons name="people" size={18} color={COLORS.primary.DEFAULT} />
+              <Users size={16} color={COLORS.primary.DEFAULT} strokeWidth={2.5} />
             </View>
-            <View style={styles.misGruposCardContent}>
-              <Text style={styles.misGruposCardName} numberOfLines={1}>
-                {group.name}
-              </Text>
-              <Text style={styles.misGruposCardMembers}>
-                {group.memberCount} {group.memberCount === 1 ? 'miembro' : 'miembros'}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.text.muted} />
+            <Text style={styles.misGruposCardName}>
+              {group.name}
+            </Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -301,7 +296,7 @@ function ProximosContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo />
+          <MatchCard match={item} showPhaseInfo showPrediction={false} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -409,7 +404,7 @@ function GruposContent({
           )}
           renderItem={({ item }) => (
             <View style={styles.matchCardWrapper}>
-              <MatchCard match={item} showPhaseInfo />
+              <MatchCard match={item} showPhaseInfo showPrediction={false} />
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -502,7 +497,7 @@ function KnockoutContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo={false} />
+          <MatchCard match={item} showPhaseInfo={false} showPrediction={false} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -603,7 +598,7 @@ function CombinedFinalsContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo />
+          <MatchCard match={item} showPhaseInfo showPrediction={false} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -666,9 +661,7 @@ export default function TournamentDetailScreen() {
   if (error || !tournament) {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title="Torneo" gradient>
-          <BackButton />
-        </ScreenHeader>
+        <ScreenHeader title="Torneo" gradient rightAction={<BackButton />} />
 
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
@@ -685,9 +678,14 @@ export default function TournamentDetailScreen() {
   return (
     <View style={styles.screen}>
       {/* Header */}
-      <ScreenHeader title={tournament.name} subtitle={typeLabel} gradient>
-        <BackButton />
-      </ScreenHeader>
+      <ScreenHeader
+        title={tournament.name}
+        subtitle={typeLabel}
+        gradient
+        titleStyle={styles.headerTitle}
+        subtitleStyle={styles.headerSubtitle}
+        rightAction={<BackButton />}
+      />
 
       {/* Mis Grupos — user's groups playing this tournament */}
       <MisGruposSection tournamentId={tournament.id} tournamentSlug={tournament.slug} />
@@ -805,15 +803,27 @@ const styles = StyleSheet.create({
 
   // ── Back button ───────────────────────────────────────────────────────
   backButton: {
-    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    gap: 4,
   },
   backText: {
     fontSize: 14,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+
+  // ── Header text overrides (normal case, larger title) ─────────────────
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    textTransform: 'none' as const,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'none' as const,
+    color: 'rgba(255, 255, 255, 0.6)',
   },
 
   // ── Mis Grupos section ────────────────────────────────────────────────
@@ -838,35 +848,26 @@ const styles = StyleSheet.create({
   misGruposCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary.light,
-    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    minWidth: 160,
-    maxWidth: 220,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   misGruposCardIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-  },
-  misGruposCardContent: {
-    flex: 1,
-    marginRight: 4,
   },
   misGruposCardName: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.text.primary,
-  },
-  misGruposCardMembers: {
-    fontSize: 11,
-    color: COLORS.text.secondary,
-    marginTop: 1,
   },
 
   // ── Error state ───────────────────────────────────────────────────────
@@ -895,20 +896,25 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tabButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: 'transparent',
   },
   tabButtonActive: {
     backgroundColor: COLORS.primary.DEFAULT,
+    borderColor: COLORS.primary.DEFAULT,
   },
   tabButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text.secondary,
+    fontWeight: '500',
+    color: '#6B7280',
   },
   tabButtonTextActive: {
     color: '#FFFFFF',
+    fontWeight: '600',
   },
 
   // ── Group sub-filter ──────────────────────────────────────────────────
@@ -925,18 +931,20 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 9999,
+    borderRadius: 20,
   },
   filterChipActive: {
-    backgroundColor: COLORS.primary.light,
+    borderWidth: 1,
+    borderColor: COLORS.primary.DEFAULT,
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text.muted,
+    fontWeight: '500',
+    color: '#9CA3AF',
   },
   filterChipTextActive: {
     color: COLORS.primary.DEFAULT,
+    fontWeight: '600',
   },
 
   // ── Section headers ───────────────────────────────────────────────────

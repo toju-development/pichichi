@@ -27,6 +27,10 @@ interface ScreenHeaderProps {
   rightAction?: React.ReactNode;
   /** Optional content rendered below the title inside the gradient area (e.g. avatar). */
   children?: React.ReactNode;
+  /** Override title text styles (merged on top of base + light/dark). */
+  titleStyle?: import('react-native').TextStyle;
+  /** Override subtitle text styles (merged on top of base + light/dark). */
+  subtitleStyle?: import('react-native').TextStyle;
 }
 
 export function ScreenHeader({
@@ -35,6 +39,8 @@ export function ScreenHeader({
   gradient = true,
   rightAction,
   children,
+  titleStyle,
+  subtitleStyle,
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
@@ -44,7 +50,7 @@ export function ScreenHeader({
       <View style={styles.titleRow}>
         {/* Text group */}
         <View style={styles.titleGroup}>
-          <Text style={[styles.title, gradient ? styles.titleLight : styles.titleDark]}>
+          <Text style={[styles.title, gradient ? styles.titleLight : styles.titleDark, titleStyle]}>
             {title}
           </Text>
 
@@ -53,6 +59,7 @@ export function ScreenHeader({
               style={[
                 styles.subtitle,
                 gradient ? styles.subtitleLight : styles.subtitleDark,
+                subtitleStyle,
               ]}
             >
               {subtitle}
