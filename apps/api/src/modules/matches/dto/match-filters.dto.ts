@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsNotEmpty,
@@ -7,6 +8,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { MatchPhase, MatchStatus } from '@prisma/client';
 
 export class MatchFiltersDto {
@@ -28,13 +30,19 @@ export class MatchFiltersDto {
   phase?: MatchPhase;
 
   @ApiPropertyOptional({
-    description: 'Filter by match status',
-    enum: MatchStatus,
-    example: MatchStatus.SCHEDULED,
+    description:
+      'Filter by match status. Supports a single value or comma-separated list (e.g. "LIVE,SCHEDULED").',
+    example: 'SCHEDULED',
   })
-  @IsEnum(MatchStatus)
   @IsOptional()
-  status?: MatchStatus;
+  @Transform(({ value }) => {
+    if (value == null) return undefined;
+    const raw = Array.isArray(value) ? value : String(value).split(',');
+    return raw.map((v: string) => v.trim()).filter(Boolean);
+  })
+  @IsArray()
+  @IsEnum(MatchStatus, { each: true })
+  status?: MatchStatus[];
 
   @ApiPropertyOptional({
     description: 'Filter by group letter (e.g. A, B, C)',

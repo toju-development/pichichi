@@ -228,7 +228,8 @@ function MisGruposSection({ tournamentId, tournamentSlug }: { tournamentId: stri
 
 /**
  * Renders the "Próximos" tab content.
- * Fetches all SCHEDULED matches for this tournament, grouped by date.
+ * Fetches LIVE + SCHEDULED matches for this tournament, grouped by date.
+ * LIVE matches are returned first by the API, so they appear at the top.
  */
 function ProximosContent({
   tournamentId,
@@ -244,7 +245,7 @@ function ProximosContent({
     isLoading,
     refetch,
     isRefetching,
-  } = useMatches({ tournamentId, status: 'SCHEDULED' });
+  } = useMatches({ tournamentId, status: 'LIVE,SCHEDULED' });
 
   const sections = useMemo(
     () => groupMatchesByDate(matches ?? []),

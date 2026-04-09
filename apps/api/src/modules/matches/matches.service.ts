@@ -41,17 +41,36 @@ export class MatchesService {
         }
       : {};
 
+    const statusFilter = filters.status?.length
+      ? filters.status.length === 1
+        ? { status: filters.status[0] }
+        : { status: { in: filters.status } }
+      : {};
+
     const matches = await this.prisma.match.findMany({
       where: {
         tournamentId: filters.tournamentId,
         ...(filters.phase ? { phase: filters.phase } : {}),
-        ...(filters.status ? { status: filters.status } : {}),
+        ...statusFilter,
         ...(filters.groupLetter ? { groupLetter: filters.groupLetter } : {}),
         ...dateFilter,
       },
       include: MATCH_INCLUDE,
       orderBy: [{ scheduledAt: 'asc' }, { matchNumber: 'asc' }],
     });
+
+    // When multiple statuses are requested, sort LIVE matches before others
+    // so they appear at the top of mixed-status lists.
+    if (filters.status && filters.status.length > 1) {
+      const STATUS_PRIORITY: Record<string, number> = { LIVE: 0 };
+      matches.sort((a, b) => {
+        const pa = STATUS_PRIORITY[a.status] ?? 1;
+        const pb = STATUS_PRIORITY[b.status] ?? 1;
+        if (pa !== pb) return pa - pb;
+        // Preserve scheduledAt / matchNumber ordering within the same priority
+        return 0;
+      });
+    }
 
     return matches.map((m) => this.toResponseDto(m));
   }
