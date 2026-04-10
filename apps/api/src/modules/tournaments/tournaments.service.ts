@@ -271,7 +271,7 @@ export class TournamentsService {
     const tournamentTeams = await this.prisma.tournamentTeam.findMany({
       where: { tournamentId },
       include: { team: true },
-      orderBy: [{ groupLetter: 'asc' }, { team: { name: 'asc' } }],
+      orderBy: [{ groupName: 'asc' }, { team: { name: 'asc' } }],
     });
 
     return tournamentTeams.map((tt) => ({
@@ -280,7 +280,7 @@ export class TournamentsService {
       name: tt.team.name,
       shortName: tt.team.shortName,
       logoUrl: tt.team.logoUrl ?? null,
-      groupLetter: tt.groupLetter,
+      groupName: tt.groupName,
       isEliminated: tt.isEliminated,
       externalId: tt.team.externalId ?? null,
     }));
@@ -293,7 +293,7 @@ export class TournamentsService {
   async addTeam(
     tournamentId: string,
     teamId: string,
-    groupLetter?: string,
+    groupName?: string,
   ): Promise<TournamentTeamResponseDto> {
     const tournament = await this.prisma.tournament.findUnique({
       where: { id: tournamentId, isActive: true },
@@ -323,7 +323,7 @@ export class TournamentsService {
       data: {
         tournamentId,
         teamId,
-        groupLetter: groupLetter ?? null,
+        groupName: groupName ?? null,
       },
       include: { team: true },
     });
@@ -334,7 +334,7 @@ export class TournamentsService {
       name: tournamentTeam.team.name,
       shortName: tournamentTeam.team.shortName,
       logoUrl: tournamentTeam.team.logoUrl ?? null,
-      groupLetter: tournamentTeam.groupLetter,
+      groupName: tournamentTeam.groupName,
       isEliminated: tournamentTeam.isEliminated,
       externalId: tournamentTeam.team.externalId ?? null,
     };

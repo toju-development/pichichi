@@ -124,6 +124,27 @@ export interface ApiFootballSquad {
   players: ApiFootballSquadPlayer[];
 }
 
+export interface ApiFootballStandingTeam {
+  id: number;
+  name: string;
+}
+
+export interface ApiFootballStandingEntry {
+  rank: number;
+  team: ApiFootballStandingTeam;
+  group: string;
+  points: number;
+}
+
+export interface ApiFootballStandingsResponse {
+  league: {
+    id: number;
+    name: string;
+    season: number;
+    standings: ApiFootballStandingEntry[][];
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Client
 // ---------------------------------------------------------------------------
@@ -141,6 +162,7 @@ interface ApiFootballClient {
   fetchTeams: (leagueId: number, season: number) => Promise<ApiFootballTeam[]>;
   fetchFixtures: (leagueId: number, season: number) => Promise<ApiFootballFixture[]>;
   fetchSquad: (teamId: number) => Promise<ApiFootballSquad | null>;
+  fetchStandings: (leagueId: number, season: number) => Promise<ApiFootballStandingEntry[][]>;
   getApiCallCount: () => number;
 }
 
@@ -281,8 +303,38 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
       return results[0] ?? null;
     },
 
+    async fetchStandings(leagueId: number, season: number): Promise<ApiFootballStandingEntry[][]> {
+      const results = await request<ApiFootballStandingsResponse>('standings', {
+        league: String(leagueId),
+        season: String(season),
+      });
+      return results[0]?.league?.standings ?? [];
+    },
+
     getApiCallCount(): number {
       return apiCallCount;
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a lookup map from team external ID → group name.
+ *
+ * Takes the raw standings (array of groups, each group is an array of team entries)
+ * and returns a Map where key = team.id, value = group string (e.g. "Group A").
+ */
+export function buildTeamGroupMap(standings: ApiFootballStandingEntry[][]): Map<number, string> {
+  const map = new Map<number, string>();
+
+  for (const group of standings) {
+    for (const entry of group) {
+      map.set(entry.team.id, entry.group);
+    }
+  }
+
+  return map;
 }

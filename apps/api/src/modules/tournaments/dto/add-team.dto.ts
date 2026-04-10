@@ -11,12 +11,12 @@ export class AddTeamDto {
   teamId!: string;
 
   @ApiPropertyOptional({
-    description: 'Group letter assignment (e.g. A, B, C)',
-    example: 'A',
-    maxLength: 2,
+    description: 'Group name assignment (e.g. Group A, Group B)',
+    example: 'Group A',
+    maxLength: 50,
   })
   @IsString()
   @IsOptional()
-  @MaxLength(2)
-  groupLetter?: string;
+  @MaxLength(50)
+  groupName?: string;
 }

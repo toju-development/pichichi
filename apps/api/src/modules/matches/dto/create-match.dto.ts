@@ -46,14 +46,14 @@ export class CreateMatchDto {
   phase!: MatchPhase;
 
   @ApiPropertyOptional({
-    description: 'Group letter (for group stage matches)',
-    example: 'A',
-    maxLength: 2,
+    description: 'Group name (for group stage matches)',
+    example: 'Group A',
+    maxLength: 50,
   })
   @IsString()
   @IsOptional()
-  @MaxLength(2)
-  groupLetter?: string;
+  @MaxLength(50)
+  groupName?: string;
 
   @ApiPropertyOptional({
     description: 'Match number in the tournament',

@@ -31,8 +31,8 @@ export class MatchResponseDto {
   @ApiProperty({ description: 'Match phase', enum: ['GROUP_STAGE', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL'] })
   phase!: MatchPhase;
 
-  @ApiPropertyOptional({ description: 'Group letter', example: 'A' })
-  groupLetter?: string | null;
+  @ApiPropertyOptional({ description: 'Group name', example: 'Group A' })
+  groupName?: string | null;
 
   @ApiPropertyOptional({ description: 'Match number', example: 1 })
   matchNumber?: number | null;

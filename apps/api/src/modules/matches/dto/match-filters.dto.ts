@@ -45,12 +45,12 @@ export class MatchFiltersDto {
   status?: MatchStatus[];
 
   @ApiPropertyOptional({
-    description: 'Filter by group letter (e.g. A, B, C)',
-    example: 'A',
+    description: 'Filter by group name (e.g. Group A, Group B)',
+    example: 'Group A',
   })
   @IsString()
   @IsOptional()
-  groupLetter?: string;
+  groupName?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by date (ISO 8601 date, e.g. 2026-06-11)',

@@ -16,8 +16,8 @@ export class TournamentTeamResponseDto {
   @ApiPropertyOptional({ description: 'Team logo URL', example: 'https://example.com/logos/arg.png' })
   logoUrl?: string | null;
 
-  @ApiPropertyOptional({ description: 'Group letter', example: 'A' })
-  groupLetter?: string | null;
+  @ApiPropertyOptional({ description: 'Group name', example: 'Group A' })
+  groupName?: string | null;
 
   @ApiProperty({ description: 'Whether the team is eliminated', example: false })
   isEliminated!: boolean;

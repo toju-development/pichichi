@@ -59,10 +59,8 @@ const TAB_PHASE_LABELS: Record<string, string> = {
   SEMI_FINAL: 'Semis',
 };
 
-/** Group sub-filter options. */
-const GROUP_LETTERS = [
-  'Todos', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-] as const;
+/** Value used when no group filter is applied. */
+const ALL_GROUPS = 'Todos' as const;
 
 /**
  * Phases that are combined into a single "3°/Final" tab.
@@ -326,28 +324,46 @@ function GruposContent({
   onRefresh: () => void;
   isRefreshing: boolean;
 }) {
-  const [selectedGroup, setSelectedGroup] = useState<string>('Todos');
+  const [selectedGroupName, setSelectedGroupName] = useState<string>(ALL_GROUPS);
 
+  // Fetch ALL group-stage matches (no groupName filter) so we can derive the chip list
   const {
-    data: matches,
+    data: allGroupMatches,
     isLoading,
     refetch,
     isRefetching,
   } = useMatches({
     tournamentId,
     phase: 'GROUP_STAGE',
-    groupLetter: selectedGroup === 'Todos' ? undefined : selectedGroup,
   });
 
+  // Derive unique group names from match data
+  const groupNames = useMemo(
+    () => [...new Set((allGroupMatches ?? []).map((m) => m.groupName).filter(Boolean))].sort() as string[],
+    [allGroupMatches],
+  );
+
+  // Client-side filter: if a group is selected, filter the already-fetched matches
+  const filteredMatches = useMemo(() => {
+    if (selectedGroupName === ALL_GROUPS) return allGroupMatches ?? [];
+    return (allGroupMatches ?? []).filter((m) => m.groupName === selectedGroupName);
+  }, [allGroupMatches, selectedGroupName]);
+
   const sections = useMemo(
-    () => groupMatchesByDate(matches ?? []),
-    [matches],
+    () => groupMatchesByDate(filteredMatches),
+    [filteredMatches],
   );
 
   const handleRefresh = useCallback(() => {
     onRefresh();
     refetch();
   }, [onRefresh, refetch]);
+
+  /** Extract a short display label from the full group name (e.g. "Group A" → "A"). */
+  const chipLabel = (name: string): string => {
+    const parts = name.split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] : name;
+  };
 
   return (
     <View style={styles.fill}>
@@ -358,12 +374,18 @@ function GruposContent({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.subFilterScroll}
         >
-          {GROUP_LETTERS.map((letter) => (
+          <FilterChip
+            key={ALL_GROUPS}
+            label={ALL_GROUPS}
+            isActive={selectedGroupName === ALL_GROUPS}
+            onPress={() => setSelectedGroupName(ALL_GROUPS)}
+          />
+          {groupNames.map((name) => (
             <FilterChip
-              key={letter}
-              label={letter}
-              isActive={selectedGroup === letter}
-              onPress={() => setSelectedGroup(letter)}
+              key={name}
+              label={chipLabel(name)}
+              isActive={selectedGroupName === name}
+              onPress={() => setSelectedGroupName(name)}
             />
           ))}
         </ScrollView>
@@ -390,9 +412,9 @@ function GruposContent({
             icon={<TrophyIcon size={40} color={COLORS.primary.DEFAULT} />}
             title="No hay partidos"
             description={
-              selectedGroup === 'Todos'
+              selectedGroupName === ALL_GROUPS
                 ? 'No hay partidos en la fase de grupos.'
-                : `No hay partidos en el Grupo ${selectedGroup}.`
+                : `No hay partidos en ${selectedGroupName}.`
             }
           />
         </ScrollView>

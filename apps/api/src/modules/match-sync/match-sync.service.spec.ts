@@ -24,7 +24,7 @@ function makeDbMatch(overrides: Record<string, unknown> = {}) {
     homeTeamId: 'team-home',
     awayTeamId: 'team-away',
     phase: 'GROUP_STAGE' as const,
-    groupLetter: 'A',
+    groupName: 'Group A',
     matchNumber: 1,
     scheduledAt: new Date('2026-06-15T18:00:00Z'),
     venue: 'Stadium',

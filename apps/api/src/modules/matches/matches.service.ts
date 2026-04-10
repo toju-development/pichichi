@@ -52,7 +52,7 @@ export class MatchesService {
         tournamentId: filters.tournamentId,
         ...(filters.phase ? { phase: filters.phase } : {}),
         ...statusFilter,
-        ...(filters.groupLetter ? { groupLetter: filters.groupLetter } : {}),
+        ...(filters.groupName ? { groupName: filters.groupName } : {}),
         ...dateFilter,
       },
       include: MATCH_INCLUDE,
@@ -142,7 +142,7 @@ export class MatchesService {
         homeTeamId: dto.homeTeamId ?? null,
         awayTeamId: dto.awayTeamId ?? null,
         phase: dto.phase,
-        groupLetter: dto.groupLetter ?? null,
+        groupName: dto.groupName ?? null,
         matchNumber: dto.matchNumber ?? null,
         scheduledAt: new Date(dto.scheduledAt),
         venue: dto.venue ?? null,
@@ -175,7 +175,7 @@ export class MatchesService {
         ...(dto.homeTeamId !== undefined ? { homeTeamId: dto.homeTeamId ?? null } : {}),
         ...(dto.awayTeamId !== undefined ? { awayTeamId: dto.awayTeamId ?? null } : {}),
         ...(dto.phase !== undefined ? { phase: dto.phase } : {}),
-        ...(dto.groupLetter !== undefined ? { groupLetter: dto.groupLetter ?? null } : {}),
+        ...(dto.groupName !== undefined ? { groupName: dto.groupName ?? null } : {}),
         ...(dto.matchNumber !== undefined ? { matchNumber: dto.matchNumber ?? null } : {}),
         ...(dto.scheduledAt !== undefined ? { scheduledAt: new Date(dto.scheduledAt) } : {}),
         ...(dto.venue !== undefined ? { venue: dto.venue ?? null } : {}),
@@ -261,7 +261,7 @@ export class MatchesService {
       homeTeamId: string | null;
       awayTeamId: string | null;
       phase: string;
-      groupLetter: string | null;
+      groupName: string | null;
       matchNumber: number | null;
       scheduledAt: Date;
       venue: string | null;
@@ -300,7 +300,7 @@ export class MatchesService {
           }
         : null,
       phase: match.phase as MatchResponseDto['phase'],
-      groupLetter: match.groupLetter,
+      groupName: match.groupName,
       matchNumber: match.matchNumber,
       scheduledAt: match.scheduledAt,
       venue: match.venue,

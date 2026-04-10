@@ -9,7 +9,7 @@ export function useMatches(params?: {
   phase?: string;
   status?: string;
   date?: string;
-  groupLetter?: string;
+  groupName?: string;
 }) {
   return useQuery({
     queryKey: queryKeys.matches.all(params),

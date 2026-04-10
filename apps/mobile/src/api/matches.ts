@@ -7,7 +7,7 @@ interface GetMatchesParams {
   phase?: string;
   status?: string;
   date?: string;
-  groupLetter?: string;
+  groupName?: string;
 }
 
 export async function getMatches(

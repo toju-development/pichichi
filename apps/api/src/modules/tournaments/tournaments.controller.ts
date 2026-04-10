@@ -141,7 +141,7 @@ export class TournamentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AddTeamDto,
   ): Promise<TournamentTeamResponseDto> {
-    return this.tournamentsService.addTeam(id, dto.teamId, dto.groupLetter);
+    return this.tournamentsService.addTeam(id, dto.teamId, dto.groupName);
   }
 
   @Delete(':id/teams/:teamId')

@@ -125,7 +125,7 @@ export interface TournamentTeamDto {
   name: string;
   shortName: string;
   logoUrl: string | null;
-  groupLetter: string | null;
+  groupName: string | null;
   isEliminated: boolean;
   externalId: number | null;
 }
@@ -161,7 +161,7 @@ export interface MatchDto {
   homeTeam: MatchTeamDto | null;
   awayTeam: MatchTeamDto | null;
   phase: MatchPhase;
-  groupLetter: string | null;
+  groupName: string | null;
   matchNumber: number | null;
   scheduledAt: string;
   venue: string | null;

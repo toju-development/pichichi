@@ -237,7 +237,7 @@ export function MatchCard({
     homeTeamPlaceholder,
     awayTeamPlaceholder,
     phase,
-    groupLetter,
+    groupName,
     status,
     homeScore,
     awayScore,
@@ -259,7 +259,7 @@ export function MatchCard({
   // ── Phase / group info line ──────────────────────────────────────────────
 
   const phaseLabel = PHASE_LABELS[phase] ?? phase;
-  const groupLabel = groupLetter ? `Grupo ${groupLetter}` : null;
+  const groupLabel = groupName ?? null;
   const phaseInfoText = groupLabel
     ? `${groupLabel}  \u00B7  ${phaseLabel}`
     : phaseLabel;

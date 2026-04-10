@@ -22,6 +22,7 @@ import 'dotenv/config';
 import { MatchPhase, PrismaClient, TournamentStatus } from '@prisma/client';
 
 import {
+  buildTeamGroupMap,
   createApiFootballClient,
   type ApiFootballLeague,
 } from './api-football-client.js';
@@ -308,13 +309,22 @@ function logPrefix(dryRun: boolean): string {
 }
 
 /**
- * Extract group letter from API-Football round string.
- * "Group A - 1" → "A", "Group B - 3" → "B"
- * Returns null for non-group rounds.
+ * Extract full group name from API-Football round string.
+ *
+ * PRIMARY: Look up from teamGroupMap by team external ID (from /standings endpoint).
+ * FALLBACK: When standings map is empty, parse the round string with a regex.
+ *
+ * The regex captures "Group A" through "Group H" (full name, not just the letter).
+ * It rejects "Group Stage" because the word boundary \b after [A-H] won't match "Stage".
+ *
+ * @returns Full group name like "Group A", or null if not a group-stage round.
  */
-function extractGroupLetter(round: string): string | null {
-  const match = round.match(/^Group\s+([A-Z])/i);
-  return match ? match[1].toUpperCase() : null;
+function extractGroupName(round: string): string | null {
+  const match = round.match(/^(Group\s+[A-H])\b/i);
+  if (!match) return null;
+  // Normalize to "Group X" with uppercase letter
+  const letter = match[1].slice(-1).toUpperCase();
+  return `Group ${letter}`;
 }
 
 async function runImportPipeline(
@@ -473,7 +483,18 @@ async function runImportPipeline(
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // 4. Fetch fixtures (needed for TournamentTeams groupLetter + Phases)
+    // 4. Fetch standings (primary source for team→group mapping)
+    // ─────────────────────────────────────────────────────────────────────
+
+    console.log(`${prefix}📡 Fetching standings...`);
+
+    const standings = await client.fetchStandings(leagueId, season);
+    const teamGroupMap = buildTeamGroupMap(standings);
+
+    console.log(`${prefix}📊 Found ${teamGroupMap.size} team→group mappings from standings`);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 4a. Fetch fixtures (needed for phases + match upserts)
     // ─────────────────────────────────────────────────────────────────────
 
     console.log(`${prefix}📡 Fetching fixtures...`);
@@ -481,20 +502,25 @@ async function runImportPipeline(
     const apiFixtures = await client.fetchFixtures(leagueId, season);
     const mappedFixtures = apiFixtures.map(mapFixtureData);
 
-    // Build group letter lookup from group-stage fixtures
-    // Map<externalTeamId, groupLetter>
-    const teamGroupLetters = new Map<number, string>();
+    // Build fallback group name lookup from group-stage fixtures (only used
+    // when standings returned no data — e.g. tournament hasn't started yet).
+    // Map<externalTeamId, groupName>
+    if (teamGroupMap.size === 0) {
+      console.log(`${prefix}⚠️  Standings empty — falling back to regex on round strings`);
 
-    for (const fixture of mappedFixtures) {
-      const groupLetter = extractGroupLetter(fixture.round);
-      if (groupLetter) {
-        if (fixture.homeTeamExternalId) {
-          teamGroupLetters.set(fixture.homeTeamExternalId, groupLetter);
-        }
-        if (fixture.awayTeamExternalId) {
-          teamGroupLetters.set(fixture.awayTeamExternalId, groupLetter);
+      for (const fixture of mappedFixtures) {
+        const groupName = extractGroupName(fixture.round);
+        if (groupName) {
+          if (fixture.homeTeamExternalId) {
+            teamGroupMap.set(fixture.homeTeamExternalId, groupName);
+          }
+          if (fixture.awayTeamExternalId) {
+            teamGroupMap.set(fixture.awayTeamExternalId, groupName);
+          }
         }
       }
+
+      console.log(`${prefix}📊 Regex fallback found ${teamGroupMap.size} team→group mappings`);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -505,15 +531,15 @@ async function runImportPipeline(
       let ttCount = 0;
 
       for (const [externalId, teamId] of teamExternalToId.entries()) {
-        const groupLetter = teamGroupLetters.get(externalId) ?? null;
+        const groupName = teamGroupMap.get(externalId) ?? null;
 
         try {
           await prisma.tournamentTeam.upsert({
             where: {
               tournamentId_teamId: { tournamentId, teamId },
             },
-            update: { groupLetter },
-            create: { tournamentId, teamId, groupLetter },
+            update: { groupName },
+            create: { tournamentId, teamId, groupName },
           });
           ttCount++;
         } catch (error) {
@@ -639,7 +665,9 @@ async function runImportPipeline(
               ? apiFixtures[matchIndex - 1]?.teams.away.name ?? null
               : null;
 
-          const groupLetter = extractGroupLetter(fixture.round);
+          const groupName = fixture.homeTeamExternalId
+            ? teamGroupMap.get(fixture.homeTeamExternalId) ?? null
+            : null;
 
           if (dryRun) {
             const existing = await prisma.match.findUnique({
@@ -663,7 +691,7 @@ async function runImportPipeline(
                 homeTeamId,
                 awayTeamId,
                 phase: fixture.phase,
-                groupLetter,
+                groupName,
                 scheduledAt: fixture.scheduledAt,
                 venue: fixture.venue,
                 city: fixture.city,
@@ -682,7 +710,7 @@ async function runImportPipeline(
                 homeTeamId,
                 awayTeamId,
                 phase: fixture.phase,
-                groupLetter,
+                groupName,
                 matchNumber: matchIndex,
                 scheduledAt: fixture.scheduledAt,
                 venue: fixture.venue,

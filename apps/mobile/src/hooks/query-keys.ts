@@ -34,7 +34,7 @@ export const queryKeys = {
 
   // ─── Matches ───────────────────────────────────────────────────────────────
   matches: {
-    all: (params?: { tournamentId?: string; phase?: string; status?: string; date?: string; groupLetter?: string }) =>
+    all: (params?: { tournamentId?: string; phase?: string; status?: string; date?: string; groupName?: string }) =>
       ['matches', params ?? {}] as const,
     detail: (id: string) => ['matches', id] as const,
     upcoming: ['matches', 'upcoming'] as const,
