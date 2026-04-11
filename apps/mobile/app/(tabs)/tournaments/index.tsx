@@ -57,6 +57,7 @@ const TYPE_LABELS: Record<TournamentType, string> = {
   COPA_AMERICA: 'Copa América',
   EURO: 'Eurocopa',
   CHAMPIONS_LEAGUE: 'Champions League',
+  COPA_LIBERTADORES: 'Copa Libertadores',
   CUSTOM: 'Personalizado',
 };
 

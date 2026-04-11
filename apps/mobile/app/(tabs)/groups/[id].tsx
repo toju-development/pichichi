@@ -56,6 +56,7 @@ const TOURNAMENT_TAG_COLORS: Record<string, { bg: string; text: string }> = {
   COPA_AMERICA: { bg: '#FFF3E0', text: '#E65100' },
   EURO: { bg: '#FFF3E0', text: '#E65100' },
   CHAMPIONS_LEAGUE: { bg: '#FFF3E0', text: '#E65100' },
+  COPA_LIBERTADORES: { bg: '#FFF3E0', text: '#E65100' },
   CUSTOM: { bg: '#E8F5EE', text: '#0B6E4F' },
 };
 

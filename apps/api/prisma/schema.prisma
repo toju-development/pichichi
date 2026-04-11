@@ -30,6 +30,7 @@ enum TournamentType {
   COPA_AMERICA
   EURO
   CHAMPIONS_LEAGUE
+  COPA_LIBERTADORES
   CUSTOM
 }
 

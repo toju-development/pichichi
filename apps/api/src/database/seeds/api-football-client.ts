@@ -124,6 +124,32 @@ export interface ApiFootballSquad {
   players: ApiFootballSquadPlayer[];
 }
 
+// ---------------------------------------------------------------------------
+// Tournament Players (players?league=...&season=...&team=...) — paginated
+// ---------------------------------------------------------------------------
+
+export interface ApiFootballTournamentPlayerStatGames {
+  appearences: number | null;
+  position: string | null;
+  number: number | null;
+}
+
+export interface ApiFootballTournamentPlayerStat {
+  games: ApiFootballTournamentPlayerStatGames;
+}
+
+export interface ApiFootballTournamentPlayerEntry {
+  player: {
+    id: number;
+    name: string;
+    firstname: string | null;
+    lastname: string | null;
+    age: number | null;
+    photo: string | null;
+  };
+  statistics: ApiFootballTournamentPlayerStat[];
+}
+
 export interface ApiFootballStandingTeam {
   id: number;
   name: string;
@@ -158,11 +184,25 @@ interface ApiFootballClientOptions {
 
 interface ApiFootballClient {
   searchLeagues: (search: string) => Promise<ApiFootballLeague[]>;
-  fetchLeague: (leagueId: number, season: number) => Promise<ApiFootballLeague | null>;
+  fetchLeague: (
+    leagueId: number,
+    season: number,
+  ) => Promise<ApiFootballLeague | null>;
   fetchTeams: (leagueId: number, season: number) => Promise<ApiFootballTeam[]>;
-  fetchFixtures: (leagueId: number, season: number) => Promise<ApiFootballFixture[]>;
+  fetchFixtures: (
+    leagueId: number,
+    season: number,
+  ) => Promise<ApiFootballFixture[]>;
   fetchSquad: (teamId: number) => Promise<ApiFootballSquad | null>;
-  fetchStandings: (leagueId: number, season: number) => Promise<ApiFootballStandingEntry[][]>;
+  fetchTournamentPlayers: (
+    leagueId: number,
+    season: number,
+    teamId: number,
+  ) => Promise<ApiFootballTournamentPlayerEntry[]>;
+  fetchStandings: (
+    leagueId: number,
+    season: number,
+  ) => Promise<ApiFootballStandingEntry[][]>;
   getApiCallCount: () => number;
 }
 
@@ -170,12 +210,18 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function createApiFootballClient(options: ApiFootballClientOptions): ApiFootballClient {
+export function createApiFootballClient(
+  options: ApiFootballClientOptions,
+): ApiFootballClient {
   const { apiKey, delayMs = 7000 } = options;
   let apiCallCount = 0;
   let lastCallTime = 0;
 
-  async function request<T>(endpoint: string, params: Record<string, string>, isRetry = false): Promise<T[]> {
+  async function request<T>(
+    endpoint: string,
+    params: Record<string, string>,
+    isRetry = false,
+  ): Promise<T[]> {
     // Rate limiter: ensure minimum delay between calls
     const now = Date.now();
     const elapsed = now - lastCallTime;
@@ -246,11 +292,14 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
     const errorKeys = Object.keys(body.errors);
 
     if (errorKeys.length > 0) {
-      const errorMsg = errorKeys.map((k) => `${k}: ${body.errors[k]}`).join(', ');
+      const errorMsg = errorKeys
+        .map((k) => `${k}: ${body.errors[k]}`)
+        .join(', ');
 
       // API-Football returns rate limit errors as 200 with error body
       const isRateLimit = errorKeys.some(
-        (k) => body.errors[k]?.toLowerCase().includes('rate limit') ||
+        (k) =>
+          body.errors[k]?.toLowerCase().includes('rate limit') ||
           body.errors[k]?.toLowerCase().includes('too many'),
       );
 
@@ -269,12 +318,49 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
     return body.response;
   }
 
+  /**
+   * Paginated request — loops through all pages until no more results.
+   * API-Football paginates at 20 results per page.
+   */
+  async function requestPaginated<T>(
+    endpoint: string,
+    params: Record<string, string>,
+  ): Promise<T[]> {
+    const allResults: T[] = [];
+    let page = 1;
+
+    while (true) {
+      const pageResults = await request<T>(endpoint, {
+        ...params,
+        page: String(page),
+      });
+
+      if (pageResults.length === 0) {
+        break;
+      }
+
+      allResults.push(...pageResults);
+
+      // API-Football returns max 20 per page. If we got fewer, we're done.
+      if (pageResults.length < 20) {
+        break;
+      }
+
+      page++;
+    }
+
+    return allResults;
+  }
+
   return {
     async searchLeagues(search: string): Promise<ApiFootballLeague[]> {
       return request<ApiFootballLeague>('leagues', { search });
     },
 
-    async fetchLeague(leagueId: number, season: number): Promise<ApiFootballLeague | null> {
+    async fetchLeague(
+      leagueId: number,
+      season: number,
+    ): Promise<ApiFootballLeague | null> {
       const results = await request<ApiFootballLeague>('leagues', {
         id: String(leagueId),
         season: String(season),
@@ -282,14 +368,20 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
       return results[0] ?? null;
     },
 
-    async fetchTeams(leagueId: number, season: number): Promise<ApiFootballTeam[]> {
+    async fetchTeams(
+      leagueId: number,
+      season: number,
+    ): Promise<ApiFootballTeam[]> {
       return request<ApiFootballTeam>('teams', {
         league: String(leagueId),
         season: String(season),
       });
     },
 
-    async fetchFixtures(leagueId: number, season: number): Promise<ApiFootballFixture[]> {
+    async fetchFixtures(
+      leagueId: number,
+      season: number,
+    ): Promise<ApiFootballFixture[]> {
       return request<ApiFootballFixture>('fixtures', {
         league: String(leagueId),
         season: String(season),
@@ -303,7 +395,22 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
       return results[0] ?? null;
     },
 
-    async fetchStandings(leagueId: number, season: number): Promise<ApiFootballStandingEntry[][]> {
+    async fetchTournamentPlayers(
+      leagueId: number,
+      season: number,
+      teamId: number,
+    ): Promise<ApiFootballTournamentPlayerEntry[]> {
+      return requestPaginated<ApiFootballTournamentPlayerEntry>('players', {
+        league: String(leagueId),
+        season: String(season),
+        team: String(teamId),
+      });
+    },
+
+    async fetchStandings(
+      leagueId: number,
+      season: number,
+    ): Promise<ApiFootballStandingEntry[][]> {
       const results = await request<ApiFootballStandingsResponse>('standings', {
         league: String(leagueId),
         season: String(season),
@@ -322,17 +429,37 @@ export function createApiFootballClient(options: ApiFootballClientOptions): ApiF
 // ---------------------------------------------------------------------------
 
 /**
+ * Strip tournament-name prefix from a group string returned by the API.
+ *
+ * API-Football returns group names differently depending on the tournament:
+ *   - World Cup:    "Group A"                               → "Group A"  (already clean)
+ *   - Libertadores: "CONMEBOL Libertadores 2026, Group A"   → "Group A"
+ *
+ * The regex looks for "Group <word>" at the end of the string.
+ * If no match is found the original value is returned as-is (safe fallback).
+ */
+export function normalizeGroupName(raw: string): string {
+  const match = raw.match(/Group\s+\w+$/i);
+  return match ? match[0] : raw;
+}
+
+/**
  * Build a lookup map from team external ID → group name.
  *
  * Takes the raw standings (array of groups, each group is an array of team entries)
  * and returns a Map where key = team.id, value = group string (e.g. "Group A").
+ *
+ * Group names are normalized to strip any tournament-name prefix that the API
+ * may prepend (e.g. "CONMEBOL Libertadores 2026, Group A" → "Group A").
  */
-export function buildTeamGroupMap(standings: ApiFootballStandingEntry[][]): Map<number, string> {
+export function buildTeamGroupMap(
+  standings: ApiFootballStandingEntry[][],
+): Map<number, string> {
   const map = new Map<number, string>();
 
   for (const group of standings) {
     for (const entry of group) {
-      map.set(entry.team.id, entry.group);
+      map.set(entry.team.id, normalizeGroupName(entry.group));
     }
   }
 

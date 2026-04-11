@@ -27,7 +27,9 @@ import {
   type ApiFootballLeague,
 } from './api-football-client.js';
 import {
+  adaptTournamentPlayerToSquadPlayer,
   generateTournamentSlug,
+  isQualificationRound,
   mapFixtureData,
   mapMatchPhase,
   mapPlayerData,
@@ -211,7 +213,9 @@ function parseArgs(argv: string[]): CliArgs | null {
 
   // Validate mutually exclusive modes
   if (searchText && leagueId) {
-    console.error('Error: --search and --league are mutually exclusive. Use one or the other.');
+    console.error(
+      'Error: --search and --league are mutually exclusive. Use one or the other.',
+    );
     return null;
   }
 
@@ -222,7 +226,15 @@ function parseArgs(argv: string[]): CliArgs | null {
 
   // Import mode — requires both --league and --season
   if (leagueId && season) {
-    return { mode: 'import', leagueId, season, includePlayers, dryRun, linkSlug, delayMs };
+    return {
+      mode: 'import',
+      leagueId,
+      season,
+      includePlayers,
+      dryRun,
+      linkSlug,
+      delayMs,
+    };
   }
 
   if (leagueId && !season) {
@@ -235,7 +247,9 @@ function parseArgs(argv: string[]): CliArgs | null {
     return null;
   }
 
-  console.error('Error: Provide either --search <text> or --league <id> --season <year>');
+  console.error(
+    'Error: Provide either --search <text> or --league <id> --season <year>',
+  );
   printHelp();
   return null;
 }
@@ -262,8 +276,10 @@ async function runSearchMode(
   }
 
   // Table header
-  const header = '  ID      Type     Name                                 Country          Seasons';
-  const separator = '  ─────   ──────   ────────────────────────────────────  ───────────────  ───────';
+  const header =
+    '  ID      Type     Name                                 Country          Seasons';
+  const separator =
+    '  ─────   ──────   ────────────────────────────────────  ───────────────  ───────';
 
   console.log(header);
   console.log(separator);
@@ -327,10 +343,7 @@ function extractGroupName(round: string): string | null {
   return `Group ${letter}`;
 }
 
-async function runImportPipeline(
-  args: CliArgs,
-  apiKey: string,
-): Promise<void> {
+async function runImportPipeline(args: CliArgs, apiKey: string): Promise<void> {
   const { leagueId, season, includePlayers, dryRun, linkSlug, delayMs } = args;
   const prefix = logPrefix(dryRun);
   const startTime = Date.now();
@@ -364,12 +377,16 @@ async function runImportPipeline(
     // 1. Fetch league info
     // ─────────────────────────────────────────────────────────────────────
 
-    console.log(`\n${prefix}📡 Fetching league info for league=${leagueId}, season=${season}...`);
+    console.log(
+      `\n${prefix}📡 Fetching league info for league=${leagueId}, season=${season}...`,
+    );
 
     const league = await client.fetchLeague(leagueId, season);
 
     if (!league) {
-      console.error(`\n❌ No league found for ID ${leagueId} in season ${season}.`);
+      console.error(
+        `\n❌ No league found for ID ${leagueId} in season ${season}.`,
+      );
       console.error('   Use --search to find valid league IDs.');
       process.exit(1);
     }
@@ -379,7 +396,9 @@ async function runImportPipeline(
     const seasonData = league.seasons.find((s) => s.year === season);
     const tournamentStatus = mapTournamentStatus(seasonData);
 
-    console.log(`${prefix}🏆 Importing: ${league.league.name} (${league.league.type}) → status: ${tournamentStatus}`);
+    console.log(
+      `${prefix}🏆 Importing: ${league.league.name} (${league.league.type}) → status: ${tournamentStatus}`,
+    );
 
     // ─────────────────────────────────────────────────────────────────────
     // 2. Upsert Tournament
@@ -388,10 +407,17 @@ async function runImportPipeline(
     let tournamentId: string;
 
     if (dryRun) {
-      const existing = await findExistingTournament(prisma, slug, leagueId, season);
+      const existing = await findExistingTournament(
+        prisma,
+        slug,
+        leagueId,
+        season,
+      );
       counts.tournamentAction = existing ? 'updated' : 'created';
       tournamentId = existing?.id ?? 'dry-run-id';
-      console.log(`${prefix}✅ Tournament: would be ${counts.tournamentAction} "${league.league.name}"`);
+      console.log(
+        `${prefix}✅ Tournament: would be ${counts.tournamentAction} "${league.league.name}"`,
+      );
     } else {
       const result = await upsertTournament(prisma, {
         slug,
@@ -406,7 +432,9 @@ async function runImportPipeline(
       });
       tournamentId = result.id;
       counts.tournamentAction = result.action;
-      console.log(`${prefix}✅ Tournament: ${result.action} "${league.league.name}"`);
+      console.log(
+        `${prefix}✅ Tournament: ${result.action} "${league.league.name}"`,
+      );
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -491,7 +519,9 @@ async function runImportPipeline(
     const standings = await client.fetchStandings(leagueId, season);
     const teamGroupMap = buildTeamGroupMap(standings);
 
-    console.log(`${prefix}📊 Found ${teamGroupMap.size} team→group mappings from standings`);
+    console.log(
+      `${prefix}📊 Found ${teamGroupMap.size} team→group mappings from standings`,
+    );
 
     // ─────────────────────────────────────────────────────────────────────
     // 4a. Fetch fixtures (needed for phases + match upserts)
@@ -499,14 +529,32 @@ async function runImportPipeline(
 
     console.log(`${prefix}📡 Fetching fixtures...`);
 
-    const apiFixtures = await client.fetchFixtures(leagueId, season);
+    const apiFixturesRaw = await client.fetchFixtures(leagueId, season);
+
+    // ── Filter out qualification rounds (generic for any cup tournament) ──
+    const qualificationCount = apiFixturesRaw.filter((f) =>
+      isQualificationRound(f.league.round),
+    ).length;
+
+    const apiFixtures = apiFixturesRaw.filter(
+      (f) => !isQualificationRound(f.league.round),
+    );
+
+    if (qualificationCount > 0) {
+      console.log(
+        `${prefix}🚫 Filtered out ${qualificationCount} qualification matches (kept ${apiFixtures.length} of ${apiFixturesRaw.length})`,
+      );
+    }
+
     const mappedFixtures = apiFixtures.map(mapFixtureData);
 
     // Build fallback group name lookup from group-stage fixtures (only used
     // when standings returned no data — e.g. tournament hasn't started yet).
     // Map<externalTeamId, groupName>
     if (teamGroupMap.size === 0) {
-      console.log(`${prefix}⚠️  Standings empty — falling back to regex on round strings`);
+      console.log(
+        `${prefix}⚠️  Standings empty — falling back to regex on round strings`,
+      );
 
       for (const fixture of mappedFixtures) {
         const groupName = extractGroupName(fixture.round);
@@ -520,17 +568,60 @@ async function runImportPipeline(
         }
       }
 
-      console.log(`${prefix}📊 Regex fallback found ${teamGroupMap.size} team→group mappings`);
+      console.log(
+        `${prefix}📊 Regex fallback found ${teamGroupMap.size} team→group mappings`,
+      );
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // 4b. Upsert TournamentTeams
+    // 4b. Build set of relevant teams (exclude qualification-only teams)
+    //
+    // Relevant teams = teams in standings + teams in remaining fixtures
+    // (after qualification filtering). Teams that ONLY played in
+    // qualification rounds won't appear in either set.
+    // ─────────────────────────────────────────────────────────────────────
+
+    const relevantTeamExternalIds = new Set<number>();
+
+    // Teams from standings (group-stage participants)
+    for (const externalId of teamGroupMap.keys()) {
+      relevantTeamExternalIds.add(externalId);
+    }
+
+    // Teams from non-qualification fixtures
+    for (const fixture of apiFixtures) {
+      if (fixture.teams.home.id) {
+        relevantTeamExternalIds.add(fixture.teams.home.id);
+      }
+      if (fixture.teams.away.id) {
+        relevantTeamExternalIds.add(fixture.teams.away.id);
+      }
+    }
+
+    // Filter the team map to only relevant teams
+    const filteredTeamCount = teamExternalToId.size;
+    const relevantTeamExternalToId = new Map<number, string>();
+    for (const [externalId, teamId] of teamExternalToId.entries()) {
+      if (relevantTeamExternalIds.has(externalId)) {
+        relevantTeamExternalToId.set(externalId, teamId);
+      }
+    }
+
+    const excludedTeamCount = filteredTeamCount - relevantTeamExternalToId.size;
+    if (excludedTeamCount > 0) {
+      console.log(
+        `${prefix}🚫 Filtered out ${excludedTeamCount} qualification-only teams (linking ${relevantTeamExternalToId.size} of ${filteredTeamCount})`,
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 4c. Upsert TournamentTeams
     // ─────────────────────────────────────────────────────────────────────
 
     if (!dryRun) {
       let ttCount = 0;
 
-      for (const [externalId, teamId] of teamExternalToId.entries()) {
+      for (const [externalId, teamId] of relevantTeamExternalToId.entries()) {
         const groupName = teamGroupMap.get(externalId) ?? null;
 
         try {
@@ -552,7 +643,9 @@ async function runImportPipeline(
 
       console.log(`${prefix}🔗 TournamentTeams: ${ttCount} linked`);
     } else {
-      console.log(`${prefix}🔗 TournamentTeams: ${teamExternalToId.size} would be linked`);
+      console.log(
+        `${prefix}🔗 TournamentTeams: ${relevantTeamExternalToId.size} would be linked`,
+      );
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -564,7 +657,9 @@ async function runImportPipeline(
 
     if (dryRun) {
       counts.phasesCreated = uniquePhases.length;
-      console.log(`${prefix}📊 Phases: ${uniquePhases.join(', ')} (${uniquePhases.length} would be created/verified)`);
+      console.log(
+        `${prefix}📊 Phases: ${uniquePhases.join(', ')} (${uniquePhases.length} would be created/verified)`,
+      );
     } else {
       for (const phase of uniquePhases) {
         try {
@@ -592,7 +687,9 @@ async function runImportPipeline(
         }
       }
 
-      console.log(`${prefix}📊 Phases: ${uniquePhases.join(', ')} (${counts.phasesCreated} created/verified)`);
+      console.log(
+        `${prefix}📊 Phases: ${uniquePhases.join(', ')} (${counts.phasesCreated} created/verified)`,
+      );
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -601,7 +698,9 @@ async function runImportPipeline(
 
     if (dryRun) {
       counts.bonusTypesCreated = STANDARD_BONUS_TYPES.length;
-      console.log(`${prefix}🎯 Bonus types: ${STANDARD_BONUS_TYPES.length} would be created/verified`);
+      console.log(
+        `${prefix}🎯 Bonus types: ${STANDARD_BONUS_TYPES.length} would be created/verified`,
+      );
     } else {
       for (const bonus of STANDARD_BONUS_TYPES) {
         try {
@@ -631,7 +730,9 @@ async function runImportPipeline(
         }
       }
 
-      console.log(`${prefix}🎯 Bonus types: ${counts.bonusTypesCreated} created/verified`);
+      console.log(
+        `${prefix}🎯 Bonus types: ${counts.bonusTypesCreated} created/verified`,
+      );
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -649,24 +750,24 @@ async function runImportPipeline(
         try {
           // Resolve team external IDs to Prisma UUIDs
           const homeTeamId = fixture.homeTeamExternalId
-            ? teamExternalToId.get(fixture.homeTeamExternalId) ?? null
+            ? (teamExternalToId.get(fixture.homeTeamExternalId) ?? null)
             : null;
           const awayTeamId = fixture.awayTeamExternalId
-            ? teamExternalToId.get(fixture.awayTeamExternalId) ?? null
+            ? (teamExternalToId.get(fixture.awayTeamExternalId) ?? null)
             : null;
 
           // For knockout with TBD teams, use API team name as placeholder
           const homeTeamPlaceholder =
             !homeTeamId && fixture.homeTeamExternalId === null
-              ? apiFixtures[matchIndex - 1]?.teams.home.name ?? null
+              ? (apiFixtures[matchIndex - 1]?.teams.home.name ?? null)
               : null;
           const awayTeamPlaceholder =
             !awayTeamId && fixture.awayTeamExternalId === null
-              ? apiFixtures[matchIndex - 1]?.teams.away.name ?? null
+              ? (apiFixtures[matchIndex - 1]?.teams.away.name ?? null)
               : null;
 
           const groupName = fixture.homeTeamExternalId
-            ? teamGroupMap.get(fixture.homeTeamExternalId) ?? null
+            ? (teamGroupMap.get(fixture.homeTeamExternalId) ?? null)
             : null;
 
           if (dryRun) {
@@ -750,26 +851,60 @@ async function runImportPipeline(
     // ─────────────────────────────────────────────────────────────────────
 
     if (includePlayers) {
-      const teamEntries = [...teamExternalToId.entries()];
+      const teamEntries = [...relevantTeamExternalToId.entries()];
       const totalTeams = teamEntries.length;
       let teamProgress = 0;
 
       for (const [externalTeamId, teamId] of teamEntries) {
         teamProgress++;
-        console.log(`${prefix}👥 Players: Fetching squad ${teamProgress}/${totalTeams}...`);
 
         try {
-          const squad = await client.fetchSquad(externalTeamId);
+          // ── Try tournament-filtered endpoint first ──────────────────
+          console.log(
+            `${prefix}👥 Players: Fetching tournament roster ${teamProgress}/${totalTeams} ` +
+              `(league=${leagueId}, season=${season}, team=${externalTeamId})...`,
+          );
 
-          if (!squad || squad.players.length === 0) {
-            console.warn(
-              `${prefix}  ⚠️  No squad data for team externalId=${externalTeamId}`,
+          const tournamentPlayers = await client.fetchTournamentPlayers(
+            leagueId,
+            season,
+            externalTeamId,
+          );
+
+          let squadPlayers: import('./api-football-client.js').ApiFootballSquadPlayer[];
+          let teamName: string | undefined;
+
+          if (tournamentPlayers.length > 0) {
+            console.log(
+              `${prefix}  ✅ Tournament endpoint returned ${tournamentPlayers.length} players`,
             );
-            continue;
+            squadPlayers = tournamentPlayers.map(
+              adaptTournamentPlayerToSquadPlayer,
+            );
+          } else {
+            // ── Fallback to full squad endpoint ────────────────────────
+            console.log(
+              `${prefix}  ⚠️  Tournament endpoint returned 0 players — falling back to squad endpoint`,
+            );
+
+            const squad = await client.fetchSquad(externalTeamId);
+
+            if (!squad || squad.players.length === 0) {
+              console.warn(
+                `${prefix}  ⚠️  No player data from either endpoint for team externalId=${externalTeamId}`,
+              );
+              continue;
+            }
+
+            console.log(
+              `${prefix}  📋 Squad fallback returned ${squad.players.length} players`,
+            );
+            squadPlayers = squad.players;
+            teamName = squad.team.name;
           }
 
-          for (const apiPlayer of squad.players) {
-            const mapped = mapPlayerData(apiPlayer, squad.team.name);
+          for (const apiPlayer of squadPlayers) {
+            const mapped = mapPlayerData(apiPlayer, teamName);
 
             try {
               if (dryRun) {
@@ -781,14 +916,16 @@ async function runImportPipeline(
 
                   // Check TournamentPlayer
                   if (tournamentId !== 'dry-run-id') {
-                    const existingTp = await prisma.tournamentPlayer.findUnique({
-                      where: {
-                        tournamentId_playerId: {
-                          tournamentId,
-                          playerId: existing.id,
+                    const existingTp = await prisma.tournamentPlayer.findUnique(
+                      {
+                        where: {
+                          tournamentId_playerId: {
+                            tournamentId,
+                            playerId: existing.id,
+                          },
                         },
                       },
-                    });
+                    );
                     if (existingTp) {
                       counts.tournamentPlayersUpdated++;
                     } else {
@@ -878,7 +1015,7 @@ async function runImportPipeline(
           }
         } catch (error) {
           console.error(
-            `${prefix}⚠️  Failed to fetch squad for team externalId=${externalTeamId}:`,
+            `${prefix}⚠️  Failed to fetch players for team externalId=${externalTeamId}:`,
             error instanceof Error ? error.message : error,
           );
         }
@@ -901,13 +1038,23 @@ async function runImportPipeline(
     console.log(`${prefix}📊 Summary:`);
     console.log(`${prefix}  Tournament:   1 ${counts.tournamentAction}`);
     console.log(
-      `${prefix}  Teams:        ${counts.teamsCreated + counts.teamsUpdated} (${counts.teamsCreated} created, ${counts.teamsUpdated} updated)`,
+      `${prefix}  Teams:        ${relevantTeamExternalToId.size} linked to tournament` +
+        (excludedTeamCount > 0
+          ? ` (${excludedTeamCount} qualification-only teams excluded)`
+          : ''),
     );
     console.log(
-      `${prefix}  Matches:      ${counts.matchesCreated + counts.matchesUpdated} (${counts.matchesCreated} created, ${counts.matchesUpdated} updated)`,
+      `${prefix}  Matches:      ${counts.matchesCreated + counts.matchesUpdated} (${counts.matchesCreated} created, ${counts.matchesUpdated} updated)` +
+        (qualificationCount > 0
+          ? ` — ${qualificationCount} qualification matches filtered out`
+          : ''),
     );
-    console.log(`${prefix}  Phases:       ${counts.phasesCreated} created/verified`);
-    console.log(`${prefix}  Bonus Types:  ${counts.bonusTypesCreated} created/verified`);
+    console.log(
+      `${prefix}  Phases:       ${counts.phasesCreated} created/verified`,
+    );
+    console.log(
+      `${prefix}  Bonus Types:  ${counts.bonusTypesCreated} created/verified`,
+    );
 
     if (includePlayers) {
       const totalPlayers = counts.playersCreated + counts.playersUpdated;
@@ -1033,7 +1180,9 @@ async function main(): Promise<void> {
 
   if (!apiKey) {
     console.error('❌ API_FOOTBALL_KEY is not set in environment variables.');
-    console.error('   Add it to your .env file: API_FOOTBALL_KEY=your-key-here');
+    console.error(
+      '   Add it to your .env file: API_FOOTBALL_KEY=your-key-here',
+    );
     process.exit(1);
   }
 

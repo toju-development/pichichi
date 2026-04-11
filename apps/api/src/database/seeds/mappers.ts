@@ -8,7 +8,12 @@
  * use direct Prisma access, not the shared package).
  */
 
-import { MatchPhase, MatchStatus, TournamentStatus, TournamentType } from '@prisma/client';
+import {
+  MatchPhase,
+  MatchStatus,
+  TournamentStatus,
+  TournamentType,
+} from '@prisma/client';
 
 import type {
   ApiFootballFixture,
@@ -16,6 +21,7 @@ import type {
   ApiFootballSeason,
   ApiFootballSquadPlayer,
   ApiFootballTeam,
+  ApiFootballTournamentPlayerEntry,
 } from './api-football-client.js';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +36,8 @@ const LEAGUE_ID_TO_TYPE: Record<number, TournamentType> = {
   3: TournamentType.CHAMPIONS_LEAGUE, // UEFA Europa League → closest match
   4: TournamentType.EURO,
   848: TournamentType.EURO, // Euro Championship qualifying / alternate ID
+  13: TournamentType.COPA_LIBERTADORES,
+  11: TournamentType.COPA_LIBERTADORES, // Copa Sudamericana → closest match (same continent club cup)
 } as const;
 
 export function mapTournamentType(league: ApiFootballLeague): TournamentType {
@@ -58,7 +66,9 @@ export function mapTournamentType(league: ApiFootballLeague): TournamentType {
  *
  * Falls back to UPCOMING when no season data is available.
  */
-export function mapTournamentStatus(season?: ApiFootballSeason): TournamentStatus {
+export function mapTournamentStatus(
+  season?: ApiFootballSeason,
+): TournamentStatus {
   if (!season) {
     return TournamentStatus.UPCOMING;
   }
@@ -108,6 +118,19 @@ const PHASE_PATTERNS: PhasePattern[] = [
   { pattern: /\bFinal$/i, phase: MatchPhase.FINAL },
 ];
 
+/**
+ * Detects qualification round strings from API-Football.
+ *
+ * Cup tournaments (e.g. Copa Libertadores, Champions League) often include
+ * "Qualification Round 1", "Qualifying Round 2", "Preliminary Round", etc.
+ * These are pre-tournament rounds that should be filtered out before import.
+ */
+const QUALIFICATION_PATTERN = /qualif|preliminary/i;
+
+export function isQualificationRound(round: string): boolean {
+  return QUALIFICATION_PATTERN.test(round);
+}
+
 export function mapMatchPhase(round: string): MatchPhase {
   for (const { pattern, phase } of PHASE_PATTERNS) {
     if (pattern.test(round)) {
@@ -115,7 +138,13 @@ export function mapMatchPhase(round: string): MatchPhase {
     }
   }
 
-  console.warn(`[mappers] Unknown round string: "${round}" — defaulting to GROUP_STAGE`);
+  // Don't warn for qualification rounds — they are filtered upstream
+  if (!isQualificationRound(round)) {
+    console.warn(
+      `[mappers] Unknown round string: "${round}" — defaulting to GROUP_STAGE`,
+    );
+  }
+
   return MatchPhase.GROUP_STAGE;
 }
 
@@ -192,7 +221,10 @@ export function mapIsExtraTime(apiStatus: string): boolean {
  *   "UEFA Champions League" + 2024 → "champions-league-2024"
  *   "Copa America" + 2024 → "copa-america-2024"
  */
-export function generateTournamentSlug(leagueName: string, season: number): string {
+export function generateTournamentSlug(
+  leagueName: string,
+  season: number,
+): string {
   const slug = leagueName
     // Strip known federation prefixes
     .replace(/^(FIFA|UEFA|AFC|CAF|CONMEBOL|CONCACAF|OFC)\s+/i, '')
@@ -220,9 +252,7 @@ export interface MappedTeamData {
   externalId: number;
 }
 
-export function mapTeamData(
-  apiTeam: ApiFootballTeam,
-): MappedTeamData {
+export function mapTeamData(apiTeam: ApiFootballTeam): MappedTeamData {
   // shortName: use team.code if available, otherwise first 3 chars of name (uppercased)
   const code = apiTeam.team.code;
   const shortName = code
@@ -235,6 +265,33 @@ export function mapTeamData(
     logoUrl: apiTeam.team.logo,
     country: apiTeam.team.country,
     externalId: apiTeam.team.id,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tournament Player → Squad Player Adapter
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts the paginated `players?league=...` response format into the simpler
+ * `ApiFootballSquadPlayer` shape that `mapPlayerData()` already expects.
+ *
+ * This avoids having two code paths for player mapping — the new tournament-
+ * filtered endpoint returns richer data, but we normalize it to the existing
+ * format at the boundary.
+ */
+export function adaptTournamentPlayerToSquadPlayer(
+  entry: ApiFootballTournamentPlayerEntry,
+): ApiFootballSquadPlayer {
+  const stats = entry.statistics[0];
+
+  return {
+    id: entry.player.id,
+    name: entry.player.name,
+    age: entry.player.age ?? null,
+    number: stats?.games.number ?? null,
+    position: stats?.games.position ?? 'Unknown',
+    photo: entry.player.photo ?? '',
   };
 }
 
