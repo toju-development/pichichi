@@ -708,6 +708,11 @@ export default function TournamentDetailScreen() {
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.headerSubtitle}
         rightAction={<BackButton />}
+        titleProps={{
+          numberOfLines: 1,
+          adjustsFontSizeToFit: true,
+          minimumFontScale: 0.7,
+        }}
       />
 
       {/* Mis Grupos — user's groups playing this tournament */}
@@ -841,6 +846,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     textTransform: 'none' as const,
+    flexShrink: 1,
   },
   headerSubtitle: {
     fontSize: 14,

@@ -12,6 +12,7 @@
  */
 
 import { StyleSheet, Text, View } from 'react-native';
+import type { TextProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS } from '@/theme/colors';
@@ -31,6 +32,8 @@ interface ScreenHeaderProps {
   titleStyle?: import('react-native').TextStyle;
   /** Override subtitle text styles (merged on top of base + light/dark). */
   subtitleStyle?: import('react-native').TextStyle;
+  /** Extra props forwarded to the title <Text> (e.g. numberOfLines, adjustsFontSizeToFit). */
+  titleProps?: Omit<TextProps, 'style' | 'children'>;
 }
 
 export function ScreenHeader({
@@ -41,6 +44,7 @@ export function ScreenHeader({
   children,
   titleStyle,
   subtitleStyle,
+  titleProps,
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
@@ -50,7 +54,10 @@ export function ScreenHeader({
       <View style={styles.titleRow}>
         {/* Text group */}
         <View style={styles.titleGroup}>
-          <Text style={[styles.title, gradient ? styles.titleLight : styles.titleDark, titleStyle]}>
+          <Text
+            style={[styles.title, gradient ? styles.titleLight : styles.titleDark, titleStyle]}
+            {...titleProps}
+          >
             {title}
           </Text>
 

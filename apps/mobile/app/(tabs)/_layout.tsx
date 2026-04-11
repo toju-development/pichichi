@@ -1,7 +1,7 @@
 /**
  * Tab navigator layout — bottom navigation for authenticated users.
  *
- * 5 tabs: Inicio, Torneos, Grupos, Ranking, Perfil.
+ * 5 tabs: Inicio, Grupos, Torneos, Ranking, Perfil.
  * Uses branded SVG icons from @/components/brand/icons.
  * Active indicator: small green dot below focused icon.
  *
@@ -14,8 +14,8 @@
 import { useCallback } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import { ChartBar, User } from 'lucide-react-native';
 
 import { GlobeIcon, GroupIcon, TrophyIcon } from '@/components/brand/icons';
 import { COLORS } from '@/theme/colors';
@@ -111,24 +111,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tournaments"
-        options={{
-          title: 'Torneos',
-          tabBarIcon: ({ color }) => <TrophyIcon size={24} color={color} />,
-          tabBarLabel: ({ focused }) => (
-            <View style={styles.labelContainer}>
-              <Text style={focused ? styles.labelTextActive : styles.labelText}>
-                Torneos
-              </Text>
-              {focused && <ActiveDot />}
-            </View>
-          ),
-        }}
-        listeners={{
-          tabPress: createTabPressHandler('tournaments'),
-        }}
-      />
-      <Tabs.Screen
         name="groups"
         options={{
           title: 'Grupos',
@@ -147,15 +129,29 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="tournaments"
+        options={{
+          title: 'Torneos',
+          tabBarIcon: ({ color }) => <TrophyIcon size={24} color={color} />,
+          tabBarLabel: ({ focused }) => (
+            <View style={styles.labelContainer}>
+              <Text style={focused ? styles.labelTextActive : styles.labelText}>
+                Torneos
+              </Text>
+              {focused && <ActiveDot />}
+            </View>
+          ),
+        }}
+        listeners={{
+          tabPress: createTabPressHandler('tournaments'),
+        }}
+      />
+      <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'Ranking',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'stats-chart' : 'stats-chart-outline'}
-              size={24}
-              color={color}
-            />
+          tabBarIcon: ({ color }) => (
+            <ChartBar size={24} color={color} />
           ),
           tabBarLabel: ({ focused }) => (
             <View style={styles.labelContainer}>
@@ -174,12 +170,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'person' : 'person-outline'}
-              size={24}
-              color={color}
-            />
+          tabBarIcon: ({ color }) => (
+            <User size={24} color={color} />
           ),
           tabBarLabel: ({ focused }) => (
             <View style={styles.labelContainer}>

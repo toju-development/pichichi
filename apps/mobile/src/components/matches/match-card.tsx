@@ -126,26 +126,12 @@ function TeamSide({
     );
   }
 
-  const avatar = <TeamAvatar team={team} />;
-  const name = (
-    <Text style={styles.teamName} numberOfLines={1}>
-      {team.name}
-    </Text>
-  );
-
   return (
     <View style={[styles.teamSide, reverse && styles.teamSideReverse]}>
-      {reverse ? (
-        <>
-          {name}
-          <View style={styles.avatarSpacer}>{avatar}</View>
-        </>
-      ) : (
-        <>
-          <View style={styles.avatarSpacer}>{avatar}</View>
-          {name}
-        </>
-      )}
+      <TeamAvatar team={team} />
+      <Text style={styles.teamName} numberOfLines={1}>
+        {team.name}
+      </Text>
     </View>
   );
 }
@@ -411,6 +397,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   teamSideReverse: {
     flexDirection: 'row-reverse',
@@ -449,15 +436,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     position: 'absolute',
   },
-  avatarSpacer: {
-    marginHorizontal: 8,
-  },
 
   // ── Score block ──────────────────────────────────────────────────────────
   scoreBlock: {
     alignItems: 'center',
-    paddingHorizontal: 8,
-    minWidth: 70,
+    paddingHorizontal: 4,
+    minWidth: 56,
   },
   scoreRow: {
     flexDirection: 'row',
@@ -478,7 +462,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '400',
     color: COLORS.text.muted,
-    marginHorizontal: 6,
+    marginHorizontal: 4,
   },
   extraTimeLabel: {
     fontSize: 10,
@@ -496,8 +480,8 @@ const styles = StyleSheet.create({
   // ── VS block ─────────────────────────────────────────────────────────────
   vsBlock: {
     alignItems: 'center',
-    paddingHorizontal: 8,
-    minWidth: 70,
+    paddingHorizontal: 4,
+    minWidth: 56,
   },
   vsText: {
     fontSize: 16,

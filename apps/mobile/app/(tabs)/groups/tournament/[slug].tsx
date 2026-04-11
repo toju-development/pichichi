@@ -353,7 +353,16 @@ export default function GroupTournamentScreen() {
   return (
     <View style={styles.screen}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <ScreenHeader title={tournament.name} subtitle={headerSubtitle} gradient>
+      <ScreenHeader
+        title={tournament.name}
+        subtitle={headerSubtitle}
+        gradient
+        titleProps={{
+          numberOfLines: 1,
+          adjustsFontSizeToFit: true,
+          minimumFontScale: 0.7,
+        }}
+      >
         <BackButton />
       </ScreenHeader>
 
