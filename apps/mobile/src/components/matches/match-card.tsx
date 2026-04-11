@@ -12,12 +12,12 @@
  * same element.
  */
 
-import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { MatchDto, MatchTeamDto } from '@pichichi/shared';
 
 import { Card } from '@/components/ui/card';
+import { TeamAvatar } from '@/components/ui/team-avatar';
 import { COLORS } from '@/theme/colors';
 
 // ─── Phase labels (Spanish) ─────────────────────────────────────────────────
@@ -79,31 +79,6 @@ interface MatchCardProps {
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
-
-/** Team avatar — shows logo if available, otherwise colored circle with initial. */
-function TeamAvatar({ team }: { team: MatchTeamDto }) {
-  const [imageError, setImageError] = useState(false);
-
-  if (team.logoUrl && !imageError) {
-    return (
-      <View style={styles.avatar}>
-        <Image
-          source={{ uri: team.logoUrl }}
-          style={styles.avatarImage}
-          onError={() => setImageError(true)}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>
-        {team.shortName.charAt(0).toUpperCase()}
-      </Text>
-    </View>
-  );
-}
 
 /** One side of the match (home or away). */
 function TeamSide({
@@ -414,27 +389,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: COLORS.text.muted,
     flexShrink: 1,
-  },
-
-  // ── Avatar ───────────────────────────────────────────────────────────────
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary.light,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primary.DEFAULT,
-  },
-  avatarImage: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    position: 'absolute',
   },
 
   // ── Score block ──────────────────────────────────────────────────────────

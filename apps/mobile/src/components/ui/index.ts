@@ -5,3 +5,4 @@ export { EmptyState } from './empty-state';
 export { Button } from './button';
 export { Stepper } from './stepper';
 export { LoadingScreen } from './loading-screen';
+export { TeamAvatar } from './team-avatar';

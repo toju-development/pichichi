@@ -13,18 +13,14 @@
  * Never mix `style` and `className` on the same element.
  */
 
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, Globe } from 'lucide-react-native';
 
 import type { DashboardTodayMatchDto } from '@pichichi/shared';
 
+import { TeamAvatar } from '@/components/ui/team-avatar';
 import { COLORS } from '@/theme/colors';
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-type TodayTeam = DashboardTodayMatchDto['homeTeam'];
 
 // ─── Time formatting ────────────────────────────────────────────────────────
 
@@ -71,34 +67,12 @@ interface TodayMatchesSectionProps {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function TeamAvatar({ team }: { team: NonNullable<TodayTeam> }) {
-  const [imageError, setImageError] = useState(false);
-
-  if (team.logoUrl && !imageError) {
-    return (
-      <Image
-        source={{ uri: team.logoUrl }}
-        style={styles.avatarImage}
-        onError={() => setImageError(true)}
-      />
-    );
-  }
-
-  return (
-    <View style={styles.avatar}>
-      <Text style={styles.avatarText}>
-        {team.name.charAt(0).toUpperCase()}
-      </Text>
-    </View>
-  );
-}
-
 function TeamSide({
   team,
   placeholder,
   reverse,
 }: {
-  team: TodayTeam;
+  team: DashboardTodayMatchDto['homeTeam'];
   placeholder: string | null;
   reverse?: boolean;
 }) {
@@ -397,26 +371,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: COLORS.text.muted,
     width: 90,
-  },
-
-  // ── Avatar ──────────────────────────────────────────────────────────────
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary.light,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarImage: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  avatarText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primary.DEFAULT,
   },
 
   // ── Time / Score blocks ─────────────────────────────────────────────────

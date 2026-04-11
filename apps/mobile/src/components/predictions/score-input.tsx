@@ -1,24 +1,33 @@
 /**
- * ScoreInput — dual-stepper control for entering a match score prediction.
+ * ScoreInput — unified team + score section for match prediction.
  *
- *   [Home Team]         [Away Team]
- *     [- 0 +]    VS      [- 0 +]
+ *    [🛡️ 40px]              [🛡️ 40px]
+ *  Estudiantes L.P.          Cusco
+ *     [- 0 +]    –    [- 0 +]
  *
- * Composes two `Stepper` instances side-by-side with team name labels
- * and a centered "VS" separator.
+ * Each team column shows: avatar → name → stepper, all centered.
+ * An en-dash sits between the two steppers, vertically aligned.
  *
- * NativeWind v4 rule: className-only — NEVER mix style + className.
+ * IMPORTANT — NativeWind v4 ghost-card fix:
+ * ALL visual properties live in StyleSheet. Never mix `style` and `className`
+ * on the same element.
  */
 
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Stepper } from '@/components/ui/stepper';
+import { TeamAvatar } from '@/components/ui/team-avatar';
+import { COLORS } from '@/theme/colors';
+
+import type { MatchTeamDto } from '@pichichi/shared';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
 interface ScoreInputProps {
   homeTeamName: string;
   awayTeamName: string;
+  homeTeam?: MatchTeamDto | null;
+  awayTeam?: MatchTeamDto | null;
   homeScore: number;
   awayScore: number;
   onHomeChange: (value: number) => void;
@@ -33,6 +42,8 @@ interface ScoreInputProps {
 export function ScoreInput({
   homeTeamName,
   awayTeamName,
+  homeTeam,
+  awayTeam,
   homeScore,
   awayScore,
   onHomeChange,
@@ -42,55 +53,109 @@ export function ScoreInput({
   maxScore = 20,
 }: ScoreInputProps) {
   return (
-    <View className="items-center gap-3">
-      {/* Team name labels */}
-      <View className="w-full flex-row items-center justify-between px-2">
-        <View className="flex-1 items-center">
+    <View style={styles.container}>
+      <View style={[styles.columnsRow, disabled ? styles.disabled : undefined]}>
+        {/* Home team column */}
+        <View style={styles.teamColumn}>
+          <TeamAvatar team={homeTeam ?? null} size={40} />
           <Text
-            className="text-sm font-semibold text-text-primary"
+            style={styles.teamName}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
           >
             {homeTeamName}
           </Text>
+          <View
+            style={styles.stepperWrapper}
+            pointerEvents={disabled ? 'none' : 'auto'}
+          >
+            <Stepper
+              value={homeScore}
+              min={minScore}
+              max={maxScore}
+              onChange={onHomeChange}
+            />
+          </View>
         </View>
 
-        {/* Spacer matching VS width */}
-        <View className="mx-3 w-10" />
+        {/* En-dash separator — vertically aligned with steppers */}
+        <View style={styles.separatorWrapper}>
+          <Text style={styles.dashText}>–</Text>
+        </View>
 
-        <View className="flex-1 items-center">
+        {/* Away team column */}
+        <View style={styles.teamColumn}>
+          <TeamAvatar team={awayTeam ?? null} size={40} />
           <Text
-            className="text-sm font-semibold text-text-primary"
+            style={styles.teamName}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
           >
             {awayTeamName}
           </Text>
-        </View>
-      </View>
-
-      {/* Steppers + VS separator */}
-      <View className={`flex-row items-center ${disabled ? 'opacity-50' : ''}`}>
-        <View className="items-center" pointerEvents={disabled ? 'none' : 'auto'}>
-          <Stepper
-            value={homeScore}
-            min={minScore}
-            max={maxScore}
-            onChange={onHomeChange}
-          />
-        </View>
-
-        <View className="mx-3 w-10 items-center">
-          <Text className="text-base font-medium text-text-muted">VS</Text>
-        </View>
-
-        <View className="items-center" pointerEvents={disabled ? 'none' : 'auto'}>
-          <Stepper
-            value={awayScore}
-            min={minScore}
-            max={maxScore}
-            onChange={onAwayChange}
-          />
+          <View
+            style={styles.stepperWrapper}
+            pointerEvents={disabled ? 'none' : 'auto'}
+          >
+            <Stepper
+              value={awayScore}
+              min={minScore}
+              max={maxScore}
+              onChange={onAwayChange}
+            />
+          </View>
         </View>
       </View>
     </View>
   );
 }
+
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+  },
+
+  // ── Main row with both columns + separator ──────────────────────────────
+  columnsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    width: '100%',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+
+  // ── Individual team column ──────────────────────────────────────────────
+  teamColumn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  teamName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  stepperWrapper: {
+    alignItems: 'center',
+  },
+
+  // ── En-dash separator ───────────────────────────────────────────────────
+  separatorWrapper: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 10,
+  },
+  dashText: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: COLORS.text.muted,
+  },
+});
