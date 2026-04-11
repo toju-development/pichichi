@@ -26,7 +26,7 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 
 import type { MatchDto, MatchPhase, TournamentPhaseDto } from '@pichichi/shared';
 
@@ -124,19 +124,6 @@ function buildTabs(phases: TournamentPhaseDto[]): TabDefinition[] {
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
-
-/** Back button rendered inside ScreenHeader (gradient area). */
-function BackButton() {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      style={styles.backButton}
-    >
-      <ChevronLeft size={18} color="rgba(255, 255, 255, 0.8)" strokeWidth={2.5} />
-      <Text style={styles.backText}>Volver</Text>
-    </Pressable>
-  );
-}
 
 /** Single tab button in the phase tab bar. */
 function TabButton({
@@ -684,7 +671,7 @@ export default function TournamentDetailScreen() {
   if (error || !tournament) {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title="Torneo" gradient rightAction={<BackButton />} />
+        <ScreenHeader title="Torneo" gradient onBack={() => router.back()} />
 
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
@@ -705,9 +692,9 @@ export default function TournamentDetailScreen() {
         title={tournament.name}
         subtitle={typeLabel}
         gradient
+        onBack={() => router.back()}
         titleStyle={styles.headerTitle}
         subtitleStyle={styles.headerSubtitle}
-        rightAction={<BackButton />}
         titleProps={{
           numberOfLines: 1,
           adjustsFontSizeToFit: true,
@@ -827,18 +814,6 @@ const styles = StyleSheet.create({
   },
   fill: {
     flex: 1,
-  },
-
-  // ── Back button ───────────────────────────────────────────────────────
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
   },
 
   // ── Header text overrides (normal case, larger title) ─────────────────

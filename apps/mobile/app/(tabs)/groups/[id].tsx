@@ -16,7 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import type { AxiosError } from 'axios';
-import { ArrowLeft, LogOut, Pencil, Trash2, UserPlus, Users } from 'lucide-react-native';
+import { LogOut, Pencil, Trash2, UserPlus, Users } from 'lucide-react-native';
 
 import type { GroupMemberRole, TournamentDto } from '@pichichi/shared';
 
@@ -24,8 +24,8 @@ import { TrophyIcon } from '@/components/brand/icons';
 import { AddTournamentModal } from '@/components/groups/add-tournament-modal';
 import { EditGroupModal } from '@/components/groups/edit-group-modal';
 import { Button } from '@/components/ui/button';
-import { GradientBackground } from '@/components/ui/gradient-bg';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { checkRemoveTournament } from '@/api/groups';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_TYPE_LABELS } from '@/utils/match-helpers';
 import {
@@ -370,18 +370,7 @@ export default function GroupDetailScreen() {
   if (error || !group) {
     return (
       <View style={s.screen}>
-        <GradientBackground colors={['#062E22', '#0B6E4F'] as const}>
-          <View style={[s.headerContainer, { paddingTop: insets.top + 16 }]}>
-            <View style={s.headerRow}>
-              <Pressable onPress={() => router.back()} style={s.headerBackPressable}>
-                <ArrowLeft size={20} color="#FFFFFF" />
-              </Pressable>
-              <View style={s.headerTitleCol}>
-                <Text style={s.headerTitle}>Grupo</Text>
-              </View>
-            </View>
-          </View>
-        </GradientBackground>
+        <ScreenHeader title="Grupo" gradient onBack={() => router.back()} />
 
         <View style={s.errorContainer}>
           <Text style={s.errorText}>
@@ -398,35 +387,26 @@ export default function GroupDetailScreen() {
   return (
     <View style={s.screen}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <GradientBackground colors={['#062E22', '#0B6E4F'] as const}>
-        <View style={[s.headerContainer, { paddingTop: insets.top + 16 }]}>
-          <View style={s.headerRow}>
-            {/* Left: back + title */}
-            <Pressable onPress={() => router.back()} style={s.headerBackPressable}>
-              <ArrowLeft size={20} color="#FFFFFF" />
+      <ScreenHeader
+        title={group.name}
+        subtitle={group.description || 'Grupo de predicciones'}
+        gradient
+        onBack={() => router.back()}
+        titleStyle={s.headerTitleOverride}
+        subtitleStyle={s.headerSubtitleOverride}
+        titleProps={{ numberOfLines: 1 }}
+        rightAction={
+          isAdmin ? (
+            <Pressable
+              onPress={() => setEditModalVisible(true)}
+              style={s.headerEditBtn}
+            >
+              <Pencil size={14} color="#FFFFFF" />
+              <Text style={s.headerEditText}>Editar</Text>
             </Pressable>
-            <View style={s.headerTitleCol}>
-              <Text style={s.headerTitle} numberOfLines={1}>
-                {group.name}
-              </Text>
-              <Text style={s.headerSubtitle} numberOfLines={1}>
-                {group.description || 'Grupo de predicciones'}
-              </Text>
-            </View>
-
-            {/* Right: Edit button (admin only) */}
-            {isAdmin ? (
-              <Pressable
-                onPress={() => setEditModalVisible(true)}
-                style={s.headerEditBtn}
-              >
-                <Pencil size={14} color="#FFFFFF" />
-                <Text style={s.headerEditText}>Editar</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-      </GradientBackground>
+          ) : undefined
+        }
+      />
 
       {/* ── Scrollable Content ─────────────────────────────────────────── */}
       <ScrollView
@@ -759,31 +739,15 @@ const s = StyleSheet.create({
     backgroundColor: '#F0FAF4',
   },
 
-  // ── Header
-  headerContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerBackPressable: {
-    marginRight: 10,
-  },
-  headerTitleCol: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
+  // ── Header overrides for ScreenHeader
+  headerTitleOverride: {
     fontSize: 20,
     fontWeight: '900',
+    textTransform: 'none' as const,
   },
-  headerSubtitle: {
-    color: '#FFFFFF60',
+  headerSubtitleOverride: {
     fontSize: 11,
-    marginTop: 2,
+    textTransform: 'none' as const,
   },
   headerEditBtn: {
     flexDirection: 'row',

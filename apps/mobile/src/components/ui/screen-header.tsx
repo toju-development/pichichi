@@ -11,9 +11,10 @@
  * frame. The gradient variant uses white text; the plain variant uses dark text.
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { TextProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft } from 'lucide-react-native';
 
 import { COLORS } from '@/theme/colors';
 
@@ -24,6 +25,8 @@ interface ScreenHeaderProps {
   subtitle?: string;
   /** Use green gradient background (default: true). */
   gradient?: boolean;
+  /** Called when the back arrow is pressed. Renders an ArrowLeft icon to the left of the title. */
+  onBack?: () => void;
   /** Optional element rendered on the right side (icon button, etc.). */
   rightAction?: React.ReactNode;
   /** Optional content rendered below the title inside the gradient area (e.g. avatar). */
@@ -40,6 +43,7 @@ export function ScreenHeader({
   title,
   subtitle,
   gradient = true,
+  onBack,
   rightAction,
   children,
   titleStyle,
@@ -55,8 +59,18 @@ export function ScreenHeader({
   const content = (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       {/* Title row — always rendered for rightAction alignment */}
-      {(hasTitleContent || rightAction) ? (
+      {(hasTitleContent || rightAction || onBack) ? (
         <View style={styles.titleRow}>
+          {/* Back arrow */}
+          {onBack ? (
+            <Pressable onPress={onBack} style={styles.backArrow} hitSlop={8}>
+              <ArrowLeft
+                size={20}
+                color={gradient ? '#FFFFFF' : COLORS.text.primary}
+              />
+            </Pressable>
+          ) : null}
+
           {/* Text group — rendered as spacer even when empty so rightAction stays right */}
           <View style={styles.titleGroup}>
             {hasTitle ? (
@@ -110,6 +124,9 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  backArrow: {
+    marginRight: 10,
   },
   titleGroup: {
     flex: 1,

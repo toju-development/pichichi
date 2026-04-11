@@ -16,17 +16,15 @@ import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { NotificationDto } from '@pichichi/shared';
 
+import { ScreenHeader } from '@/components/ui/screen-header';
 import {
   useMarkAllAsRead,
   useNotifications,
@@ -189,7 +187,6 @@ const emptyStyles = StyleSheet.create({
 // ─── Main screen ────────────────────────────────────────────────────────────
 
 export default function NotificationsScreen() {
-  const insets = useSafeAreaInsets();
   const markAllAsRead = useMarkAllAsRead();
   const markedRef = useRef(false);
 
@@ -221,20 +218,11 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.root}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Notificaciones</Text>
-        {/* Spacer to center title */}
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader
+        title="Notificaciones"
+        gradient={false}
+        onBack={() => router.back()}
+      />
 
       {/* Loading state */}
       {isLoading ? (
@@ -274,31 +262,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text.primary,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 36,
   },
   loadingContainer: {
     flex: 1,

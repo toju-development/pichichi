@@ -81,18 +81,6 @@ const TABS: TabDefinition[] = [
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-/** Back button rendered inside ScreenHeader (gradient area). */
-function BackButton() {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      style={styles.backButton}
-    >
-      <Text style={styles.backText}>{'\u2190'} Volver</Text>
-    </Pressable>
-  );
-}
-
 /** Single tab button in the tab bar — icon only, no text. */
 function TabButton({
   tab,
@@ -325,9 +313,7 @@ export default function GroupTournamentScreen() {
   if (tournamentError || !tournament || !groupId) {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title="Torneo" gradient>
-          <BackButton />
-        </ScreenHeader>
+        <ScreenHeader title="Torneo" gradient onBack={() => router.back()} />
 
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
@@ -357,14 +343,13 @@ export default function GroupTournamentScreen() {
         title={tournament.name}
         subtitle={headerSubtitle}
         gradient
+        onBack={() => router.back()}
         titleProps={{
           numberOfLines: 1,
           adjustsFontSizeToFit: true,
           minimumFontScale: 0.7,
         }}
-      >
-        <BackButton />
-      </ScreenHeader>
+      />
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
       <View style={styles.tabBarContainer}>
@@ -766,19 +751,6 @@ const styles = StyleSheet.create({
   },
   fill: {
     flex: 1,
-  },
-
-  // ── Back button ───────────────────────────────────────────────────────
-  backButton: {
-    marginTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
   },
 
   // ── Error state ───────────────────────────────────────────────────────
