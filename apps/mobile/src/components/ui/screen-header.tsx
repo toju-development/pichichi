@@ -48,35 +48,43 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
+  const hasTitle = title.length > 0;
+  const hasSubtitle = Boolean(subtitle);
+  const hasTitleContent = hasTitle || hasSubtitle;
+
   const content = (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      {/* Title row */}
-      <View style={styles.titleRow}>
-        {/* Text group */}
-        <View style={styles.titleGroup}>
-          <Text
-            style={[styles.title, gradient ? styles.titleLight : styles.titleDark, titleStyle]}
-            {...titleProps}
-          >
-            {title}
-          </Text>
+      {/* Title row — always rendered for rightAction alignment */}
+      {(hasTitleContent || rightAction) ? (
+        <View style={styles.titleRow}>
+          {/* Text group — rendered as spacer even when empty so rightAction stays right */}
+          <View style={styles.titleGroup}>
+            {hasTitle ? (
+              <Text
+                style={[styles.title, gradient ? styles.titleLight : styles.titleDark, titleStyle]}
+                {...titleProps}
+              >
+                {title}
+              </Text>
+            ) : null}
 
-          {subtitle ? (
-            <Text
-              style={[
-                styles.subtitle,
-                gradient ? styles.subtitleLight : styles.subtitleDark,
-                subtitleStyle,
-              ]}
-            >
-              {subtitle}
-            </Text>
-          ) : null}
+            {hasSubtitle ? (
+              <Text
+                style={[
+                  styles.subtitle,
+                  gradient ? styles.subtitleLight : styles.subtitleDark,
+                  subtitleStyle,
+                ]}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Right action */}
+          {rightAction ? <View>{rightAction}</View> : null}
         </View>
-
-        {/* Right action */}
-        {rightAction ? <View>{rightAction}</View> : null}
-      </View>
+      ) : null}
 
       {/* Optional extra content (avatar, filters, etc.) */}
       {children}

@@ -1,7 +1,7 @@
 /**
  * Tab navigator layout — bottom navigation for authenticated users.
  *
- * 5 tabs: Inicio, Grupos, Torneos, Ranking, Perfil.
+ * 4 tabs: Inicio, Grupos, Torneos, Perfil.
  * Uses branded SVG icons from @/components/brand/icons.
  * Active indicator: small green dot below focused icon.
  *
@@ -15,7 +15,7 @@ import { useCallback } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChartBar, User } from 'lucide-react-native';
+import { User } from 'lucide-react-native';
 
 import { GlobeIcon, GroupIcon, TrophyIcon } from '@/components/brand/icons';
 import { COLORS } from '@/theme/colors';
@@ -25,16 +25,15 @@ import { COLORS } from '@/theme/colors';
 // the user taps that tab icon. Uses prefix matching (same pattern as
 // use-socket-events.ts) so all sub-queries are covered automatically.
 //
-// Profile has no data queries — it reads from the auth store.
-// Notifications unread count is shared across all tabs (shown in every header),
-// so it's invalidated on EVERY tab press.
+// Profile invalidates dashboard + leaderboard because it displays stats
+// from both sources. Notifications unread count is shared across all tabs
+// (shown in every header), so it's invalidated on EVERY tab press.
 
 const TAB_QUERY_KEYS: Record<string, readonly (readonly string[])[]> = {
   index: [['dashboard']],
   tournaments: [['tournaments']],
   groups: [['groups'], ['predictions'], ['bonus-predictions']],
-  leaderboard: [['leaderboard']],
-  profile: [],
+  profile: [['dashboard'], ['leaderboard']],
 };
 
 /** Query keys invalidated on EVERY tab press (cross-cutting concerns). */
@@ -144,26 +143,6 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: createTabPressHandler('tournaments'),
-        }}
-      />
-      <Tabs.Screen
-        name="leaderboard"
-        options={{
-          title: 'Ranking',
-          tabBarIcon: ({ color }) => (
-            <ChartBar size={24} color={color} />
-          ),
-          tabBarLabel: ({ focused }) => (
-            <View style={styles.labelContainer}>
-              <Text style={focused ? styles.labelTextActive : styles.labelText}>
-                Ranking
-              </Text>
-              {focused && <ActiveDot />}
-            </View>
-          ),
-        }}
-        listeners={{
-          tabPress: createTabPressHandler('leaderboard'),
         }}
       />
       <Tabs.Screen
