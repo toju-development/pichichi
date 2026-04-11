@@ -25,16 +25,23 @@ import type {
   TournamentPlayerResponseDto,
   TournamentTeamDto,
 } from '@pichichi/shared';
+import type { LucideIcon } from 'lucide-react-native';
+import { CircleDot, Lock, Sparkles, Star, Trophy } from 'lucide-react-native';
 
 import { COLORS } from '@/theme/colors';
 
-// ─── Category icons (emoji) ────────────────────────────────────────────────
+// ─── Category icons (Lucide) ───────────────────────────────────────────────
 
-const CATEGORY_ICONS: Record<string, string> = {
-  CHAMPION: '\uD83C\uDFC6',    // trophy
-  TOP_SCORER: '\u26BD',         // soccer ball
-  MVP: '\u2B50',                // star
-  REVELATION: '\uD83D\uDCA5',  // collision/explosion
+interface CategoryIcon {
+  Icon: LucideIcon;
+  color: string;
+}
+
+const CATEGORY_ICONS: Record<string, CategoryIcon> = {
+  CHAMPION: { Icon: Trophy, color: '#FFD166' },
+  TOP_SCORER: { Icon: CircleDot, color: '#9CA3AF' },
+  MVP: { Icon: Star, color: '#FFD166' },
+  REVELATION: { Icon: Sparkles, color: '#E65100' },
 };
 
 // ─── Category label translations ───────────────────────────────────────────
@@ -135,7 +142,7 @@ export function BonusPredictionCard({
 }: BonusPredictionCardProps) {
   const hasPrediction = prediction != null && prediction.predictedValue !== '';
   const normalizedKey = bonusType.key.toUpperCase();
-  const icon = CATEGORY_ICONS[normalizedKey] ?? '\uD83C\uDFC5'; // medal fallback
+  const categoryIcon = CATEGORY_ICONS[normalizedKey] ?? { Icon: Trophy, color: '#9CA3AF' };
   const displayLabel = BONUS_LABELS[normalizedKey] ?? BONUS_LABELS[bonusType.label] ?? bonusType.label;
 
   // ── Determine visual state ──────────────────────────────────────────────
@@ -155,7 +162,7 @@ export function BonusPredictionCard({
       <View style={styles.mainRow}>
         {/* Left: icon + label + points */}
         <View style={styles.leftSection}>
-          <Text style={styles.icon}>{icon}</Text>
+          <categoryIcon.Icon size={24} color={categoryIcon.color} />
           <View style={styles.labelGroup}>
             <Text style={styles.categoryLabel} numberOfLines={1}>{displayLabel}</Text>
             <Text style={styles.pointsText}>{bonusType.points} pts</Text>
@@ -166,7 +173,7 @@ export function BonusPredictionCard({
         <View style={styles.rightSection}>
           {isLocked && !hasPrediction ? (
             <View style={styles.lockedRow}>
-              <Text style={styles.lockedIcon}>{'\uD83D\uDD12'}</Text>
+              <Lock size={14} color="#9CA3AF" />
               <Text style={styles.lockedText}>Sin pronóstico</Text>
             </View>
           ) : hasPrediction && resolved ? (
@@ -256,7 +263,9 @@ const styles = StyleSheet.create({
   // ── Card surface ────────────────────────────────────────────────────────
   cardSurface: {
     overflow: 'hidden',
-    borderRadius: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -284,15 +293,12 @@ const styles = StyleSheet.create({
     gap: 10,
     flexShrink: 1,
   },
-  icon: {
-    fontSize: 20,
-  },
   labelGroup: {
     flexShrink: 1,
   },
   categoryLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text.primary,
   },
   pointsText: {
@@ -346,14 +352,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  lockedIcon: {
-    fontSize: 13,
-  },
   lockedText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text.muted,
-    fontStyle: 'italic',
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#9CA3AF',
   },
 
   // ── Earned badge ────────────────────────────────────────────────────────

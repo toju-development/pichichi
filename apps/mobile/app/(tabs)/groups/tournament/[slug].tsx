@@ -34,7 +34,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 
 import type { MatchDto, PredictionDto, TournamentBonusTypeDto } from '@pichichi/shared';
 
-import { Ionicons } from '@expo/vector-icons';
+import { BarChart3, CircleCheck, CircleDot, Star } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { LeaderboardList } from '@/components/leaderboard/leaderboard-list';
@@ -68,15 +69,14 @@ type Tab = 'pronosticos' | 'resultados' | 'bonus' | 'ranking';
 interface TabDefinition {
   key: Tab;
   label: string;
-  iconName: keyof typeof Ionicons.glyphMap;
-  iconNameOutline: keyof typeof Ionicons.glyphMap;
+  Icon: LucideIcon;
 }
 
 const TABS: TabDefinition[] = [
-  { key: 'pronosticos', label: 'Pronósticos', iconName: 'football', iconNameOutline: 'football-outline' },
-  { key: 'resultados', label: 'Resultados', iconName: 'checkmark-circle', iconNameOutline: 'checkmark-circle-outline' },
-  { key: 'bonus', label: 'Bonus', iconName: 'star', iconNameOutline: 'star-outline' },
-  { key: 'ranking', label: 'Ranking', iconName: 'podium', iconNameOutline: 'podium-outline' },
+  { key: 'pronosticos', label: 'Pronósticos', Icon: CircleDot },
+  { key: 'resultados', label: 'Resultados', Icon: CircleCheck },
+  { key: 'bonus', label: 'Bonus', Icon: Star },
+  { key: 'ranking', label: 'Ranking', Icon: BarChart3 },
 ];
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -103,6 +103,7 @@ function TabButton({
   isActive: boolean;
   onPress: () => void;
 }) {
+  const { Icon } = tab;
   return (
     <Pressable
       onPress={onPress}
@@ -110,10 +111,9 @@ function TabButton({
       accessibilityLabel={tab.label}
       accessibilityRole="tab"
     >
-      <Ionicons
-        name={isActive ? tab.iconName : tab.iconNameOutline}
+      <Icon
         size={20}
-        color={isActive ? '#FFFFFF' : COLORS.text.secondary}
+        color={isActive ? '#FFFFFF' : '#9CA3AF'}
       />
     </Pressable>
   );
@@ -791,18 +791,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    paddingVertical: 6,
+    paddingVertical: 12,
   },
   tabBarScroll: {
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: 20,
+    gap: 12,
   },
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 44,
-    height: 36,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   tabButtonActive: {
     backgroundColor: COLORS.primary.DEFAULT,

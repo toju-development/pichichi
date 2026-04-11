@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 8,
   },
   dateText: {
     fontSize: 12,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
 
   // ── Footer ──────────────────────────────────────────────────────────────
   footerRow: {
-    marginTop: 10,
+    marginTop: 8,
     alignItems: 'center' as const,
   },
 });

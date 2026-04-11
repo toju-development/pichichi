@@ -205,7 +205,9 @@ export function PredictionStatusBadge({
 
     case 'finished-no-prediction':
       return (
-        <Text style={styles.finishedNoPredictionText}>Sin pronóstico</Text>
+        <View style={styles.finishedNoPredictionBadge}>
+          <Text style={styles.finishedNoPredictionText}>Sin pronóstico</Text>
+        </View>
       );
 
     case 'live':
@@ -225,10 +227,12 @@ const styles = StyleSheet.create({
   openBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#E65100',
     alignSelf: 'center',
   },
   openBadgeText: {
@@ -243,9 +247,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
     backgroundColor: COLORS.primary.light,
   },
   predictedLabel: {
@@ -356,11 +360,19 @@ const styles = StyleSheet.create({
   },
 
   // ── Finished without prediction ──────────────────────────────────────────
+  finishedNoPredictionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    alignSelf: 'center',
+  },
   finishedNoPredictionText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    color: COLORS.text.muted,
-    fontStyle: 'italic',
+    color: '#9CA3AF',
   },
 
   // ── Live (no prediction) ────────────────────────────────────────────────

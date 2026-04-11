@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 16,
+    padding: 14,
   },
   accentBar: {
     position: 'absolute',

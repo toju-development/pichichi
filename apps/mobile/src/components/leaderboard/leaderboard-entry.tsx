@@ -1,7 +1,7 @@
 /**
  * Single row in the group leaderboard.
  *
- * Renders position badge (with medal emoji for top 3), user avatar,
+ * Renders position badge (with colored numbers for top positions), user avatar,
  * display name, total points, and exact-prediction count.
  *
  * IMPORTANT — NativeWind v4 ghost-card fix:
@@ -26,30 +26,29 @@ export interface LeaderboardEntryProps {
   className?: string;
 }
 
-// ─── Medal config ───────────────────────────────────────────────────────────
+// ─── Position color config ──────────────────────────────────────────────────
 
-const MEDALS: Record<number, string> = {
-  1: '🏆',
-  2: '🥈',
-  3: '🥉',
+const POSITION_COLORS: Record<number, string> = {
+  1: '#FFD166', // gold
+  2: '#C0C0C0', // silver
 };
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-/** Position number — bold for top 3, with medal emoji. */
+/** Position number — colored for top positions. */
 function PositionBadge({ position }: { position: number }) {
-  const medal = MEDALS[position];
-  const isTop3 = position <= 3;
+  const color = POSITION_COLORS[position];
 
   return (
     <View style={styles.positionContainer}>
-      {medal ? (
-        <Text style={styles.medalEmoji}>{medal}</Text>
-      ) : (
-        <Text style={isTop3 ? styles.positionTextBold : styles.positionText}>
-          #{position}
-        </Text>
-      )}
+      <Text
+        style={[
+          styles.positionText,
+          color != null && { color },
+        ]}
+      >
+        {position}
+      </Text>
     </View>
   );
 }
@@ -97,7 +96,7 @@ export function LeaderboardEntry({
       {/* User avatar */}
       <UserAvatar displayName={displayName} avatarUrl={avatarUrl} />
 
-      {/* Name */}
+      {/* Name + exacto subtitle */}
       <View style={styles.nameContainer}>
         <Text
           style={[styles.displayName, isCurrentUser && styles.displayNameBold]}
@@ -105,16 +104,15 @@ export function LeaderboardEntry({
         >
           {displayName}
         </Text>
+        <Text style={styles.exactCount}>
+          {exactCount} {exactCount === 1 ? 'exacto' : 'exactos'}
+        </Text>
       </View>
 
-      {/* Points */}
+      {/* Points — number on top, "pts" label below */}
       <View style={styles.pointsContainer}>
-        <Text style={styles.totalPoints}>{totalPoints}pts</Text>
-        {exactCount > 0 ? (
-          <Text style={styles.exactCount}>
-            {exactCount} {exactCount === 1 ? 'exacto' : 'exactos'}
-          </Text>
-        ) : null}
+        <Text style={styles.totalPoints}>{totalPoints}</Text>
+        <Text style={styles.ptsLabel}>pts</Text>
       </View>
     </View>
   );
@@ -135,9 +133,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   rowHighlighted: {
@@ -148,36 +146,28 @@ const styles = StyleSheet.create({
 
   // ── Position ─────────────────────────────────────────────────────────────
   positionContainer: {
-    width: 36,
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   positionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
-  },
-  positionTextBold: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: COLORS.text.primary,
-  },
-  medalEmoji: {
-    fontSize: 20,
   },
 
   // ── Avatar ───────────────────────────────────────────────────────────────
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginLeft: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginLeft: 6,
   },
   avatarFallback: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginLeft: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginLeft: 6,
     backgroundColor: COLORS.primary.light,
     alignItems: 'center',
     justifyContent: 'center',
@@ -196,7 +186,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.text.primary,
   },
   displayNameBold: {
@@ -205,13 +195,22 @@ const styles = StyleSheet.create({
 
   // ── Points ───────────────────────────────────────────────────────────────
   pointsContainer: {
+    flexDirection: 'column',
     alignItems: 'flex-end',
-    minWidth: 60,
+    flexShrink: 0,
+    minWidth: 40,
   },
   totalPoints: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '800',
     color: COLORS.primary.DEFAULT,
+    lineHeight: 24,
+  },
+  ptsLabel: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: COLORS.text.muted,
+    lineHeight: 14,
   },
   exactCount: {
     fontSize: 11,

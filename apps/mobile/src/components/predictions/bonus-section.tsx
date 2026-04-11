@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   pointsBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: COLORS.gold.DEFAULT,
   },
   pointsLabel: {
