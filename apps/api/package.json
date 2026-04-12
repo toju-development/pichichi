@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "npm run build -w @pichichi/shared",
     "build": "nest build",
+    "migrate:deploy": "prisma migrate deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "prestart": "npm run build -w @pichichi/shared",
     "start": "nest start",

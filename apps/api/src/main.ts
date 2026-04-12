@@ -9,6 +9,12 @@ async function bootstrap(): Promise<void> {
   });
   const logger = new Logger('Bootstrap');
 
+  // Health check — must be registered BEFORE setGlobalPrefix so it bypasses the prefix
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
