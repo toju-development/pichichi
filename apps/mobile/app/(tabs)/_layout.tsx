@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { User } from 'lucide-react-native';
 
 import { GlobeIcon, GroupIcon, TrophyIcon } from '@/components/brand/icons';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { COLORS } from '@/theme/colors';
 
 // ─── Query key prefixes per tab ─────────────────────────────────────────────
@@ -83,14 +84,16 @@ export default function TabLayout() {
   );
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: COLORS.primary.DEFAULT,
-        tabBarInactiveTintColor: '#94A3B8',
-        tabBarStyle: styles.tabBar,
-      }}
-    >
+    <View style={styles.root}>
+      <OfflineBanner />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: COLORS.primary.DEFAULT,
+          tabBarInactiveTintColor: '#94A3B8',
+          tabBarStyle: styles.tabBar,
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -166,12 +169,16 @@ export default function TabLayout() {
          }}
       />
     </Tabs>
+    </View>
   );
 }
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   tabBar: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
