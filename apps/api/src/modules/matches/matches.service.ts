@@ -274,6 +274,7 @@ export class MatchesService {
       isExtraTime: boolean;
       homeTeamPlaceholder: string | null;
       awayTeamPlaceholder: string | null;
+      externalId?: number | null;
       createdAt: Date;
       updatedAt: Date;
       homeTeam?: { id: string; name: string; shortName: string; logoUrl: string | null } | null;
@@ -313,6 +314,7 @@ export class MatchesService {
       isExtraTime: match.isExtraTime,
       homeTeamPlaceholder: match.homeTeamPlaceholder,
       awayTeamPlaceholder: match.awayTeamPlaceholder,
+      externalId: match.externalId ?? null,
       createdAt: match.createdAt,
       updatedAt: match.updatedAt,
     };

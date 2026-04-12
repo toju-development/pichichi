@@ -21,6 +21,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PlansModule } from './modules/plans/plans.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { MatchSyncModule } from './modules/match-sync/match-sync.module.js';
+import { WidgetProxyModule } from './modules/widget-proxy/widget-proxy.module.js';
 import { EventsModule } from './gateways/events.module.js';
 
 @Module({
@@ -47,6 +48,7 @@ import { EventsModule } from './gateways/events.module.js';
     PlansModule,
     DashboardModule,
     MatchSyncModule,
+    WidgetProxyModule,
   ],
   controllers: [AppController],
   providers: [

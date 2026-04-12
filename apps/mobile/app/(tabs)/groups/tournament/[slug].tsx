@@ -46,6 +46,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { MatchDetailModal } from '@/components/matches/match-detail-modal';
 import { useBonusPredictions } from '@/hooks/use-bonus-predictions';
 import { useGroup } from '@/hooks/use-groups';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
@@ -154,6 +155,7 @@ export default function GroupTournamentScreen() {
 
   const [activeTab, setActiveTab] = useState<Tab>('pronosticos');
   const [selectedMatch, setSelectedMatch] = useState<MatchDto | null>(null);
+  const [selectedExternalId, setSelectedExternalId] = useState<number | null>(null);
 
   // ── Auth ──────────────────────────────────────────────────────────────
   const currentUserId = useAuthStore((s) => s.user?.id) ?? '';
@@ -298,6 +300,10 @@ export default function GroupTournamentScreen() {
     setSelectedMatch(match);
   }, []);
 
+  const handleMatchDetail = useCallback((match: MatchDto) => {
+    setSelectedExternalId(match.externalId);
+  }, []);
+
   const handleCloseModal = useCallback(() => {
     setSelectedMatch(null);
   }, []);
@@ -380,6 +386,7 @@ export default function GroupTournamentScreen() {
             isRefreshing={isMatchDataRefreshing}
             onRefresh={onRefreshMatchData}
             onPredictMatch={handlePredictMatch}
+            onMatchDetail={handleMatchDetail}
           />
         ) : activeTab === 'resultados' ? (
           <ResultadosTab
@@ -389,6 +396,7 @@ export default function GroupTournamentScreen() {
             isLoading={isLoadingMatchData}
             isRefreshing={isMatchDataRefreshing}
             onRefresh={onRefreshMatchData}
+            onMatchDetail={handleMatchDetail}
           />
         ) : activeTab === 'bonus' ? (
           <BonusTab
@@ -420,6 +428,12 @@ export default function GroupTournamentScreen() {
         groupId={groupId}
         onClose={handleCloseModal}
       />
+
+      {/* ── Match detail modal ──────────────────────────────────────────── */}
+      <MatchDetailModal
+        externalId={selectedExternalId}
+        onClose={() => setSelectedExternalId(null)}
+      />
     </View>
   );
 }
@@ -434,6 +448,7 @@ function PronosticosTab({
   isRefreshing,
   onRefresh,
   onPredictMatch,
+  onMatchDetail,
 }: {
   matchSections: MatchSection[];
   predictionsByMatchId: Map<string, PredictionDto>;
@@ -442,6 +457,7 @@ function PronosticosTab({
   isRefreshing: boolean;
   onRefresh: () => void;
   onPredictMatch: (match: MatchDto) => void;
+  onMatchDetail: (match: MatchDto) => void;
 }) {
   if (isLoading) {
     return (
@@ -499,6 +515,7 @@ function PronosticosTab({
             match={item}
             prediction={predictionsByMatchId.get(item.id)}
             onPredict={onPredictMatch}
+            onMatchDetail={onMatchDetail}
             groupId={groupId}
           />
         </View>
@@ -526,6 +543,7 @@ function ResultadosTab({
   isLoading,
   isRefreshing,
   onRefresh,
+  onMatchDetail,
 }: {
   matchSections: MatchSection[];
   predictionsByMatchId: Map<string, PredictionDto>;
@@ -533,6 +551,7 @@ function ResultadosTab({
   isLoading: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
+  onMatchDetail: (match: MatchDto) => void;
 }) {
   if (isLoading) {
     return (
@@ -590,6 +609,7 @@ function ResultadosTab({
             match={item}
             prediction={predictionsByMatchId.get(item.id)}
             onPredict={() => {}} // Not tappable — locked/finished
+            onMatchDetail={onMatchDetail}
             groupId={groupId}
           />
         </View>

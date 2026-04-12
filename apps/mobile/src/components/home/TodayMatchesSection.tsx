@@ -13,12 +13,14 @@
  * Never mix `style` and `className` on the same element.
  */
 
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, Globe } from 'lucide-react-native';
 
 import type { DashboardTodayMatchDto } from '@pichichi/shared';
 
+import { MatchDetailModal } from '@/components/matches/match-detail-modal';
 import { TeamAvatar } from '@/components/ui/team-avatar';
 import { COLORS } from '@/theme/colors';
 
@@ -161,29 +163,35 @@ function PredictionIndicator({ match }: { match: DashboardTodayMatchDto }) {
   );
 }
 
-function TodayMatchCard({ match }: { match: DashboardTodayMatchDto }) {
+function TodayMatchCard({
+  match,
+  onPressLive,
+}: {
+  match: DashboardTodayMatchDto;
+  onPressLive: (externalId: number | null) => void;
+}) {
   const isLive = match.isLocked && match.status !== 'FINISHED';
   const canNavigate = !isLive;
 
   const handlePress = () => {
-    if (!canNavigate) return;
-    router.push({
-      pathname: '/(tabs)/groups/tournament/[slug]',
-      params: {
-        slug: match.tournamentSlug,
-        groupId: match.groupId,
-      },
-    });
+    if (canNavigate) {
+      router.push({
+        pathname: '/(tabs)/groups/tournament/[slug]',
+        params: {
+          slug: match.tournamentSlug,
+          groupId: match.groupId,
+        },
+      });
+    } else {
+      onPressLive(match.externalId);
+    }
   };
 
   return (
     <View style={[styles.matchCard, isLive && styles.matchCardLive]}>
       <Pressable
         onPress={handlePress}
-        disabled={!canNavigate}
-        style={({ pressed }) => [
-          pressed && canNavigate && styles.matchCardPressed,
-        ]}
+        style={styles.matchCardPressable}
       >
         {/* Live indicator */}
         {isLive ? (
@@ -222,6 +230,8 @@ function TodayMatchCard({ match }: { match: DashboardTodayMatchDto }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function TodayMatchesSection({ matches }: TodayMatchesSectionProps) {
+  const [selectedExternalId, setSelectedExternalId] = useState<number | null>(null);
+
   // Filter to only "today" matches using the device timezone.
   // The backend returns all upcoming matches — timezone filtering happens here.
   const todayMatches = filterTodayMatches(matches);
@@ -256,8 +266,18 @@ export function TodayMatchesSection({ matches }: TodayMatchesSectionProps) {
 
       {/* Match cards */}
       {todayMatches.map((match) => (
-        <TodayMatchCard key={`${match.matchId}-${match.groupId}`} match={match} />
+        <TodayMatchCard
+          key={`${match.matchId}-${match.groupId}`}
+          match={match}
+          onPressLive={setSelectedExternalId}
+        />
       ))}
+
+      {/* Match detail modal */}
+      <MatchDetailModal
+        externalId={selectedExternalId}
+        onClose={() => setSelectedExternalId(null)}
+      />
     </View>
   );
 }
@@ -320,6 +340,9 @@ const styles = StyleSheet.create({
   },
   matchCardPressed: {
     opacity: 0.7,
+  },
+  matchCardPressable: {
+    // Static container — no dynamic press styles (NativeWind v4 compatibility)
   },
 
   // ── Live indicator ──────────────────────────────────────────────────────

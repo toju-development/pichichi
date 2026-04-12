@@ -13,6 +13,7 @@ import { PrismaService } from '../../config/prisma.service.js';
 
 interface RawTodayMatchRow {
   id: string;
+  external_id: number | null;
   scheduled_at: Date;
   status: string;
   home_score: number | null;
@@ -114,6 +115,7 @@ export class DashboardService {
     const rows = await this.prisma.$queryRaw<RawTodayMatchRow[]>`
       SELECT
         m.id,
+        m.external_id,
         m.scheduled_at,
         m.status,
         m.home_score,
@@ -161,6 +163,7 @@ export class DashboardService {
 
     return rows.map((row) => ({
       matchId: row.id,
+      externalId: row.external_id,
       homeTeam: row.home_team_id && row.home_team_name
         ? { id: row.home_team_id, name: row.home_team_name, logoUrl: row.home_team_logo_url }
         : null,

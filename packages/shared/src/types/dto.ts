@@ -174,6 +174,7 @@ export interface MatchDto {
   isExtraTime: boolean;
   homeTeamPlaceholder: string | null;
   awayTeamPlaceholder: string | null;
+  externalId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -380,6 +381,7 @@ export interface DashboardGroupRankingDto {
 
 export interface DashboardTodayMatchDto {
   matchId: string;
+  externalId: number | null;
   homeTeam: { id: string; name: string; logoUrl: string | null } | null;
   awayTeam: { id: string; name: string; logoUrl: string | null } | null;
   homePlaceholder: string | null;

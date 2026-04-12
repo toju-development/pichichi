@@ -37,6 +37,7 @@ const mockDashboardResponse: DashboardResponseDto = {
       hasPrediction: false,
       predictedHome: null,
       predictedAway: null,
+      externalId: 12345,
       isLocked: false,
     },
   ],

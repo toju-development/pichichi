@@ -24,9 +24,22 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // CORS
+  // CORS — function-based origin to support WebView's `Origin: null`.
+  // WebView loads HTML via `source={{ html }}` which sends `Origin: null`.
+  // The cors package echoes back the matched origin, so `null` origins get
+  // `Access-Control-Allow-Origin: null` which browsers/WebViews accept.
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001'],
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // null/undefined origin: WebViews (send literal string "null"), same-origin, curl, etc.
+      if (!origin || origin === 'null') return callback(null, true);
+      const allowed =
+        process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001'];
+      if (allowed.includes(origin)) return callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   });
 

@@ -70,6 +70,9 @@ export class MatchResponseDto {
   @ApiPropertyOptional({ description: 'Away team placeholder label', example: 'Runner-up Group B' })
   awayTeamPlaceholder?: string | null;
 
+  @ApiPropertyOptional({ description: 'API-Football fixture ID', example: 1208614 })
+  externalId?: number | null;
+
   @ApiProperty({ description: 'Creation date' })
   createdAt!: Date;
 

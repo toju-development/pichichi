@@ -30,6 +30,11 @@ export interface PredictionMatchCardProps {
   prediction: PredictionDto | null | undefined;
   /** Called when the user taps the card to open prediction entry. */
   onPredict: (match: MatchDto) => void;
+  /**
+   * Called when the user taps the card while it is locked (e.g. LIVE or past
+   * the prediction cutoff). Use this to open a match detail view.
+   */
+  onMatchDetail?: (match: MatchDto) => void;
   /** Group ID for context (used by parent for mutations). */
   groupId: string;
   /** Show the phase/group badge line at the top. */
@@ -44,6 +49,7 @@ export function PredictionMatchCard({
   match,
   prediction,
   onPredict,
+  onMatchDetail,
   showPhaseInfo = false,
   className,
 }: PredictionMatchCardProps) {
@@ -65,7 +71,7 @@ export function PredictionMatchCard({
         hasPrediction={hasPrediction}
         showPhaseInfo={showPhaseInfo}
         footer={badge}
-        onPress={locked ? undefined : () => onPredict(match)}
+        onPress={locked ? (onMatchDetail ? () => onMatchDetail(match) : undefined) : () => onPredict(match)}
       />
     </View>
   );

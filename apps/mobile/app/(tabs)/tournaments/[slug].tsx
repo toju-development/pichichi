@@ -32,6 +32,7 @@ import type { MatchDto, MatchPhase, TournamentPhaseDto } from '@pichichi/shared'
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { MatchCard } from '@/components/matches/match-card';
+import { MatchDetailModal } from '@/components/matches/match-detail-modal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -220,10 +221,12 @@ function ProximosContent({
   tournamentId,
   onRefresh,
   isRefreshing,
+  onMatchPress,
 }: {
   tournamentId: string;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onMatchPress: (externalId: number | null) => void;
 }) {
   const {
     data: matches,
@@ -282,7 +285,7 @@ function ProximosContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo showPrediction={false} />
+          <MatchCard match={item} showPhaseInfo showPrediction={false} onPress={item.status !== 'SCHEDULED' ? () => onMatchPress(item.externalId) : undefined} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -306,10 +309,12 @@ function GruposContent({
   tournamentId,
   onRefresh,
   isRefreshing,
+  onMatchPress,
 }: {
   tournamentId: string;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onMatchPress: (externalId: number | null) => void;
 }) {
   const [selectedGroupName, setSelectedGroupName] = useState<string>(ALL_GROUPS);
 
@@ -414,7 +419,7 @@ function GruposContent({
           )}
           renderItem={({ item }) => (
             <View style={styles.matchCardWrapper}>
-              <MatchCard match={item} showPhaseInfo showPrediction={false} />
+              <MatchCard match={item} showPhaseInfo showPrediction={false} onPress={item.status !== 'SCHEDULED' ? () => onMatchPress(item.externalId) : undefined} />
             </View>
           )}
           contentContainerStyle={styles.listContent}
@@ -442,11 +447,13 @@ function KnockoutContent({
   phase,
   onRefresh,
   isRefreshing,
+  onMatchPress,
 }: {
   tournamentId: string;
   phase: MatchPhase;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onMatchPress: (externalId: number | null) => void;
 }) {
   const {
     data: matches,
@@ -507,7 +514,7 @@ function KnockoutContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo={false} showPrediction={false} />
+          <MatchCard match={item} showPhaseInfo={false} showPrediction={false} onPress={item.status !== 'SCHEDULED' ? () => onMatchPress(item.externalId) : undefined} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -532,10 +539,12 @@ function CombinedFinalsContent({
   tournamentId,
   onRefresh,
   isRefreshing,
+  onMatchPress,
 }: {
   tournamentId: string;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onMatchPress: (externalId: number | null) => void;
 }) {
   const {
     data: thirdPlaceMatches,
@@ -608,7 +617,7 @@ function CombinedFinalsContent({
       )}
       renderItem={({ item }) => (
         <View style={styles.matchCardWrapper}>
-          <MatchCard match={item} showPhaseInfo showPrediction={false} />
+          <MatchCard match={item} showPhaseInfo showPrediction={false} onPress={item.status !== 'SCHEDULED' ? () => onMatchPress(item.externalId) : undefined} />
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -638,6 +647,7 @@ export default function TournamentDetailScreen() {
   } = useTournament(slug!);
 
   const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedExternalId, setSelectedExternalId] = useState<number | null>(null);
 
   // ── Build tabs from tournament phases ──────────────────────────────────
 
@@ -733,9 +743,16 @@ export default function TournamentDetailScreen() {
             tournamentId={tournament.id}
             onRefresh={onRefresh}
             isRefreshing={isRefetching}
+            onMatchPress={setSelectedExternalId}
           />
         ) : null}
       </View>
+
+      {/* Match detail modal */}
+      <MatchDetailModal
+        externalId={selectedExternalId}
+        onClose={() => setSelectedExternalId(null)}
+      />
     </View>
   );
 }
@@ -750,11 +767,13 @@ function TabContent({
   tournamentId,
   onRefresh,
   isRefreshing,
+  onMatchPress,
 }: {
   tab: TabDefinition;
   tournamentId: string;
   onRefresh: () => void;
   isRefreshing: boolean;
+  onMatchPress: (externalId: number | null) => void;
 }) {
   // Próximos (virtual tab — all scheduled matches)
   if (tab.key === PROXIMOS_TAB_KEY) {
@@ -763,6 +782,7 @@ function TabContent({
         tournamentId={tournamentId}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        onMatchPress={onMatchPress}
       />
     );
   }
@@ -774,6 +794,7 @@ function TabContent({
         tournamentId={tournamentId}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        onMatchPress={onMatchPress}
       />
     );
   }
@@ -785,6 +806,7 @@ function TabContent({
         tournamentId={tournamentId}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        onMatchPress={onMatchPress}
       />
     );
   }
@@ -797,6 +819,7 @@ function TabContent({
         phase={tab.phases[0]}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        onMatchPress={onMatchPress}
       />
     );
   }
