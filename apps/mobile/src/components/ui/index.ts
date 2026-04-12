@@ -6,4 +6,4 @@ export { Button } from './button';
 export { Stepper } from './stepper';
 export { LoadingScreen } from './loading-screen';
 export { TeamAvatar } from './team-avatar';
-export { SectionErrorBoundary } from './error-boundary';
+export { SectionErrorBoundary, AppErrorBoundary } from './error-boundary';

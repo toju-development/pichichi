@@ -20,23 +20,26 @@ import { Stack } from 'expo-router';
 import { queryClient } from '@/hooks/query-client';
 import { AuthProvider } from '@/providers/auth-provider';
 import { SocketProvider } from '@/providers/socket-provider';
+import { AppErrorBoundary } from '@/components/ui/error-boundary';
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SocketProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="notifications"
-              options={{ animation: 'slide_from_right' }}
-            />
-          </Stack>
-        </SocketProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <SocketProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="notifications"
+                options={{ animation: 'slide_from_right' }}
+              />
+            </Stack>
+          </SocketProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
