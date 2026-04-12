@@ -14,6 +14,15 @@ import { PrismaService } from '../../config/prisma.service.js';
 import { UsersService, type UserWithPlan } from '../users/users.service.js';
 import type { AuthResponseDto } from './dto/auth-response.dto.js';
 
+interface AppleJwk {
+  kty: string;
+  kid: string;
+  use: string;
+  alg: string;
+  n: string;
+  e: string;
+}
+
 interface AppleJwtPayload {
   iss: string;
   sub: string;
@@ -29,6 +38,8 @@ interface TokenPair {
 
 const BCRYPT_SALT_ROUNDS = 10;
 const REFRESH_TOKEN_EXPIRY = '30d';
+const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
+const APPLE_JWKS_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 @Injectable()
 export class AuthService {
@@ -36,6 +47,7 @@ export class AuthService {
   private readonly googleClient: OAuth2Client;
   private readonly googleClientId: string;
   private readonly appleClientId: string;
+  private appleJwksCache: { keys: AppleJwk[]; fetchedAt: number } | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -297,9 +309,6 @@ export class AuthService {
 
   private async verifyAppleToken(token: string): Promise<AppleJwtPayload> {
     try {
-      // Apple's public keys endpoint for JWT verification
-      const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
-
       // Decode the JWT header to get the key ID (kid)
       const decoded = jsonwebtoken.decode(token, { complete: true });
 
@@ -307,14 +316,17 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Apple token format');
       }
 
-      // Fetch Apple's public keys
-      const response = await fetch(APPLE_KEYS_URL);
-      const { keys } = (await response.json()) as { keys: Record<string, unknown>[] };
+      const kid = decoded.header.kid;
 
-      // Find the matching key
-      const matchingKey = keys.find(
-        (key) => key['kid'] === decoded.header.kid,
-      );
+      // Try to find the matching key in cache first
+      let keys = await this.getAppleJwks();
+      let matchingKey = keys.find((key) => key.kid === kid);
+
+      // If kid not found, force-refresh in case Apple rotated keys
+      if (!matchingKey) {
+        keys = await this.fetchAppleJwks();
+        matchingKey = keys.find((key) => key.kid === kid);
+      }
 
       if (!matchingKey) {
         throw new UnauthorizedException('Apple token signing key not found');
@@ -322,7 +334,7 @@ export class AuthService {
 
       // Convert JWK to PEM using Node.js crypto
       const publicKey = createPublicKey({
-        key: matchingKey as JsonWebKeyInput['key'],
+        key: matchingKey as unknown as JsonWebKeyInput['key'],
         format: 'jwk',
       });
 
@@ -344,6 +356,32 @@ export class AuthService {
       this.logger.error('Apple token verification failed', error);
       throw new UnauthorizedException('Invalid Apple token');
     }
+  }
+
+  /**
+   * Return cached Apple JWKS if still fresh, otherwise fetch new keys.
+   */
+  private async getAppleJwks(): Promise<AppleJwk[]> {
+    if (
+      this.appleJwksCache &&
+      Date.now() - this.appleJwksCache.fetchedAt < APPLE_JWKS_TTL_MS
+    ) {
+      return this.appleJwksCache.keys;
+    }
+
+    return this.fetchAppleJwks();
+  }
+
+  /**
+   * Fetch Apple's public JWKS and update the in-memory cache.
+   */
+  private async fetchAppleJwks(): Promise<AppleJwk[]> {
+    const response = await fetch(APPLE_KEYS_URL);
+    const { keys } = (await response.json()) as { keys: AppleJwk[] };
+
+    this.appleJwksCache = { keys, fetchedAt: Date.now() };
+
+    return keys;
   }
 
   /**

@@ -62,6 +62,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.pichichi.app',
+      usesAppleSignIn: true,
     },
     android: {
       adaptiveIcon: {
