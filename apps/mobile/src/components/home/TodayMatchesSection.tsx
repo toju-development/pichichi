@@ -16,7 +16,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Check, Globe } from 'lucide-react-native';
+import { Check, CalendarX2, Globe } from 'lucide-react-native';
 
 import type { DashboardTodayMatchDto } from '@pichichi/shared';
 
@@ -244,8 +244,13 @@ export function TodayMatchesSection({ matches }: TodayMatchesSectionProps) {
           <Text style={styles.headerTitle}>Partidos del D{'\u00ED'}a</Text>
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>{'\uD83D\uDE34'}</Text>
-          <Text style={styles.emptyText}>No hay partidos hoy</Text>
+          <View style={styles.emptyIconCircle}>
+            <CalendarX2 size={24} color={COLORS.text.muted} strokeWidth={1.5} />
+          </View>
+          <Text style={styles.emptyTitle}>Sin partidos hoy</Text>
+          <Text style={styles.emptyText}>
+            Cuando haya partidos programados,{'\n'}van a aparecer ac{'\u00E1'}
+          </Text>
         </View>
       </View>
     );
@@ -481,19 +486,34 @@ const styles = StyleSheet.create({
   // ── Empty state ─────────────────────────────────────────────────────────
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
     backgroundColor: COLORS.surface,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
   },
-  emptyIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  emptyIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 4,
   },
   emptyText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
+    fontSize: 13,
+    fontWeight: '400',
+    color: COLORS.text.muted,
     textAlign: 'center',
+    lineHeight: 18,
   },
 });
