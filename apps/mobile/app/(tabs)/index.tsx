@@ -26,6 +26,7 @@ import {
 } from '@/components/home';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { SectionErrorBoundary } from '@/components/ui/error-boundary';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { COLORS } from '@/theme/colors';
@@ -136,7 +137,9 @@ export default function HomeScreen() {
         ) : data.stats === null ? (
           <SectionError label="estadísticas" />
         ) : (
-          <UserStatsSection stats={data.stats} />
+          <SectionErrorBoundary label="estadísticas">
+            <UserStatsSection stats={data.stats} />
+          </SectionErrorBoundary>
         )}
 
         {/* ── Today Matches ──────────────────────────────────────────── */}
@@ -145,7 +148,9 @@ export default function HomeScreen() {
         ) : data.todayMatches === null ? (
           <SectionError label="partidos de hoy" />
         ) : (
-          <TodayMatchesSection matches={data.todayMatches} />
+          <SectionErrorBoundary label="partidos de hoy">
+            <TodayMatchesSection matches={data.todayMatches} />
+          </SectionErrorBoundary>
         )}
 
         {/* ── Group Rankings ──────────────────────────────────────────── */}
@@ -154,7 +159,9 @@ export default function HomeScreen() {
         ) : data.groups === null ? (
           <SectionError label="grupos" />
         ) : (
-          <GroupRankingsSection groups={data.groups} />
+          <SectionErrorBoundary label="grupos">
+            <GroupRankingsSection groups={data.groups} />
+          </SectionErrorBoundary>
         )}
       </ScrollView>
     </View>
