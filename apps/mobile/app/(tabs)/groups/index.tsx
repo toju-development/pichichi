@@ -12,9 +12,9 @@
  * container, not the visible card content.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { GroupDto } from '@pichichi/shared';
 import { Hash, Plus, Users } from 'lucide-react-native';
 
@@ -139,6 +139,8 @@ export default function GroupsScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
 
+  const { action } = useLocalSearchParams<{ action?: 'create' | 'join' }>();
+
   const user = useAuthStore((s) => s.user);
   const maxGroupsCreated = user?.plan.maxGroupsCreated ?? 3;
 
@@ -163,6 +165,14 @@ export default function GroupsScreen() {
     }
     setShowCreateModal(true);
   }
+
+  // Pre-open modal if navigated with ?action=create|join
+  useEffect(() => {
+    if (!action) return;
+    if (action === 'create') handleCreatePress();
+    if (action === 'join') setShowJoinModal(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action]);
 
   const onRefresh = useCallback(() => {
     console.log('[Notifications] 🔄 Refetching unread count');

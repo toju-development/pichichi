@@ -67,14 +67,26 @@ export function GroupRankingsSection({ groups }: GroupRankingsSectionProps) {
           <Text style={styles.headerTitle}>Mis Grupos</Text>
         </View>
         <View style={styles.emptyContainer}>
-          <Users size={32} color={COLORS.text.muted} />
-          <Text style={styles.emptyText}>No estás en ningún grupo</Text>
-          <View style={styles.emptyAction}>
-            <Button
-              title="Unirse a un grupo"
-              variant="primary"
-              onPress={() => router.push('/(tabs)/groups')}
-            />
+          <Users size={36} color={COLORS.primary.DEFAULT} />
+          <Text style={styles.emptyTitle}>¡Sumate al prode!</Text>
+          <Text style={styles.emptyText}>
+            Creá un grupo o ingresá con el código de un amigo
+          </Text>
+          <View style={styles.emptyActions}>
+            <View style={styles.emptyActionSecondary}>
+              <Button
+                title="Tengo un código"
+                variant="outline"
+                onPress={() => router.push('/(tabs)/groups?action=join')}
+              />
+            </View>
+            <View style={styles.emptyActionPrimary}>
+              <Button
+                title="Crear grupo"
+                variant="primary"
+                onPress={() => router.push('/(tabs)/groups?action=create')}
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -189,19 +201,37 @@ const styles = StyleSheet.create({
   // ── Empty state ─────────────────────────────────────────────────────────
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
     backgroundColor: COLORS.surface,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  emptyText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginTop: 12,
   },
-  emptyAction: {
-    marginTop: 16,
+  emptyText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
+  },
+  emptyActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 10,
+  },
+  emptyActionSecondary: {
+    flex: 1,
+  },
+  emptyActionPrimary: {
+    flex: 1,
   },
 });
