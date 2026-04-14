@@ -17,7 +17,7 @@ export function Header() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Logo */}
         <a href="#" className="flex items-center">
-          <Logo size="small" />
+          <Logo size="default" />
         </a>
 
         {/* Desktop nav */}

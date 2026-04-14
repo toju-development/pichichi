@@ -25,7 +25,7 @@ export function Footer() {
           {/* Logo and tagline */}
           <div className="flex flex-col items-center sm:items-start">
             <a href="#">
-              <Logo size="small" />
+              <Logo size="default" />
             </a>
             <p className="mt-3 text-sm text-text-tertiary">
               Hecho con pasión para el Mundial 2026

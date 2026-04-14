@@ -37,6 +37,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://pichichi.app",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-icon.png",
+  },
   robots: {
     index: true,
     follow: true,
