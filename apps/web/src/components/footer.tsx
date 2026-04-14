@@ -1,6 +1,7 @@
 import { Logo } from "@/components/logo";
 
 const FOOTER_LINKS = [
+  { label: "FAQ", href: "/faq" },
   { label: "Términos y Condiciones", href: "#" },
   { label: "Política de Privacidad", href: "#" },
 ] as const;
