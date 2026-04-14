@@ -21,7 +21,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pichichi.app"),
-  title: "Pichichi — El prode de fútbol de tu grupo",
+  title: "Pichichi — Armá tu prode, ganale a tus amigos",
   description:
     "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
   keywords: [
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Pichichi — El prode de fútbol de tu grupo",
+    title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
       "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
     type: "website",
@@ -65,13 +65,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Pichichi — El prode de fútbol de tu grupo",
+        alt: "Pichichi — Armá tu prode, ganale a tus amigos",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pichichi — El prode de fútbol de tu grupo",
+    title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
       "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
     images: ["/og-image.png"],
