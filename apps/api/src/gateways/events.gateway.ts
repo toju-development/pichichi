@@ -8,15 +8,21 @@ import {
 import type { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
-  cors: {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin || origin === 'null') return callback(null, true);
-      const allowed = process.env.CORS_ORIGINS?.split(',') ?? [];
-      if (allowed.includes(origin)) return callback(null, true);
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  },
+  cors:
+    process.env.NODE_ENV === 'production'
+      ? {
+          origin: (
+            origin: string | undefined,
+            callback: (err: Error | null, allow?: boolean) => void,
+          ) => {
+            if (!origin || origin === 'null') return callback(null, true);
+            const allowed = process.env.CORS_ORIGINS?.split(',') ?? [];
+            if (allowed.includes(origin)) return callback(null, true);
+            callback(new Error('Not allowed by CORS'));
+          },
+          credentials: true,
+        }
+      : true,
   namespace: '/events',
 })
 export class EventsGateway
