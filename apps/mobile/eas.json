@@ -19,7 +19,13 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.pichichi.app/api/v1",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "883384274738-thd39abk38veh2p31bosdq1dh2m4hqug.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "883384274738-atiolonr1gls3hvv9tdp1oqb4mdklv2f.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "883384274738-hmdf924dbhl8ir6vnmgmb2bbi04dtlkn.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {

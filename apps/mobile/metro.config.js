@@ -16,4 +16,15 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
+// Redirect @pichichi/shared to its TypeScript source so Metro doesn't
+// attempt to resolve the compiled dist/ output (which is gitignored and
+// doesn't exist in EAS Build cloud environments).
+const sharedSrc = path.resolve(monorepoRoot, "packages/shared/src/index.ts");
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@pichichi/shared") {
+    return { filePath: sharedSrc, type: "sourceFile" };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: "./global.css" });

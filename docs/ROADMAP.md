@@ -2,11 +2,11 @@
 
 > This document is auto-maintained. Updated as features are implemented.
 >
-> Last updated: 2026-04-03
+> Last updated: 2026-04-14
 
 ## V1 - World Cup 2026
 
-### Completado
+### ✅ Fase 1 — Core Features — COMPLETA
 
 - [x] **Project scaffolding** — Monorepo with NestJS API, Next.js web, Expo mobile, shared packages
 - [x] **Database schema** — 13 models, multi-tournament ready (Prisma + PostgreSQL)
@@ -66,25 +66,24 @@
   - Redis-cached with graceful in-memory fallback
   - Raw SQL aggregation for performance
   - Tiebreaker: most exact score predictions, then shared position
-- [x] **WebSocket gateway (partial)** — Real-time updates
+- [x] **WebSocket gateway** — Real-time updates
   - Room: `group:{id}` for leaderboard/prediction reveals
   - Room: `match:{id}` for live score updates
-  - Socket.IO events for prediction updates
+  - Socket.IO client in mobile (match:score_update, match:status_update, leaderboard:update, prediction:points_calculated)
 - [x] **Tournament import script** — CLI to import tournaments from API-Football
   - Flags: --search, --league, --season, --include-players, --dry-run
   - Player and TournamentPlayer models added
   - Clean-db script for full reset
   - Hardcoded seed scripts removed
   - GUIA-ADMIN.md created
-- [x] **Bonus select UI** — Bonus predictions now use select dropdowns instead of free text (`33a16e3`, 2026-04-02)
+- [x] **Bonus select UI** — Bonus predictions now use select dropdowns instead of free text
   - Champion/Revelation: team picker from tournament teams
   - Top Scorer/MVP: player picker from tournament players
   - BonusPredictionSelect component with React Hook Form integration
   - Backend: GET /tournaments/:id/teams and GET /tournaments/:id/players endpoints
   - Shared: BonusOptionDto, getTournamentTeams/getTournamentPlayers API client functions
   - TanStack hooks: useTournamentTeams, useTournamentPlayers
-- [x] **Toggle tournament script** — Dev tool to toggle tournament status (NOT_STARTED ↔ IN_PROGRESS) for testing predictions lock behavior (`33a16e3`, 2026-04-02)
-- [x] **match-data-sync** — Smart Cron + API-Football for automatic live result updates (`0f4ce7a` + `69cedca`, 2026-04-03)
+- [x] **match-data-sync** — Smart Cron + API-Football for automatic live result updates
   - Smart Cron polling: hourly heartbeat + 5-min dynamic intervals when matches are live
   - API-Football integration: batch fixture fetching, rate-limit tracking
   - Match change detection and auto-score updates via `MatchesService.updateScore()`
@@ -92,118 +91,69 @@
   - Champion bonus auto-resolve on tournament final
   - `BonusPredictionsService.resolveByKey()` for manual resolution (TOP_SCORER, MVP, REVELATION)
   - Admin API: `POST /match-sync/trigger`, `POST /match-sync/toggle`, `POST /bonus-predictions/resolve`
-  - Debug logging + immediate syncTick on enable for faster feedback
-  - Tested live with Liga Argentina match (Talleres 0-1 Boca)
+- [x] **Home screen dashboard** — Real user data (stats, próximos partidos, accesos rápidos)
+- [x] **In-app notifications** — Triggers + bell badge (sendPush stub, no FCM yet)
+- [x] **Global ranking** — Deduplicated leaderboard, podium top-3, infinite scroll, sticky user bar
 
-### Fase 1 — Funcionalidades Faltantes
+### ✅ Fase 2 — UI/Navegación — COMPLETA
 
-Features needed to complete the MVP functionality.
+- [x] **Home screen redesign** — "Selva Mundialista" visual language
+- [x] **Groups list redesign** — New card layout, status pills
+- [x] **Create/Join Group Modals** — Polished forms
+- [x] **Group Detail redesign** — Members, tournaments, admin actions
+- [x] **Edit Group Modal** — Name, description, maxMembers
+- [x] **Add Tournament Modal** — Tournament picker
+- [x] **Torneos Screen redesign** — Tournament logos, type/status pills, unified green accent
+- [x] **Tournament Detail (standalone)** — "Mis Grupos" section
+- [x] **Torneo-Grupo Tabs redesign** — Pronósticos, Resultados, Bonus, Ranking tabs
+- [x] **Prediction Modal redesign** — Score stepper, badge states
+- [x] **Profile screen redesign** — Avatar, settings rows
+- [x] **Back Button Unification** — ScreenHeader onBack pattern across all screens
+- [x] **Match Detail Modal** — API-Football widget via WebView proxy
+- [x] **Empty state polish** — Lucide icons, no emoji
+- [x] **Social reveal** — GroupPredictionsSheet: group name, team logos (TeamAvatar), "(Vos)" highlight
+- [x] **Landing page SEO** — robots.ts, sitemap.ts, manifest.ts, og:image, JSON-LD, FAQ page
 
-#### Home Screen con datos reales
-- La pantalla de Inicio muestra datos hardcodeados/placeholder
-- Necesita: stats reales del usuario (predicciones, puntos, posición), próximos partidos across groups, accesos rápidos
+### ✅ Fase 3 — Pre-Launch Polish — COMPLETA
 
-#### Socket.IO client en mobile
-- El backend YA emite eventos (match:score_update, match:status_update, leaderboard:update, prediction:points_calculated)
-- El mobile NO tiene socket.io-client — todo es poll-based con TanStack Query
-- Crítico para la experiencia en vivo del Mundial
+- [x] **Onboarding flow** — First-time user experience guided flow
+- [x] **Error boundaries / offline handling** — AppErrorBoundary, SectionErrorBoundary, offline banner
+- [x] **Apple Sign In** — Backend verification code implemented (UI pendiente de Apple Developer Account)
+- [x] **Profile screen** — Redesigned with avatar, settings rows
+- [x] **Landing page polish** — SEO completo, copy mejorado, og:image, FAQ page, logo, icons
 
-#### Notification triggers
-- El backend de notificaciones existe (CRUD, mark read, unread count, FCM token registration)
-- PERO `sendPush()` es un stub y NINGÚN servicio dispara notificaciones
-- Necesita triggers: partido por empezar (1h antes), resultado disponible, cambio en leaderboard, invitación a grupo
+### 🔲 Fase 4A — Deploy Android (PRÓXIMO PASO)
 
-#### Push Notifications (FCM)
-- Firebase Admin SDK no configurado
-- Expo notification permissions no implementados
-- Depende de Notification triggers
+- [ ] **Verificar env vars** — Mobile app apuntando a `api.pichichi.app` en producción
+- [ ] **EAS Build Android** — Configurar production profile, generar `.aab`
+- [ ] **Test en dispositivo físico** — Contra backend de producción (`api.pichichi.app`)
+- [ ] **Google Play Console** — $25 única vez, cuenta, store listing, publicar
 
-#### Ranking tab global
-- La tab "Ranking" existe en el tab bar pero es placeholder estático
-- El leaderboard por grupo dentro del torneo SÍ funciona
-- Necesita decisión UX: ¿ranking por grupo? ¿agregado? ¿por torneo?
+> **Infraestructura ya deployada:** Backend en Railway (`api.pichichi.app`), landing en Vercel (`pichichi.app`), Cloudflare DNS.
 
-#### Admin Panel Web
-- Interfaz web para administración
-- Resolver bonus predictions manualmente (TOP_SCORER, MVP, REVELATION)
-- Control de sync (trigger, toggle, status)
-- Gestión de torneos
-- Probablemente Next.js (ya existe en el monorepo)
+### 🔲 Fase 4B — Deploy iOS (BLOQUEADO)
 
-### Fase 2 — Mejoras UI y Navegación
+- [ ] **Apple Developer Account** — $99/yr — **no comprada todavía**
+- [ ] **EAS Build iOS** — Una vez comprada la cuenta: generar `.ipa`
+- [ ] **App Store submission** — Store listing, review process
 
-Polish and UX improvements.
+### 🔲 Fase 5 — Monetización
 
-#### Profile screen funcional
-- Actualmente solo muestra nombre + logout
-- Settings rows ("Mi cuenta", "Notificaciones", "Acerca de") son no-ops
-- Necesita: editar display name, configuración real
+- [ ] **Stripe integration** — PREMIUM plan checkout, webhooks, subscription management (FREE/PREMIUM model already in DB)
 
-#### Navigation fixes
-- Cross-tab state pollution (bug recurrente)
-- Dual-stack mirror pattern implementado pero hay edge cases
+### 🔲 Detalles menores pendientes
 
-#### Onboarding flow
-- Usuarios nuevos llegan a home screen vacía sin grupos
-- Necesita flujo guiado: crear/unirse a primer grupo → elegir torneo → empezar a predecir
+- [ ] URLs reales App Store / Google Play en `cta-banner.tsx` (cuando existan)
+- [ ] URL real `@pichichi_app` en footer Twitter/X (cuando exista la cuenta)
 
-#### Match detail screen
-- No existe pantalla dedicada al detalle de un partido
-- Podría mostrar: predicciones de todos los miembros del grupo, comparación head-to-head, stats del partido
-- Driver de engagement social
+### 🗂 Nice to Have / Post-Launch
 
-#### Error handling / offline
-- No hay error boundary global
-- No hay manejo de offline (predicciones se pierden sin conexión)
-- No hay retry queue
-
-#### Deep linking
-- Compartir invitación de grupo por link (WhatsApp, etc.)
-- Actualmente solo se comparte código manual
-- Clave para viralidad durante el Mundial
-
-### Fase 3 — Monetización
-
-#### Modelo de negocio
-- Definir estrategia de monetización (freemium, premium features, etc.)
-- El sistema de planes FREE/PREMIUM ya existe con enforcement en backend
-- Necesita definición clara de qué features son premium
-
-#### Stripe integration
-- Cero código de Stripe actualmente
-- Modelo de Plan ya existe en DB (FREE/PREMIUM con límites)
-- Implementar checkout, webhooks, subscription management
-
-### Fase 4 — Deploy y Distribución
-
-#### EAS development build
-- Necesario para testear OAuth real en dispositivos físicos
-- Actualmente se usa Expo Go con dev-login bypass
-
-#### Apple Developer Program + Apple Sign In
-- $99/año enrollment
-- Apple REQUIERE Apple Sign In si ofrecés third-party auth (Google)
-- Backend verification code ya existe
-
-#### Deploy backend
-- API corriendo en localhost:3000
-- Necesita hosting (Railway, Fly.io, AWS, etc.)
-- Base de datos PostgreSQL en la nube
-- Redis (opcional pero recomendado para leaderboard cache)
-
-#### Deploy landing web
-- Landing Next.js "Selva Mundialista" existe
-- Necesita deploy (Vercel probable)
-- Dominio propio
-
-#### Rate limiting API
-- Sin protección actualmente
-- Necesita rate limiting básico antes de ir a producción
-
-#### App Store + Play Store submission
-- Builds de producción
-- Store listings, screenshots, descriptions
-- Review process
+- [ ] **Push Notifications (FCM/APNs)** — Firebase Admin SDK, Expo permissions. Not testable on iOS simulator / Android without Play Services. Deferred post-launch.
+- [ ] **Admin Panel web** — Bonus resolution UI, sync control, tournament management. Not needed for MVP (scripts + Smart Cron cover it for <1000 users).
+- [ ] **Podium design polish** — Visual refinement of top-3 podium component
+- [ ] **Prediction streaks / achievements** — Gamification layer
+- [ ] **Group activity feed** — Timeline of events per group
+- [ ] **User profile photo upload** — Avatar from camera/gallery
 
 ## Known Issues
 
@@ -224,20 +174,20 @@ Discovered 2026-04-07. The client-side filtering in `[slug].tsx` has gaps where 
 |---|---|---|---|---|
 | SCHEDULED | `false` (>5min to kickoff) | ✅ Predictable section | ❌ | ✅ |
 | SCHEDULED | `true` (≤5min to kickoff) | ❌ Excluded by `!isMatchLocked(m)` | ❌ Not FINISHED | ❌ **INVISIBLE** |
-| LIVE | `true` (always) | ✅ "En vivo 🔴" section | ❌ | ✅ |
+| LIVE | `true` (always) | ✅ "En vivo" section | ❌ | ✅ |
 | FINISHED | `true` (always) | ❌ | ✅ | ✅ |
 | POSTPONED | `true` (always) | ❌ Not SCHEDULED | ❌ Not FINISHED | ❌ **INVISIBLE** |
 | CANCELLED | `true` (always) | ❌ Not SCHEDULED | ❌ Not FINISHED | ❌ **INVISIBLE** |
 
 **Key findings:**
-1. **LIVE matches show in Pronósticos, NOT Resultados** — User hypothesis was wrong. `getLiveMatches()` feeds into `pronosticosSections` (line 242-256). Resultados only shows `FINISHED`.
-2. **SCHEDULED+locked gap** — A match within 5 minutes of kickoff but not yet LIVE disappears from both tabs. This window is small (≤5 min) but real. It reappears once the backend updates status to LIVE.
+1. **LIVE matches show in Pronósticos, NOT Resultados** — `getLiveMatches()` feeds into `pronosticosSections`. Resultados only shows `FINISHED`.
+2. **SCHEDULED+locked gap** — A match within 5 minutes of kickoff but not yet LIVE disappears from both tabs. Small window (≤5 min) but real.
 3. **POSTPONED/CANCELLED are invisible** — No tab handles these statuses. During the World Cup, postponed matches would vanish entirely.
 
 **Recommended fix (future):**
-- Add SCHEDULED+locked matches to Pronósticos as a "Próximos a empezar 🔒" section (locked, non-editable)
-- Add POSTPONED matches to a new section or to Resultados with a "Postergado" badge
-- CANCELLED matches could go to Resultados with a "Cancelado" badge or be filtered with explanation
+- Add SCHEDULED+locked matches to Pronósticos as a "Próximos a empezar" section (locked, non-editable)
+- Add POSTPONED matches to Resultados with a "Postergado" badge
+- CANCELLED matches to Resultados with a "Cancelado" badge or filtered with explanation
 
 ## Technical Debt
 
