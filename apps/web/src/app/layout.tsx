@@ -21,16 +21,16 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pichichi.app"),
-  title: "Pichichi — El prode del Mundial 2026",
+  title: "Pichichi — El prode de fútbol de tu grupo",
   description:
-    "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
+    "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
   keywords: [
-    "prode mundial 2026",
-    "prode",
-    "predicciones mundial",
-    "quiniela mundial 2026",
-    "pichichi app",
     "prode futbol",
+    "prode",
+    "predicciones futbol",
+    "quiniela futbol",
+    "pichichi app",
+    "prode mundial 2026",
     "world cup 2026 predictions",
     "prode gratis",
   ],
@@ -53,9 +53,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Pichichi — El prode del Mundial 2026",
+    title: "Pichichi — El prode de fútbol de tu grupo",
     description:
-      "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
+      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
     type: "website",
     url: "https://pichichi.app",
     locale: "es_AR",
@@ -65,15 +65,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Pichichi — El prode del Mundial 2026",
+        alt: "Pichichi — El prode de fútbol de tu grupo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pichichi — El prode del Mundial 2026",
+    title: "Pichichi — El prode de fútbol de tu grupo",
     description:
-      "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
+      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
     images: ["/og-image.png"],
     site: "@pichichi_app",
     creator: "@pichichi_app",
@@ -102,7 +102,7 @@ export default function RootLayout({
               applicationCategory: "SportsApplication",
               operatingSystem: "iOS, Android",
               description:
-                "Armá tu grupo, predecí los scores y demostrá que sabés más de fútbol. El prode oficial del Mundial 2026.",
+                "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
               url: "https://pichichi.app",
               offers: {
                 "@type": "Offer",
