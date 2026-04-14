@@ -15,9 +15,7 @@ import { useCallback } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { User } from 'lucide-react-native';
-
-import { GlobeIcon, GroupIcon, TrophyIcon } from '@/components/brand/icons';
+import { GlobeIcon, GroupIcon, ProfileIcon, TrophyIcon } from '@/components/brand/icons';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { COLORS } from '@/theme/colors';
 
@@ -152,9 +150,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => (
-            <User size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <ProfileIcon size={24} color={color} />,
           tabBarLabel: ({ focused }) => (
             <View style={styles.labelContainer}>
               <Text style={focused ? styles.labelTextActive : styles.labelText}>

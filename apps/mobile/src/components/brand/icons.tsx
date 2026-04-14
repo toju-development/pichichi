@@ -216,6 +216,28 @@ export function GlobeIcon({
   );
 }
 
+/** Person / Profile — single user silhouette */
+export function ProfileIcon({
+  size = DEFAULT_SIZE,
+  color = DEFAULT_COLOR,
+}: IconProps) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Circle cx={12} cy={8} r={4} />
+      <Path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+    </Svg>
+  );
+}
+
 /** Eye / Reveal — social reveal feature */
 export function RevealIcon({
   size = DEFAULT_SIZE,
