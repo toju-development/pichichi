@@ -1,40 +1,47 @@
-import { PointsIcon, BonusIcon, LiveIcon, GlobeIcon, RevealIcon } from "@/components/icons";
+import { PointsIcon, BonusIcon, LiveIcon, GlobeIcon, RevealIcon, DashboardIcon } from "@/components/icons";
 
 const FEATURES = [
   {
     icon: PointsIcon,
-    title: "Puntos por acierto",
+    title: "Sistema de puntos justo",
     description:
-      "Resultado exacto (5pts), diferencia de goles (3pts), ganador (1pt). Multiplicadores en eliminatorias.",
+      "Resultado exacto = 5pts. Misma diferencia de goles = 3pts. Acertás el ganador = 1pt. En eliminatorias se multiplica: x2 en octavos, x3 en semis y final.",
     accent: "from-primary to-primary-light",
-  },
-  {
-    icon: BonusIcon,
-    title: "Predicciones bonus",
-    description:
-      "Predecí al campeón, goleador, MVP y revelación del torneo por 10 puntos extra cada una.",
-    accent: "from-accent-gold to-accent-gold-dark",
-  },
-  {
-    icon: LiveIcon,
-    title: "Tiempo real",
-    description:
-      "Scores en vivo y ranking actualizado al instante. Nunca te perdés nada.",
-    accent: "from-primary to-primary-light",
-  },
-  {
-    icon: GlobeIcon,
-    title: "Múltiples torneos",
-    description:
-      "No solo el Mundial: preparado para Copa América, Champions League y más.",
-    accent: "from-primary-light to-primary",
   },
   {
     icon: RevealIcon,
     title: "Social reveal",
     description:
-      "Las predicciones de tus amigos se revelan al pitazo inicial. La tensión es parte del juego.",
+      "Los pronósticos se mantienen secretos hasta 5 minutos antes de cada partido. Ahí se revelan todos — y empieza la tensión.",
     accent: "from-accent-gold-dark to-accent-gold",
+  },
+  {
+    icon: BonusIcon,
+    title: "Predicciones bonus",
+    description:
+      "Elegí al campeón, goleador, MVP y selección revelación antes de que arranque el torneo. 10 puntos extra por cada acierto.",
+    accent: "from-accent-gold to-accent-gold-dark",
+  },
+  {
+    icon: LiveIcon,
+    title: "Todo en tiempo real",
+    description:
+      "Scores en vivo, puntos que se actualizan al instante y notificaciones para que no te pierdas ningún partido.",
+    accent: "from-primary to-primary-light",
+  },
+  {
+    icon: DashboardIcon,
+    title: "Tu dashboard, tus stats",
+    description:
+      "Partidos del día, porcentaje de precisión, rachas activas y tu posición en cada grupo. Todo de un vistazo.",
+    accent: "from-primary-light to-primary",
+  },
+  {
+    icon: GlobeIcon,
+    title: "Preparado para más",
+    description:
+      "Diseñado para el Mundial 2026, pero también para Copa América, Champions, Libertadores y más torneos.",
+    accent: "from-primary-light to-primary",
   },
 ] as const;
 

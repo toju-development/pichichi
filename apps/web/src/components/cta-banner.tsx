@@ -22,12 +22,12 @@ export function CtaBanner() {
 
       <div className="relative mx-auto max-w-3xl text-center">
         <h2 className="font-display text-3xl font-bold tracking-tight text-text-on-primary sm:text-4xl lg:text-5xl">
-          ¿Listo para demostrar
-          <span className="text-accent-gold"> que sabés</span>?
+          El Mundial arranca en junio.
+          <span className="text-accent-gold"> Tu prode, ahora.</span>
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-lg text-text-on-primary/75">
-          Descargá la app, creá tu grupo y empezá a competir. El Mundial 2026 se
-          vive mejor cuando hay algo en juego.
+          Descargá la app, armá tu grupo y cargá tus primeros pronósticos.
+          Cuanto antes arranques, más puntos podés sumar.
         </p>
 
         {/* Store buttons */}

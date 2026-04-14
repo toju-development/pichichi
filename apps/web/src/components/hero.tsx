@@ -22,7 +22,7 @@ export function Hero() {
         <div className="flex max-w-2xl flex-col items-center text-center lg:items-start lg:text-left">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-surface/60 px-4 py-2 text-xs font-semibold tracking-wide text-primary backdrop-blur-sm">
             <span className="flex h-2 w-2 rounded-full bg-accent-gold animate-pulse" />
-            MUNDIAL 2026
+            MUNDIAL 2026 · JUNIO–JULIO
           </span>
 
           <h1 className="font-display text-5xl font-bold tracking-tight text-text-primary sm:text-6xl lg:text-7xl">
@@ -32,8 +32,8 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 text-lg leading-relaxed text-text-secondary sm:text-xl">
-            Creá tu grupo, predecí los resultados del Mundial 2026 y competí
-            contra tus amigos. La gloria no espera.
+            Predecí los resultados de cada partido, sumá puntos y competí contra
+            tus amigos en tu propio prode. Resultado exacto, 5 puntos. ¿Podés?
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">

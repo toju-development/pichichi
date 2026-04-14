@@ -20,31 +20,32 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Pichichi — Predecí el Mundial 2026",
+  title: "Pichichi — El prode del Mundial 2026",
   description:
-    "Creá tu grupo, predecí los resultados del Mundial 2026 y competí contra tus amigos. Demostrá quién sabe más de fútbol.",
+    "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
   keywords: [
-    "mundial 2026",
+    "prode mundial 2026",
     "prode",
-    "predicciones",
-    "fútbol",
-    "world cup",
-    "pichichi",
-    "quiniela",
+    "predicciones mundial",
+    "quiniela mundial 2026",
+    "pichichi app",
+    "prode futbol",
+    "world cup 2026 predictions",
+    "prode gratis",
   ],
   openGraph: {
-    title: "Pichichi — Predecí el Mundial 2026",
+    title: "Pichichi — El prode del Mundial 2026",
     description:
-      "Creá tu grupo, predecí los resultados del Mundial 2026 y competí contra tus amigos.",
+      "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
     type: "website",
     locale: "es_AR",
     siteName: "Pichichi",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pichichi — Predecí el Mundial 2026",
+    title: "Pichichi — El prode del Mundial 2026",
     description:
-      "Creá tu grupo, predecí los resultados del Mundial 2026 y competí contra tus amigos.",
+      "El prode más completo para el Mundial 2026. Creá tu grupo, predecí cada partido, sumá puntos y competí contra amigos. Gratis para iOS y Android.",
   },
 };
 

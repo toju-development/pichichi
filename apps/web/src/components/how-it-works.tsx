@@ -5,17 +5,17 @@ const STEPS = [
   {
     icon: GroupIcon,
     title: "Creá tu grupo",
-    description: "Invitá a tus amigos con un código de 8 caracteres. Armá tu liga privada en segundos.",
+    description: "Invitá a tus amigos con un código, elegí el torneo y armá tu liga privada en segundos.",
   },
   {
     icon: PredictionIcon,
-    title: "Predecí resultados",
-    description: "Cargá el score de cada partido antes del pitazo inicial. ¿Te animás al resultado exacto?",
+    title: "Predecí los scores",
+    description: "Cargá tu pronóstico para cada partido. Se bloquea 5 minutos antes del inicio — y ahí se revelan los pronósticos de todos.",
   },
   {
     icon: TrophyIcon,
-    title: "Competí en el ranking",
-    description: "Sumá puntos y demostrá que sos el que más sabe. La gloria está en juego.",
+    title: "Subí al podio",
+    description: "Exacto = 5pts, diferencia = 3pts, ganador = 1pt. En eliminatorias los puntos se multiplican x2 y x3. ¿Quién llega primero al podio?",
   },
 ] as const;
 

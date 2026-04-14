@@ -26,12 +26,12 @@ const MATCHES = [
     team2: { name: "Australia", flag: "🇦🇺", code: "AUS" },
   },
   {
-    date: "12 Jun 2026",
-    group: "Grupo C",
-    stadium: "AT&T Stadium",
-    multiplier: "x1",
-    team1: { name: "España", flag: "🇪🇸", code: "ESP" },
-    team2: { name: "Brasil", flag: "🇧🇷", code: "BRA" },
+    date: "5 Jul 2026",
+    group: "Octavos",
+    stadium: "MetLife Stadium",
+    multiplier: "x2",
+    team1: { name: "1ºA", flag: "🏆", code: "1A" },
+    team2: { name: "2ºB", flag: "🏆", code: "2B" },
   },
 ] as const;
 
@@ -56,13 +56,13 @@ export function MatchesPreview() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-accent-gold/30 bg-accent-gold/10 px-4 py-1.5 text-xs font-bold tracking-widest text-accent-gold-dark">
             <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-accent-gold" />
-            MIRÁ LO QUE VIENE
+            PRIMEROS PARTIDOS: 11 JUN 2026
           </span>
           <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-text-primary sm:text-4xl lg:text-5xl">
-            Próximos partidos
+            Estos partidos ya tienen fecha
           </h2>
           <p className="mt-4 text-lg text-text-secondary">
-            Así se ve la experiencia en la app. ¿Qué resultado pondrías?
+            ¿Cuánto pondrías en cada uno? Descargá la app y cargá tu pronóstico antes de que se bloquee.
           </p>
         </div>
 
@@ -144,6 +144,11 @@ export function MatchesPreview() {
             </div>
           ))}
         </div>
+
+        {/* Lockout note */}
+        <p className="mt-6 text-center text-sm text-text-tertiary">
+          Los pronósticos se bloquean 5 minutos antes de cada partido.
+        </p>
       </div>
     </section>
   );
