@@ -382,6 +382,8 @@ export default function GroupTournamentScreen() {
             matchSections={pronosticosSections}
             predictionsByMatchId={predictionsByMatchId}
             groupId={groupId}
+            groupName={group?.name}
+            currentUserId={currentUserId}
             isLoading={isLoadingMatchData}
             isRefreshing={isMatchDataRefreshing}
             onRefresh={onRefreshMatchData}
@@ -393,6 +395,8 @@ export default function GroupTournamentScreen() {
             matchSections={resultsSections}
             predictionsByMatchId={predictionsByMatchId}
             groupId={groupId}
+            groupName={group?.name}
+            currentUserId={currentUserId}
             isLoading={isLoadingMatchData}
             isRefreshing={isMatchDataRefreshing}
             onRefresh={onRefreshMatchData}
@@ -444,6 +448,8 @@ function PronosticosTab({
   matchSections,
   predictionsByMatchId,
   groupId,
+  groupName,
+  currentUserId,
   isLoading,
   isRefreshing,
   onRefresh,
@@ -453,6 +459,8 @@ function PronosticosTab({
   matchSections: MatchSection[];
   predictionsByMatchId: Map<string, PredictionDto>;
   groupId: string;
+  groupName: string | undefined;
+  currentUserId: string;
   isLoading: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
@@ -517,6 +525,8 @@ function PronosticosTab({
             onPredict={onPredictMatch}
             onMatchDetail={onMatchDetail}
             groupId={groupId}
+            groupName={groupName}
+            currentUserId={currentUserId}
           />
         </View>
       )}
@@ -540,6 +550,8 @@ function ResultadosTab({
   matchSections,
   predictionsByMatchId,
   groupId,
+  groupName,
+  currentUserId,
   isLoading,
   isRefreshing,
   onRefresh,
@@ -548,6 +560,8 @@ function ResultadosTab({
   matchSections: MatchSection[];
   predictionsByMatchId: Map<string, PredictionDto>;
   groupId: string;
+  groupName: string | undefined;
+  currentUserId: string;
   isLoading: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
@@ -611,6 +625,8 @@ function ResultadosTab({
             onPredict={() => {}} // Not tappable — locked/finished
             onMatchDetail={onMatchDetail}
             groupId={groupId}
+            groupName={groupName}
+            currentUserId={currentUserId}
           />
         </View>
       )}

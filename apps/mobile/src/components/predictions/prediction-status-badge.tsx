@@ -164,7 +164,7 @@ export function PredictionStatusBadge({
     case 'live-predicted':
       return (
         <View style={styles.livePredictedBadge}>
-          <View style={styles.liveDot} />
+          <Text style={styles.livePredictedLabel}>Tu pronóstico</Text>
           <Text style={styles.livePredictedScore}>
             {state.home} - {state.away}
           </Text>
@@ -295,6 +295,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     backgroundColor: COLORS.background,
+  },
+  livePredictedLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.text.secondary,
   },
   livePredictedScore: {
     fontSize: 13,
