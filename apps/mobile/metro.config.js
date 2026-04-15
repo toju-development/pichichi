@@ -19,10 +19,24 @@ config.resolver.nodeModulesPaths = [
 // Redirect @pichichi/shared to its TypeScript source so Metro doesn't
 // attempt to resolve the compiled dist/ output (which is gitignored and
 // doesn't exist in EAS Build cloud environments).
-const sharedSrc = path.resolve(monorepoRoot, "packages/shared/src/index.ts");
+//
+// Also handles internal .js imports within the shared package — TypeScript
+// uses .js extensions for Node compatibility, but Metro can't resolve them.
+// We strip the .js extension and let Metro find the .ts file instead.
+const sharedSrc = path.resolve(monorepoRoot, "packages/shared/src");
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Redirect the package itself
   if (moduleName === "@pichichi/shared") {
-    return { filePath: sharedSrc, type: "sourceFile" };
+    return { filePath: path.join(sharedSrc, "index.ts"), type: "sourceFile" };
+  }
+  // Strip .js extension from imports inside the shared package so Metro
+  // resolves them as .ts files (e.g. './types/index.js' → './types/index.ts')
+  if (
+    context.originModulePath.includes("packages/shared/src") &&
+    moduleName.endsWith(".js")
+  ) {
+    const stripped = moduleName.slice(0, -3); // remove .js
+    return context.resolveRequest(context, stripped, platform);
   }
   return context.resolveRequest(context, moduleName, platform);
 };
