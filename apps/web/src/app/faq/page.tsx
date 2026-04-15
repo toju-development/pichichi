@@ -4,14 +4,14 @@ import { Footer } from "@/components/footer";
 import { NetPattern } from "@/components/net-pattern";
 
 export const metadata: Metadata = {
-  title: "Preguntas frecuentes | Pichichi",
+  title: "Pichichi — Armá tu prode, ganale a tus amigos",
   description:
     "Todo lo que necesitás saber sobre Pichichi: cómo funcionan los grupos, el sistema de puntos, los pronósticos y más. Resolvé tus dudas acá.",
   alternates: {
     canonical: "https://pichichi.app/faq",
   },
   openGraph: {
-    title: "Preguntas frecuentes | Pichichi",
+    title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
       "Todo lo que necesitás saber sobre Pichichi: cómo funcionan los grupos, el sistema de puntos, los pronósticos y más.",
     type: "website",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Preguntas frecuentes | Pichichi",
+    title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
       "Todo lo que necesitás saber sobre Pichichi: grupos, puntos, pronósticos y más.",
     images: ["/og-image.png"],

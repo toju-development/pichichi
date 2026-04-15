@@ -45,7 +45,7 @@ export function HowItWorks() {
         </div>
 
         {/* Steps — connected timeline layout */}
-        <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">
+        <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6 sm:items-stretch">
           {/* Connecting line (desktop only) */}
           <div className="pointer-events-none absolute left-0 right-0 top-[calc(50%+2rem)] hidden h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent sm:block" />
 
@@ -57,7 +57,7 @@ export function HowItWorks() {
                 className="group relative flex flex-col items-center text-center"
               >
                 {/* Card */}
-                <div className="relative flex w-full flex-col items-center rounded-2xl border border-border/60 bg-surface/80 p-8 pt-12 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
+                <div className="relative flex h-full w-full flex-col items-center rounded-2xl border border-border/60 bg-surface/80 p-8 pt-12 backdrop-blur-sm transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
                   {/* Step indicator — large faded number behind */}
                   <span className="pointer-events-none absolute right-4 top-3 font-display text-[80px] font-bold leading-none text-primary/[0.06] select-none">
                     {index + 1}
@@ -67,11 +67,6 @@ export function HowItWorks() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-light text-text-on-primary shadow-lg shadow-primary/20 transition-transform group-hover:scale-110">
                     <Icon size={26} className="shrink-0" />
                   </div>
-
-                  {/* Step number badge */}
-                  <span className="mt-4 mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent-gold/20 text-xs font-bold text-accent-gold-dark">
-                    {index + 1}
-                  </span>
 
                   {/* Content */}
                   <h3 className="mt-2 font-display text-lg font-bold text-text-primary">
