@@ -55,6 +55,12 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
+  // Read insets from the PARENT SafeAreaProvider — on Android, the Modal
+  // creates a separate window where SafeAreaProvider may report bottom = 0
+  // because the modal window doesn't inherit edge-to-edge configuration.
+  // By reading here and passing as a prop, the CTA always clears the nav bar.
+  const parentInsets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -63,15 +69,20 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
       onRequestClose={onClose}
     >
       <SafeAreaProvider>
-        <CreateGroupModalContent onClose={onClose} />
+        <CreateGroupModalContent onClose={onClose} parentBottomInset={parentInsets.bottom} />
       </SafeAreaProvider>
     </Modal>
   );
 }
 
-function CreateGroupModalContent({ onClose }: { onClose: () => void }) {
+function CreateGroupModalContent({ onClose, parentBottomInset }: { onClose: () => void; parentBottomInset: number }) {
   const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
   const insets = useSafeAreaInsets();
+
+  // Use the larger of modal-local insets vs parent insets.
+  // On iOS (pageSheet), local insets are correct. On Android, local may be 0
+  // so parentBottomInset provides the fallback.
+  const bottomInset = Math.max(insets.bottom, parentBottomInset);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -322,7 +333,7 @@ function CreateGroupModalContent({ onClose }: { onClose: () => void }) {
         </KeyboardAvoidingView>
 
         {/* ─── Bottom bar with CTA ──────────────────────── */}
-        <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <View style={[s.bottomBar, { paddingBottom: Math.max(bottomInset, 24) }]}>
           <View style={s.ctaShadow}>
             <Pressable
               onPress={handleSubmit}

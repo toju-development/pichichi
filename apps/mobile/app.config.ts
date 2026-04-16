@@ -72,6 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         monochromeImage: './assets/android-icon-monochrome.png',
       },
       package: 'com.pichichi.app',
+      navigationBarColor: 'transparent',
     },
     web: {
       favicon: './assets/favicon.png',

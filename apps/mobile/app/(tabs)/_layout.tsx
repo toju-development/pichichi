@@ -54,6 +54,12 @@ export default function TabLayout() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
+  // On Android, ensure we always account for the system navigation bar.
+  // Some devices/configurations report insets.bottom = 0 even with a visible
+  // nav bar (3-button or gesture). We use a minimum of 16 on Android to
+  // prevent overlap, while still respecting larger reported values.
+  const androidBottom = Math.max(insets.bottom, 16);
+
   /**
    * Creates a `tabPress` handler that invalidates the tab's queries.
    *
@@ -91,7 +97,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: COLORS.primary.DEFAULT,
           tabBarInactiveTintColor: '#94A3B8',
-        tabBarStyle: [styles.tabBar, { paddingBottom: Platform.select({ ios: insets.bottom + 6, android: insets.bottom + 8 }), height: Platform.select({ ios: 84, android: 72 + insets.bottom }) }],
+        tabBarStyle: [styles.tabBar, { paddingBottom: Platform.select({ ios: insets.bottom + 6, android: androidBottom + 8 }), height: Platform.select({ ios: 84, android: 72 + androidBottom }) }],
         }}
       >
       <Tabs.Screen
