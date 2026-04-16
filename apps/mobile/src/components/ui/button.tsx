@@ -45,6 +45,7 @@ interface ButtonProps extends Omit<import('react-native').PressableProps, 'child
   title: string;
   variant?: Variant;
   loading?: boolean;
+  textStyle?: import('react-native').TextStyle;
 }
 
 const CONTAINER_CLASSES: Record<Variant, string> = {
@@ -80,10 +81,12 @@ function ButtonContent({
   variant,
   loading,
   title,
+  textStyle,
 }: {
   variant: Variant;
   loading: boolean;
   title: string;
+  textStyle?: import('react-native').TextStyle;
 }) {
   return (
     <>
@@ -94,7 +97,7 @@ function ButtonContent({
           className="mr-2"
         />
       ) : null}
-      <Text className={TEXT_CLASSES[variant]}>{title}</Text>
+      <Text className={TEXT_CLASSES[variant]} style={textStyle} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
     </>
   );
 }
@@ -104,6 +107,7 @@ export function Button({
   variant = 'primary',
   loading = false,
   disabled,
+  textStyle,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
@@ -124,11 +128,11 @@ export function Button({
             end={{ x: 1, y: 0 }}
             className="flex-row items-center justify-center px-6 py-4"
           >
-            <ButtonContent variant={variant} loading={loading} title={title} />
+            <ButtonContent variant={variant} loading={loading} title={title} textStyle={textStyle} />
           </Gradient>
         ) : (
           <View className="flex-row items-center justify-center bg-primary px-6 py-4">
-            <ButtonContent variant={variant} loading={loading} title={title} />
+            <ButtonContent variant={variant} loading={loading} title={title} textStyle={textStyle} />
           </View>
         )}
       </Pressable>
@@ -141,7 +145,7 @@ export function Button({
       disabled={isDisabled}
       {...rest}
     >
-      <ButtonContent variant={variant} loading={loading} title={title} />
+      <ButtonContent variant={variant} loading={loading} title={title} textStyle={textStyle} />
     </Pressable>
   );
 }
