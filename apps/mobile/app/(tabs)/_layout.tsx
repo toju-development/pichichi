@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlobeIcon, GroupIcon, ProfileIcon, TrophyIcon } from '@/components/brand/icons';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { COLORS } from '@/theme/colors';
@@ -51,6 +52,7 @@ function ActiveDot() {
 
 export default function TabLayout() {
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   /**
    * Creates a `tabPress` handler that invalidates the tab's queries.
@@ -89,7 +91,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: COLORS.primary.DEFAULT,
           tabBarInactiveTintColor: '#94A3B8',
-          tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { paddingBottom: Platform.select({ ios: insets.bottom + 6, android: insets.bottom + 8 }), height: Platform.select({ ios: 84, android: 72 + insets.bottom }) }],
         }}
       >
       <Tabs.Screen
@@ -179,8 +181,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    height: Platform.select({ ios: 84, android: 72 }),
-    paddingBottom: Platform.select({ ios: 20, android: 12 }),
     paddingTop: 6,
     ...Platform.select({
       ios: {

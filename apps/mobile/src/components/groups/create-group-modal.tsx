@@ -8,6 +8,11 @@
  * IMPORTANT — NativeWind v4 ghost-card fix:
  * ALL visual properties use StyleSheet to guarantee rendering on the first
  * frame. className is NEVER used for visual props.
+ *
+ * IMPORTANT — Android SafeArea:
+ * React Native <Modal> on Android creates a separate window that does NOT
+ * inherit the parent SafeAreaProvider. We wrap modal content in its own
+ * SafeAreaProvider so useSafeAreaInsets() returns correct values.
  */
 
 import { useState } from 'react';
@@ -28,6 +33,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Check } from 'lucide-react-native';
+import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { useCreateGroup } from '@/hooks/use-groups';
@@ -49,7 +55,23 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaProvider>
+        <CreateGroupModalContent onClose={onClose} />
+      </SafeAreaProvider>
+    </Modal>
+  );
+}
+
+function CreateGroupModalContent({ onClose }: { onClose: () => void }) {
   const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -156,12 +178,6 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
       <View style={s.root}>
         {/* ─── Native drag handle ────────────────────────── */}
         <View style={s.handleContainer}>
@@ -306,7 +322,7 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
         </KeyboardAvoidingView>
 
         {/* ─── Bottom bar with CTA ──────────────────────── */}
-        <View style={s.bottomBar}>
+        <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <View style={s.ctaShadow}>
             <Pressable
               onPress={handleSubmit}
@@ -332,7 +348,6 @@ export function CreateGroupModal({ visible, onClose }: CreateGroupModalProps) {
           </View>
         </View>
       </View>
-    </Modal>
   );
 }
 
@@ -516,7 +531,6 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 32,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },

@@ -7,6 +7,11 @@
  * IMPORTANT — NativeWind v4 ghost-card fix:
  * ALL visual properties use StyleSheet to guarantee rendering on the first
  * frame. className is NEVER used for visual props.
+ *
+ * IMPORTANT — Android SafeArea:
+ * React Native <Modal> on Android creates a separate window that does NOT
+ * inherit the parent SafeAreaProvider. We wrap modal content in its own
+ * SafeAreaProvider so useSafeAreaInsets() returns correct values.
  */
 
 import { useEffect, useState } from 'react';
@@ -25,6 +30,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Minus, Plus } from 'lucide-react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { GroupDto } from '@pichichi/shared';
 
@@ -38,9 +44,25 @@ interface EditGroupModalProps {
 }
 
 export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps) {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaProvider>
+        <EditGroupModalContent group={group} onClose={onClose} visible={visible} />
+      </SafeAreaProvider>
+    </Modal>
+  );
+}
+
+function EditGroupModalContent({ group, onClose, visible }: { group: GroupDto; onClose: () => void; visible: boolean }) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? '');
   const [maxMembers, setMaxMembers] = useState(group.maxMembers);
+  const insets = useSafeAreaInsets();
 
   const updateGroup = useUpdateGroup();
   const planLimit = useAuthStore((s) => s.user?.plan.maxMembersPerGroup ?? 10);
@@ -126,132 +148,125 @@ export function EditGroupModal({ visible, group, onClose }: EditGroupModalProps)
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
-      <View style={s.root}>
-        {/* ─── Native drag handle ────────────────────────── */}
-        <View style={s.handleContainer}>
-          <View style={s.handlePill} />
-        </View>
+    <View style={s.root}>
+      {/* ─── Native drag handle ────────────────────────── */}
+      <View style={s.handleContainer}>
+        <View style={s.handlePill} />
+      </View>
 
-        {/* ─── Header ───────────────────────────────────── */}
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Editar grupo</Text>
-          <Pressable onPress={handleClose} style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}>
-            <Text style={s.headerCancel}>Cancelar</Text>
-          </Pressable>
-        </View>
+      {/* ─── Header ───────────────────────────────────── */}
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Editar grupo</Text>
+        <Pressable onPress={handleClose} style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}>
+          <Text style={s.headerCancel}>Cancelar</Text>
+        </Pressable>
+      </View>
 
-        {/* ─── Form (scrollable) ────────────────────────── */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      {/* ─── Form (scrollable) ────────────────────────── */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={s.flex1}
+      >
+        <ScrollView
           style={s.flex1}
+          contentContainerStyle={s.formContent}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView
-            style={s.flex1}
-            contentContainerStyle={s.formContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Field 1 — Nombre del grupo */}
-            <View style={s.fieldGroup}>
-              <Text style={s.label}>Nombre del grupo *</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Ej: Los cracks del mundial"
-                placeholderTextColor="#9CA3AF"
-                maxLength={100}
-                style={s.textInput}
-              />
-              <Text style={s.counter}>{name.length}/100</Text>
-            </View>
+          {/* Field 1 — Nombre del grupo */}
+          <View style={s.fieldGroup}>
+            <Text style={s.label}>Nombre del grupo *</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej: Los cracks del mundial"
+              placeholderTextColor="#9CA3AF"
+              maxLength={100}
+              style={s.textInput}
+            />
+            <Text style={s.counter}>{name.length}/100</Text>
+          </View>
 
-            {/* Field 2 — Descripción */}
-            <View style={s.fieldGroup}>
-              <Text style={s.label}>Descripción (opcional)</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="¿De qué se trata el grupo?"
-                placeholderTextColor="#9CA3AF"
-                maxLength={500}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-                style={s.textArea}
-              />
-              <Text style={s.counter}>{description.length}/500</Text>
-            </View>
+          {/* Field 2 — Descripción */}
+          <View style={s.fieldGroup}>
+            <Text style={s.label}>Descripción (opcional)</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="¿De qué se trata el grupo?"
+              placeholderTextColor="#9CA3AF"
+              maxLength={500}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              style={s.textArea}
+            />
+            <Text style={s.counter}>{description.length}/500</Text>
+          </View>
 
-            {/* Field 3 — Máximo de miembros */}
-            <View style={s.fieldGroupStepper}>
-              <Text style={s.label}>Máximo de miembros</Text>
+          {/* Field 3 — Máximo de miembros */}
+          <View style={s.fieldGroupStepper}>
+            <Text style={s.label}>Máximo de miembros</Text>
 
-              <View style={s.stepperRow}>
-                {/* Minus button */}
-                <View style={[s.stepperBtn, atMin && s.stepperBtnDisabled]}>
-                  <Pressable
-                    onPress={decrementMembers}
-                    disabled={atMin}
-                    style={({ pressed }) => pressed && !atMin ? { opacity: 0.7 } : undefined}
-                  >
-                    <Minus size={18} color={atMin ? '#9CA3AF' : '#1A1A2E'} strokeWidth={2.5} />
-                  </Pressable>
-                </View>
-
-                <Text style={s.stepperValue}>{maxMembers}</Text>
-
-                {/* Plus button */}
-                <View style={[s.stepperBtn, atMax && s.stepperBtnDisabled]}>
-                  <Pressable
-                    onPress={incrementMembers}
-                    disabled={atMax}
-                    style={({ pressed }) => pressed && !atMax ? { opacity: 0.7 } : undefined}
-                  >
-                    <Plus size={18} color={atMax ? '#9CA3AF' : '#1A1A2E'} strokeWidth={2.5} />
-                  </Pressable>
-                </View>
+            <View style={s.stepperRow}>
+              {/* Minus button */}
+              <View style={[s.stepperBtn, atMin && s.stepperBtnDisabled]}>
+                <Pressable
+                  onPress={decrementMembers}
+                  disabled={atMin}
+                  style={({ pressed }) => pressed && !atMin ? { opacity: 0.7 } : undefined}
+                >
+                  <Minus size={18} color={atMin ? '#9CA3AF' : '#1A1A2E'} strokeWidth={2.5} />
+                </Pressable>
               </View>
 
-              <Text style={s.helperText}>
-                Mínimo {minMembers}, máximo {planLimit} (según tu plan)
-              </Text>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+              <Text style={s.stepperValue}>{maxMembers}</Text>
 
-        {/* ─── Bottom bar with CTA ──────────────────────── */}
-        <View style={s.bottomBar}>
-          <View style={s.ctaShadow}>
-            <Pressable
-              onPress={handleSubmit}
-              disabled={!name.trim() || updateGroup.isPending}
-              style={({ pressed }) => [
-                pressed ? { opacity: 0.9 } : undefined,
-                (!name.trim() || updateGroup.isPending) ? { opacity: 0.5 } : undefined,
-              ]}
-            >
-              <LinearGradient
-                colors={['#0B6E4F', '#0a5e43']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={s.ctaGradient}
-              >
-                {updateGroup.isPending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={s.ctaText}>Guardar cambios</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
+              {/* Plus button */}
+              <View style={[s.stepperBtn, atMax && s.stepperBtnDisabled]}>
+                <Pressable
+                  onPress={incrementMembers}
+                  disabled={atMax}
+                  style={({ pressed }) => pressed && !atMax ? { opacity: 0.7 } : undefined}
+                >
+                  <Plus size={18} color={atMax ? '#9CA3AF' : '#1A1A2E'} strokeWidth={2.5} />
+                </Pressable>
+              </View>
+            </View>
+
+            <Text style={s.helperText}>
+              Mínimo {minMembers}, máximo {planLimit} (según tu plan)
+            </Text>
           </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* ─── Bottom bar with CTA ──────────────────────── */}
+      <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <View style={s.ctaShadow}>
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!name.trim() || updateGroup.isPending}
+            style={({ pressed }) => [
+              pressed ? { opacity: 0.9 } : undefined,
+              (!name.trim() || updateGroup.isPending) ? { opacity: 0.5 } : undefined,
+            ]}
+          >
+            <LinearGradient
+              colors={['#0B6E4F', '#0a5e43']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={s.ctaGradient}
+            >
+              {updateGroup.isPending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={s.ctaText}>Guardar cambios</Text>
+              )}
+            </LinearGradient>
+          </Pressable>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }
 
@@ -384,7 +399,6 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 32,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },

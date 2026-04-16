@@ -29,8 +29,5 @@
   },
   "keywords": [],
   "author": "",
-  "license": "UNLICENSED",
-  "dependencies": {
-    "@react-native-community/netinfo": "11.5.2"
-  }
+  "license": "UNLICENSED"
 }
