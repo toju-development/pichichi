@@ -148,6 +148,7 @@
 
 ### 🗂 Nice to Have / Post-Launch
 
+- [ ] **Soporte Liga Argentina** — Analizar y estudiar el modelo actual para soportar ligas domésticas (ej. Liga Profesional Argentina). El enum `TournamentType` no tiene tipo `LEAGUE`, el mapper de fases no reconoce jornadas ("Apertura", "Clausura", "Regular Season"), y la estructura de datos (sin grupos, con jornadas) difiere de los torneos internacionales actuales. Requiere investigación antes de implementar.
 - [ ] **Push Notifications (FCM/APNs)** — Firebase Admin SDK, Expo permissions. Not testable on iOS simulator / Android without Play Services. Deferred post-launch.
 - [ ] **Admin Panel web** — Bonus resolution UI, sync control, tournament management. Not needed for MVP (scripts + Smart Cron cover it for <1000 users).
 - [ ] **Podium design polish** — Visual refinement of top-3 podium component
