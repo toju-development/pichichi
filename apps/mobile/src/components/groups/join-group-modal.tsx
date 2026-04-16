@@ -7,11 +7,6 @@
  * IMPORTANT — NativeWind v4 ghost-card fix:
  * ALL visual properties use StyleSheet to guarantee rendering on the first
  * frame. className is NEVER used for visual props.
- *
- * IMPORTANT — Android SafeArea:
- * React Native <Modal> on Android creates a separate window that does NOT
- * inherit the parent SafeAreaProvider. We wrap modal content in its own
- * SafeAreaProvider so useSafeAreaInsets() returns correct values.
  */
 
 import { useState } from 'react';
@@ -30,7 +25,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Hash } from 'lucide-react-native';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useJoinGroup } from '@/hooks/use-groups';
 import { COLORS } from '@/theme/colors';
@@ -41,23 +35,8 @@ interface JoinGroupModalProps {
 }
 
 export function JoinGroupModal({ visible, onClose }: JoinGroupModalProps) {
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaProvider>
-        <JoinGroupModalContent onClose={onClose} />
-      </SafeAreaProvider>
-    </Modal>
-  );
-}
-
-function JoinGroupModalContent({ onClose }: { onClose: () => void }) {
   const [inviteCode, setInviteCode] = useState('');
-  const insets = useSafeAreaInsets();
+
   const joinGroup = useJoinGroup();
 
   function resetForm() {
@@ -70,6 +49,7 @@ function JoinGroupModalContent({ onClose }: { onClose: () => void }) {
   }
 
   function handleChangeCode(text: string) {
+    // Auto-uppercase and strip spaces
     setInviteCode(text.toUpperCase().replace(/\s/g, ''));
   }
 
@@ -117,79 +97,89 @@ function JoinGroupModalContent({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <View style={s.root}>
-      {/* ─── Native drag handle ────────────────────────── */}
-      <View style={s.handleContainer}>
-        <View style={s.handlePill} />
-      </View>
-
-      {/* ─── Header ───────────────────────────────────── */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Unirme a un grupo</Text>
-        <Pressable onPress={handleClose} style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}>
-          <Text style={s.headerCancel}>Cancelar</Text>
-        </Pressable>
-      </View>
-
-      {/* ─── Content area ─────────────────────────────── */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={s.flex1}
-      >
-        <View style={s.content}>
-          <View style={s.heroCircle}>
-            <Hash size={32} color={COLORS.primary.DEFAULT} />
-          </View>
-
-          <View style={s.textGroup}>
-            <Text style={s.heroText}>Pedile el código de invitación</Text>
-            <Text style={s.heroText}>al admin del grupo</Text>
-          </View>
-
-          <View style={s.codeSection}>
-            <Text style={s.codeLabel}>Código de invitación</Text>
-            <TextInput
-              value={inviteCode}
-              onChangeText={handleChangeCode}
-              placeholder="ABCD1234"
-              placeholderTextColor="#9CA3AF"
-              maxLength={8}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              style={s.codeInput}
-            />
-            <Text style={s.codeHelper}>8 caracteres, letras y números</Text>
-          </View>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
+      <View style={s.root}>
+        {/* ─── Native drag handle ────────────────────────── */}
+        <View style={s.handleContainer}>
+          <View style={s.handlePill} />
         </View>
-      </KeyboardAvoidingView>
 
-      {/* ─── Bottom bar with CTA ──────────────────────── */}
-      <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <View style={s.ctaShadow}>
-          <Pressable
-            onPress={handleSubmit}
-            disabled={inviteCode.trim().length === 0 || joinGroup.isPending}
-            style={({ pressed }) => [
-              pressed ? { opacity: 0.9 } : undefined,
-              (inviteCode.trim().length === 0 || joinGroup.isPending) ? { opacity: 0.5 } : undefined,
-            ]}
-          >
-            <LinearGradient
-              colors={['#0B6E4F', '#0a5e43']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={s.ctaGradient}
-            >
-              {joinGroup.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={s.ctaText}>Unirme al grupo</Text>
-              )}
-            </LinearGradient>
+        {/* ─── Header ───────────────────────────────────── */}
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Unirme a un grupo</Text>
+          <Pressable onPress={handleClose} style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}>
+            <Text style={s.headerCancel}>Cancelar</Text>
           </Pressable>
         </View>
+
+        {/* ─── Content area ─────────────────────────────── */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={s.flex1}
+        >
+          <View style={s.content}>
+            {/* Hero icon */}
+            <View style={s.heroCircle}>
+              <Hash size={32} color={COLORS.primary.DEFAULT} />
+            </View>
+
+            {/* Text group */}
+            <View style={s.textGroup}>
+              <Text style={s.heroText}>Pedile el código de invitación</Text>
+              <Text style={s.heroText}>al admin del grupo</Text>
+            </View>
+
+            {/* Code input section */}
+            <View style={s.codeSection}>
+              <Text style={s.codeLabel}>Código de invitación</Text>
+              <TextInput
+                value={inviteCode}
+                onChangeText={handleChangeCode}
+                placeholder="ABCD1234"
+                placeholderTextColor="#9CA3AF"
+                maxLength={8}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={s.codeInput}
+              />
+              <Text style={s.codeHelper}>8 caracteres, letras y números</Text>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+
+        {/* ─── Bottom bar with CTA ──────────────────────── */}
+        <View style={s.bottomBar}>
+          <View style={s.ctaShadow}>
+            <Pressable
+              onPress={handleSubmit}
+              disabled={inviteCode.trim().length === 0 || joinGroup.isPending}
+              style={({ pressed }) => [
+                pressed ? { opacity: 0.9 } : undefined,
+                (inviteCode.trim().length === 0 || joinGroup.isPending) ? { opacity: 0.5 } : undefined,
+              ]}
+            >
+              <LinearGradient
+                colors={['#0B6E4F', '#0a5e43']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={s.ctaGradient}
+              >
+                {joinGroup.isPending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={s.ctaText}>Unirme al grupo</Text>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
@@ -310,6 +300,7 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingHorizontal: 20,
+    paddingBottom: 32,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },

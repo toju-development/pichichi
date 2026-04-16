@@ -14,11 +14,8 @@
 import '../global.css';
 import '@/nativewind-interop';
 
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import * as NavigationBar from 'expo-navigation-bar';
 
 import { queryClient } from '@/hooks/query-client';
 import { AuthProvider } from '@/providers/auth-provider';
@@ -26,16 +23,6 @@ import { SocketProvider } from '@/providers/socket-provider';
 import { AppErrorBoundary } from '@/components/ui/error-boundary';
 
 export default function RootLayout() {
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      // Draw content behind the Android navigation bar so that
-      // react-native-safe-area-context reports the correct bottom inset.
-      NavigationBar.setPositionAsync('absolute');
-      // Make the nav bar background nearly transparent (keeps system icons visible)
-      NavigationBar.setBackgroundColorAsync('#ffffff01');
-      NavigationBar.setButtonStyleAsync('dark');
-    }
-  }, []);
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
