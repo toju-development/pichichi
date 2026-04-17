@@ -135,6 +135,11 @@ function getPredictableMatches(matches: MatchDto[]): MatchDto[] {
   return matches.filter((m) => m.status === 'SCHEDULED' && !isMatchLocked(m));
 }
 
+/** SCHEDULED matches that are locked (within 5 min of kickoff but not yet LIVE). */
+function getLockedScheduledMatches(matches: MatchDto[]): MatchDto[] {
+  return matches.filter((m) => m.status === 'SCHEDULED' && isMatchLocked(m));
+}
+
 /** Live matches — shown locked at the top of Pronósticos tab. */
 function getLiveMatches(matches: MatchDto[]): MatchDto[] {
   return matches.filter((m) => m.status === 'LIVE');
@@ -218,6 +223,11 @@ export default function GroupTournamentScreen() {
     [matches],
   );
 
+  const lockedScheduledMatches = useMemo(
+    () => getLockedScheduledMatches(matches ?? []),
+    [matches],
+  );
+
   const finishedMatches = useMemo(
     () => getFinishedMatches(matches ?? []),
     [matches],
@@ -228,7 +238,7 @@ export default function GroupTournamentScreen() {
     [predictableMatches],
   );
 
-  // Pronósticos: live matches as special section at the top, then predictable by date asc
+  // Pronósticos: live matches at top, then locked scheduled, then predictable by date asc
   const pronosticosSections = useMemo(() => {
     const sections: MatchSection[] = [];
 
@@ -240,10 +250,18 @@ export default function GroupTournamentScreen() {
       });
     }
 
+    if (lockedScheduledMatches.length > 0) {
+      sections.push({
+        title: 'Bloqueado \uD83D\uDD12',
+        dateKey: '__LOCKED__',
+        data: lockedScheduledMatches,
+      });
+    }
+
     sections.push(...predictableSections);
 
     return sections;
-  }, [liveMatches, predictableSections]);
+  }, [liveMatches, lockedScheduledMatches, predictableSections]);
 
   // Results: only finished matches, grouped by date descending
   const resultsSections = useMemo(

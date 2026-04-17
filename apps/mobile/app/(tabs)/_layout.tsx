@@ -13,7 +13,7 @@
 
 import { useCallback } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { Tabs } from 'expo-router';
+import { Tabs, router, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlobeIcon, GroupIcon, ProfileIcon, TrophyIcon } from '@/components/brand/icons';
@@ -61,19 +61,29 @@ export default function TabLayout() {
   const androidBottom = Math.max(insets.bottom, 16);
 
   /**
-   * Creates a `tabPress` handler that invalidates the tab's queries.
+   * Creates a `tabPress` handler that:
+   * 1. Navigates to the tab root (resets nested stack)
+   * 2. Invalidates TanStack Query caches for fresh data
    *
-   * We do NOT call `e.preventDefault()` — React Navigation's default
-   * `tabPress` behavior already handles:
-   * - Popping nested stacks to root (popToTop)
-   * - Scrolling to top if the tab is already focused
-   *
-   * We simply piggyback on it to invalidate TanStack Query caches,
-   * ensuring the user always sees fresh data when tapping a tab icon.
+   * React Navigation's default `tabPress` only pops to top when the
+   * tab is already focused. By explicitly navigating to the tab root,
+   * we ensure the stack resets regardless of focus state.
    */
+
+  /** Tab route name → Expo Router path */
+  const TAB_ROUTES: Record<string, Href> = {
+    index: '/(tabs)',
+    groups: '/(tabs)/groups',
+    tournaments: '/(tabs)/tournaments',
+    profile: '/(tabs)/profile',
+  } as Record<string, Href>;
+
   const createTabPressHandler = useCallback(
     (tabName: string) =>
-      () => {
+      (e: { preventDefault: () => void }) => {
+        // Prevent default tab switch — we handle navigation ourselves
+        e.preventDefault();
+
         const queryKeys = TAB_QUERY_KEYS[tabName] ?? [];
 
         // Invalidate tab-specific queries
@@ -84,6 +94,12 @@ export default function TabLayout() {
         // Invalidate shared queries (e.g. unread notification count)
         for (const key of SHARED_QUERY_KEYS) {
           void queryClient.invalidateQueries({ queryKey: key });
+        }
+
+        // Navigate to the tab root — this resets the nested stack
+        const route = TAB_ROUTES[tabName];
+        if (route) {
+          router.navigate(route);
         }
       },
     [queryClient],

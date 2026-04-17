@@ -10,7 +10,7 @@
  * Shadows use Platform.select for iOS/Android.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -135,6 +135,16 @@ export default function GroupDetailScreen() {
       pointsByUser.set(entry.userId, entry.totalPoints);
     }
   }
+
+  // Sort members by points descending so highest scorer appears first
+  const sortedMembers = useMemo(() => {
+    if (!members) return undefined;
+    return [...members].sort((a, b) => {
+      const ptsA = pointsByUser.get(a.userId) ?? 0;
+      const ptsB = pointsByUser.get(b.userId) ?? 0;
+      return ptsB - ptsA;
+    });
+  }, [members, pointsByUser]);
 
   // ── Auto-navigate on 404 (group deleted/removed by someone else) ────────
   // Uses a ref to prevent the Alert from firing more than once.
@@ -540,7 +550,7 @@ export default function GroupDetailScreen() {
 
           {/* Member cards (max 5 inline) */}
           <View style={s.cardList}>
-            {members?.slice(0, 5).map((member, index) => {
+            {sortedMembers?.slice(0, 5).map((member, index) => {
               const initial = member.displayName.charAt(0).toUpperCase();
               const isCurrentUser = member.userId === currentUserId;
               const canManage = isAdmin && !isCurrentUser;
@@ -676,7 +686,7 @@ export default function GroupDetailScreen() {
 
           {/* Members list */}
           <FlatList
-            data={members ?? []}
+            data={sortedMembers ?? []}
             keyExtractor={(item) => item.id}
             contentContainerStyle={s.modalListContent}
             renderItem={({ item: member, index }) => {

@@ -71,7 +71,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
+        <ScreenHeader title="Pichichi"  gradient rightAction={<NotificationBell />} />
         <ScrollView
           style={styles.fill}
           contentContainerStyle={styles.scrollContent}
@@ -88,7 +88,7 @@ export default function HomeScreen() {
   if (error && !data) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
+        <ScreenHeader title="Pichichi"  gradient rightAction={<NotificationBell />} />
         <ScrollView
           style={styles.fill}
           contentContainerStyle={styles.errorScrollContent}
@@ -117,7 +117,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Pichichi" subtitle="Mundial 2026" gradient rightAction={<NotificationBell />} />
+      <ScreenHeader title="Pichichi"  gradient rightAction={<NotificationBell />} />
 
       <ScrollView
         style={styles.fill}
