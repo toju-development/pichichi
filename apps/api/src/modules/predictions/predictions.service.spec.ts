@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PredictionsService } from './predictions.service';
 import { PrismaService } from '../../config/prisma.service';
 
@@ -12,6 +12,8 @@ const mockPrisma = {
   match: { findUnique: jest.fn() },
   groupTournament: { findUnique: jest.fn() },
   prediction: { upsert: jest.fn() },
+  user: { findUnique: jest.fn() },
+  $queryRaw: jest.fn(),
 };
 
 async function createService(): Promise<{
@@ -246,6 +248,121 @@ describe('PredictionsService', () => {
           },
         },
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // findByGroupAndMember
+  // ---------------------------------------------------------------------------
+
+  describe('findByGroupAndMember', () => {
+    const requestingUserId = 'requester-1';
+    const targetUserId = 'target-1';
+
+    const targetUser = {
+      id: targetUserId,
+      displayName: 'Target User',
+      avatarUrl: 'https://example.com/avatar.png',
+    };
+
+    it('should throw ForbiddenException if requesting user is not a member', async () => {
+      mockPrisma.groupMember.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.findByGroupAndMember(groupId, targetUserId, requestingUserId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if target user does not exist', async () => {
+      mockPrisma.groupMember.findFirst.mockResolvedValue(activeMembership);
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.findByGroupAndMember(groupId, targetUserId, requestingUserId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return predictions and totalPoints for a valid member', async () => {
+      mockPrisma.groupMember.findFirst.mockResolvedValue(activeMembership);
+      mockPrisma.user.findUnique.mockResolvedValue(targetUser);
+
+      const predictionRows = [
+        {
+          id: 'pred-1',
+          matchId: 'match-1',
+          predictedHome: 2,
+          predictedAway: 1,
+          pointsEarned: 3,
+          pointType: 'EXACT',
+          scheduledAt: new Date('2026-06-15T18:00:00Z'),
+          status: 'FINISHED',
+          homeScore: 2,
+          awayScore: 1,
+          phase: 'GROUP_STAGE',
+          homeTeamName: 'Argentina',
+          awayTeamName: 'Brazil',
+          homeTeamShortName: 'ARG',
+          awayTeamShortName: 'BRA',
+          homeTeamFlagUrl: null,
+          awayTeamFlagUrl: null,
+          tournamentId: 'tournament-1',
+          tournamentName: 'World Cup 2026',
+          tournamentLogoUrl: null,
+        },
+      ];
+
+      // First $queryRaw: predictions
+      mockPrisma.$queryRaw.mockResolvedValueOnce(predictionRows);
+      // Second $queryRaw: totalPoints
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ total: BigInt(42) }]);
+
+      const result = await service.findByGroupAndMember(
+        groupId,
+        targetUserId,
+        requestingUserId,
+      );
+
+      expect(result.userId).toBe(targetUserId);
+      expect(result.displayName).toBe('Target User');
+      expect(result.totalPoints).toBe(42);
+      expect(result.predictions).toHaveLength(1);
+      expect(result.predictions[0].id).toBe('pred-1');
+      expect(result.predictions[0].match.status).toBe('FINISHED');
+    });
+
+    it('should return empty predictions with 0 totalPoints when no data', async () => {
+      mockPrisma.groupMember.findFirst.mockResolvedValue(activeMembership);
+      mockPrisma.user.findUnique.mockResolvedValue(targetUser);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ total: BigInt(0) }]);
+
+      const result = await service.findByGroupAndMember(
+        groupId,
+        targetUserId,
+        requestingUserId,
+      );
+
+      expect(result.predictions).toEqual([]);
+      expect(result.totalPoints).toBe(0);
+    });
+
+    it('should return response shape with correct fields', async () => {
+      mockPrisma.groupMember.findFirst.mockResolvedValue(activeMembership);
+      mockPrisma.user.findUnique.mockResolvedValue(targetUser);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ total: BigInt(10) }]);
+
+      const result = await service.findByGroupAndMember(
+        groupId,
+        targetUserId,
+        requestingUserId,
+      );
+
+      expect(result).toHaveProperty('userId');
+      expect(result).toHaveProperty('displayName');
+      expect(result).toHaveProperty('avatarUrl');
+      expect(result).toHaveProperty('totalPoints');
+      expect(result).toHaveProperty('predictions');
     });
   });
 });

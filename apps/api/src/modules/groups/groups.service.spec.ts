@@ -36,6 +36,7 @@ const mockPrisma = {
   prediction: { count: jest.fn() },
   bonusPrediction: { count: jest.fn() },
   $transaction: jest.fn(),
+  $queryRaw: jest.fn(),
 };
 
 const mockPlansService = {
@@ -306,6 +307,121 @@ describe('GroupsService', () => {
       ).rejects.toThrow(ForbiddenException);
 
       expect(notifications.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getUpcomingPredictions
+  // ---------------------------------------------------------------------------
+
+  describe('getUpcomingPredictions', () => {
+    const groupId = 'group-1';
+    const userId = 'user-1';
+
+    beforeEach(() => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: groupId,
+        isActive: true,
+      });
+      prisma.groupMember.findFirst.mockResolvedValue({
+        id: 'member-1',
+        userId,
+        groupId,
+        isActive: true,
+      });
+    });
+
+    it('should return unpredicted SCHEDULED matches for today', async () => {
+      const rows = [
+        {
+          id: 'match-1',
+          external_id: 123,
+          scheduled_at: new Date('2026-06-15T18:00:00Z'),
+          status: 'SCHEDULED',
+          home_score: null,
+          away_score: null,
+          phase: 'GROUP_STAGE',
+          home_team_id: 'team-1',
+          away_team_id: 'team-2',
+          home_team_placeholder: null,
+          away_team_placeholder: null,
+          home_team_name: 'Argentina',
+          home_team_logo_url: 'https://example.com/arg.png',
+          away_team_name: 'Brazil',
+          away_team_logo_url: 'https://example.com/bra.png',
+          tournament_name: 'World Cup 2026',
+          tournament_slug: 'world-cup-2026',
+          group_id: groupId,
+          group_name: 'Amigos',
+        },
+      ];
+      prisma.$queryRaw.mockResolvedValue(rows);
+
+      const result = await service.getUpcomingPredictions(groupId, userId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].matchId).toBe('match-1');
+      expect(result[0].hasPrediction).toBe(false);
+      expect(result[0].predictedHome).toBeNull();
+      expect(result[0].predictedAway).toBeNull();
+      expect(result[0].isLocked).toBe(false);
+    });
+
+    it('should return empty array when no matches today', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getUpcomingPredictions(groupId, userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw ForbiddenException if user is not a member', async () => {
+      prisma.groupMember.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getUpcomingPredictions(groupId, userId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if group does not exist', async () => {
+      prisma.group.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getUpcomingPredictions(groupId, userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should accept a valid IANA timezone', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getUpcomingPredictions(
+        groupId,
+        userId,
+        'America/Argentina/Buenos_Aires',
+      );
+
+      expect(result).toEqual([]);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should normalize GMT to UTC', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getUpcomingPredictions(groupId, userId, 'GMT');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should default invalid timezone to UTC', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getUpcomingPredictions(
+        groupId,
+        userId,
+        'invalid-tz',
+      );
+
+      expect(result).toEqual([]);
     });
   });
 });

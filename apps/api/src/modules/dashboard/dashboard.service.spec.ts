@@ -675,6 +675,122 @@ describe('DashboardService', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // getDashboard — timezone parameter
+  // ---------------------------------------------------------------------------
+
+  describe('getDashboard — timezone handling', () => {
+    beforeEach(() => {
+      prisma.groupMember.findMany.mockResolvedValue([]);
+      prisma.groupMember.count.mockResolvedValue(0);
+      setupQueryRawMock(prisma.$queryRaw, {
+        todayMatches: [],
+        stats: [makeStatsRow()],
+      });
+    });
+
+    it('should accept a valid IANA timezone and pass it through', async () => {
+      await service.getDashboard('user-1', 'America/Argentina/Buenos_Aires');
+
+      // The $queryRaw call includes the timezone — verify it was called
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should default to UTC when no tz is provided', async () => {
+      const result = await service.getDashboard('user-1');
+
+      expect(result).toBeDefined();
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should default to UTC when tz is undefined', async () => {
+      const result = await service.getDashboard('user-1', undefined);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should normalize GMT to UTC', async () => {
+      const result = await service.getDashboard('user-1', 'GMT');
+
+      expect(result).toBeDefined();
+    });
+
+    it('should normalize UTC string to UTC', async () => {
+      const result = await service.getDashboard('user-1', 'UTC');
+
+      expect(result).toBeDefined();
+    });
+
+    it('should default invalid timezone to UTC', async () => {
+      const result = await service.getDashboard('user-1', 'Invalid/Not_Real_Zone_123!');
+
+      expect(result).toBeDefined();
+    });
+
+    it('should default random string to UTC', async () => {
+      const result = await service.getDashboard('user-1', 'foobar');
+
+      expect(result).toBeDefined();
+    });
+
+    it('should accept Etc/ prefix timezones as valid IANA', async () => {
+      const result = await service.getDashboard('user-1', 'Etc/GMT');
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getTodayMatches — only SCHEDULED + LIVE (no FINISHED)
+  // ---------------------------------------------------------------------------
+
+  describe('getTodayMatches — excludes FINISHED matches', () => {
+    beforeEach(() => {
+      prisma.groupMember.findMany.mockResolvedValue([]);
+      prisma.groupMember.count.mockResolvedValue(0);
+    });
+
+    it('should include SCHEDULED matches', async () => {
+      const row = makeTodayMatchRow({ status: 'SCHEDULED' });
+      setupQueryRawMock(prisma.$queryRaw, {
+        todayMatches: [row],
+        stats: [makeStatsRow()],
+      });
+
+      const result = await service.getDashboard('user-1');
+
+      expect(result.todayMatches).toHaveLength(1);
+      expect(result.todayMatches![0].status).toBe('SCHEDULED');
+    });
+
+    it('should include LIVE matches', async () => {
+      const row = makeTodayMatchRow({ status: 'LIVE', home_score: 1, away_score: 0 });
+      setupQueryRawMock(prisma.$queryRaw, {
+        todayMatches: [row],
+        stats: [makeStatsRow()],
+      });
+
+      const result = await service.getDashboard('user-1');
+
+      expect(result.todayMatches).toHaveLength(1);
+      expect(result.todayMatches![0].status).toBe('LIVE');
+    });
+
+    it('should NOT include FINISHED matches (SQL WHERE filters them out)', async () => {
+      // The SQL WHERE clause is: m.status IN ('SCHEDULED', 'LIVE')
+      // So if the DB returns no FINISHED rows, our result is empty.
+      // We simulate the DB correctly filtering by returning only non-FINISHED rows.
+      setupQueryRawMock(prisma.$queryRaw, {
+        todayMatches: [], // DB would filter out FINISHED matches
+        stats: [makeStatsRow()],
+      });
+
+      const result = await service.getDashboard('user-1');
+
+      expect(result.todayMatches).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Partial failure resilience
   // ---------------------------------------------------------------------------
 

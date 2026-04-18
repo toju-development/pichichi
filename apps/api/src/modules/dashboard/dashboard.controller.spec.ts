@@ -103,7 +103,32 @@ describe('DashboardController', () => {
       });
 
       expect(mockDashboardService.getDashboard).toHaveBeenCalledTimes(1);
-      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(mockUserId);
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(mockUserId, undefined);
+    });
+
+    it('should pass tz query parameter to the service', async () => {
+      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+
+      await controller.getDashboard(
+        { sub: mockUserId, email: 'test@test.com' },
+        'America/Argentina/Buenos_Aires',
+      );
+
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
+        mockUserId,
+        'America/Argentina/Buenos_Aires',
+      );
+    });
+
+    it('should pass undefined tz when not provided', async () => {
+      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+
+      await controller.getDashboard({ sub: mockUserId, email: 'test@test.com' });
+
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
+        mockUserId,
+        undefined,
+      );
     });
 
     it('should propagate service errors', async () => {
