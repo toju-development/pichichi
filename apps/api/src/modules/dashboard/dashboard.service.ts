@@ -61,6 +61,15 @@ const IANA_TZ_REGEX = /^[A-Za-z_]+\/[A-Za-z_\/]+$/;
 /** Fallback timezone when none provided. */
 const DEFAULT_TZ = 'UTC';
 
+/** Normalize shorthand timezone values (GMT, UTC) that lack a slash. */
+function normalizeTimezone(tz?: string): string {
+  if (!tz) return DEFAULT_TZ;
+  const upper = tz.trim().toUpperCase();
+  if (upper === 'GMT' || upper === 'UTC') return 'UTC';
+  if (upper.startsWith('ETC/')) return tz.trim(); // Etc/GMT, Etc/UTC — valid IANA
+  return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -76,7 +85,7 @@ export class DashboardService {
   // ---------------------------------------------------------------------------
 
   async getDashboard(userId: string, tz?: string): Promise<DashboardResponseDto> {
-    const timezone = tz && IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
+    const timezone = normalizeTimezone(tz);
 
     const results = await Promise.allSettled([
       this.getTodayMatches(userId, timezone),

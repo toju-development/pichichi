@@ -22,6 +22,8 @@ export const queryKeys = {
     members: (groupId: string) => ['groups', 'members', groupId] as const,
     tournaments: (groupId: string) =>
       ['groups', 'tournaments', groupId] as const,
+    upcomingPredictions: (groupId: string) =>
+      ['groups', 'upcoming-predictions', groupId] as const,
   },
 
   // ─── Tournaments ───────────────────────────────────────────────────────────

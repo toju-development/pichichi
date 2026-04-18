@@ -10,10 +10,56 @@ import { GroupMemberRole, NotificationType, TournamentStatus } from '@prisma/cli
 import { PrismaService } from '../../config/prisma.service.js';
 import { PlansService } from '../plans/plans.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import type { DashboardTodayMatchDto } from '@pichichi/shared';
 import type { CreateGroupDto } from './dto/create-group.dto.js';
 import type { UpdateGroupDto } from './dto/update-group.dto.js';
 import type { GroupResponseDto } from './dto/group-response.dto.js';
 import type { GroupMemberResponseDto } from './dto/group-member-response.dto.js';
+
+// ---------------------------------------------------------------------------
+// Raw query result types
+// ---------------------------------------------------------------------------
+
+interface RawUpcomingMatchRow {
+  id: string;
+  external_id: number | null;
+  scheduled_at: Date;
+  status: string;
+  home_score: number | null;
+  away_score: number | null;
+  phase: string;
+  home_team_id: string | null;
+  away_team_id: string | null;
+  home_team_placeholder: string | null;
+  away_team_placeholder: string | null;
+  home_team_name: string | null;
+  home_team_logo_url: string | null;
+  away_team_name: string | null;
+  away_team_logo_url: string | null;
+  tournament_name: string;
+  tournament_slug: string;
+  group_id: string;
+  group_name: string;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Regex to validate IANA timezone identifiers (basic check). */
+const IANA_TZ_REGEX = /^[A-Za-z_]+\/[A-Za-z_\/]+$/;
+
+/** Fallback timezone when none provided or invalid. */
+const DEFAULT_TZ = 'UTC';
+
+/** Normalize shorthand timezone values (GMT, UTC) that lack a slash. */
+function normalizeTimezone(tz?: string): string {
+  if (!tz) return DEFAULT_TZ;
+  const upper = tz.trim().toUpperCase();
+  if (upper === 'GMT' || upper === 'UTC') return 'UTC';
+  if (upper.startsWith('ETC/')) return tz.trim(); // Etc/GMT, Etc/UTC — valid IANA
+  return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
+}
 
 // Characters that avoid ambiguity: no 0/O, 1/I/L
 const INVITE_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -706,6 +752,83 @@ export class GroupsService {
     ]);
 
     return { action: 'removed', predictionsDeleted: predictionsResult.count };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Upcoming predictions (today's unpredicted matches in one group)
+  // ---------------------------------------------------------------------------
+
+  async getUpcomingPredictions(
+    groupId: string,
+    userId: string,
+    tz?: string,
+  ): Promise<DashboardTodayMatchDto[]> {
+    const timezone = normalizeTimezone(tz);
+
+    await this.requireMembership(groupId, userId);
+
+    const rows = await this.prisma.$queryRaw<RawUpcomingMatchRow[]>`
+      SELECT
+        m.id,
+        m.external_id,
+        m.scheduled_at,
+        m.status,
+        m.home_score,
+        m.away_score,
+        m.phase,
+        m.home_team_id,
+        m.away_team_id,
+        m.home_team_placeholder,
+        m.away_team_placeholder,
+        ht.name       AS home_team_name,
+        ht.logo_url   AS home_team_logo_url,
+        at2.name      AS away_team_name,
+        at2.logo_url  AS away_team_logo_url,
+        t.name        AS tournament_name,
+        t.slug        AS tournament_slug,
+        g.id          AS group_id,
+        g.name        AS group_name
+      FROM matches m
+      JOIN tournaments t ON t.id = m.tournament_id
+      JOIN group_tournaments gt ON gt.tournament_id = m.tournament_id
+      JOIN groups g ON g.id = gt.group_id
+      LEFT JOIN teams ht ON ht.id = m.home_team_id
+      LEFT JOIN teams at2 ON at2.id = m.away_team_id
+      WHERE gt.group_id = ${groupId}::uuid
+        AND (m.scheduled_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
+        AND m.status = 'SCHEDULED'
+        AND NOT EXISTS (
+          SELECT 1 FROM predictions p
+          WHERE p.match_id = m.id AND p.user_id = ${userId}::uuid AND p.group_id = ${groupId}::uuid
+        )
+      ORDER BY m.scheduled_at ASC
+    `;
+
+    return rows.map((row) => ({
+      matchId: row.id,
+      externalId: row.external_id,
+      homeTeam: row.home_team_id && row.home_team_name
+        ? { id: row.home_team_id, name: row.home_team_name, logoUrl: row.home_team_logo_url }
+        : null,
+      awayTeam: row.away_team_id && row.away_team_name
+        ? { id: row.away_team_id, name: row.away_team_name, logoUrl: row.away_team_logo_url }
+        : null,
+      homePlaceholder: row.home_team_placeholder,
+      awayPlaceholder: row.away_team_placeholder,
+      scheduledAt: row.scheduled_at.toISOString(),
+      status: row.status,
+      homeScore: row.home_score,
+      awayScore: row.away_score,
+      phase: row.phase,
+      tournamentName: row.tournament_name,
+      tournamentSlug: row.tournament_slug,
+      groupId: row.group_id,
+      groupName: row.group_name,
+      hasPrediction: false,
+      predictedHome: null,
+      predictedAway: null,
+      isLocked: false,
+    }));
   }
 
   // ---------------------------------------------------------------------------

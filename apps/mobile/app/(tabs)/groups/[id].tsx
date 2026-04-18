@@ -23,6 +23,7 @@ import type { GroupMemberRole, TournamentDto } from '@pichichi/shared';
 import { TrophyIcon } from '@/components/brand/icons';
 import { AddTournamentModal } from '@/components/groups/add-tournament-modal';
 import { EditGroupModal } from '@/components/groups/edit-group-modal';
+import { UpcomingPredictionsSection } from '@/components/groups/upcoming-predictions-section';
 import { Button } from '@/components/ui/button';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -36,6 +37,7 @@ import {
   useLeaveGroup,
   useRemoveMember,
   useRemoveTournament,
+  useUpcomingPredictions,
 } from '@/hooks/use-groups';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { queryKeys } from '@/hooks/query-keys';
@@ -112,6 +114,7 @@ export default function GroupDetailScreen() {
   const { data: group, isLoading, error, refetch, isRefetching } = useGroup(id!, !isGroupRemoved);
   const { data: members, refetch: refetchMembers, isRefetching: isRefetchingMembers } = useGroupMembers(id!, !isGroupRemoved);
   const { data: tournaments, refetch: refetchTournaments, isRefetching: isRefetchingTournaments } = useGroupTournaments(id!, !isGroupRemoved);
+  const { data: upcomingPredictions } = useUpcomingPredictions(id!, !isGroupRemoved);
   const { data: leaderboard } = useLeaderboard(id!);
   const leaveGroupMutation = useLeaveGroup();
   const removeMemberMutation = useRemoveMember();
@@ -527,6 +530,14 @@ export default function GroupDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* ── Section 1.5: Upcoming Predictions ────────────────────────── */}
+        {upcomingPredictions && upcomingPredictions.length > 0 ? (
+          <UpcomingPredictionsSection
+            matches={upcomingPredictions}
+            groupId={id!}
+          />
+        ) : null}
 
         {/* ── Section 2: Miembros ──────────────────────────────────────── */}
         <View>

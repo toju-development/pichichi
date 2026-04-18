@@ -45,6 +45,16 @@ export function useGroupTournaments(groupId: string, enabled = true) {
   });
 }
 
+export function useUpcomingPredictions(groupId: string, enabled = true) {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+
+  return useQuery({
+    queryKey: queryKeys.groups.upcomingPredictions(groupId),
+    queryFn: () => groupsApi.getUpcomingPredictions(groupId, tz),
+    enabled: !!groupId && enabled,
+  });
+}
+
 export function useCreateGroup() {
   const qc = useQueryClient();
 

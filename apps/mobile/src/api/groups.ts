@@ -1,4 +1,5 @@
 import type {
+  DashboardTodayMatchDto,
   GroupDto,
   GroupMemberDto,
   TournamentDto,
@@ -117,5 +118,16 @@ export async function removeTournament(
     action: string;
     predictionsDeleted: number;
   }>(`/groups/${groupId}/tournaments/${tournamentId}`);
+  return data;
+}
+
+export async function getUpcomingPredictions(
+  groupId: string,
+  tz: string,
+): Promise<DashboardTodayMatchDto[]> {
+  const { data } = await api.get<DashboardTodayMatchDto[]>(
+    `/groups/${groupId}/upcoming-predictions`,
+    { params: { tz } },
+  );
   return data;
 }

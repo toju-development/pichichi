@@ -54,6 +54,10 @@ export function useUpsertPrediction() {
       qc.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
+      // Refresh upcoming predictions in group detail
+      qc.invalidateQueries({
+        queryKey: queryKeys.groups.upcomingPredictions(variables.groupId),
+      });
     },
   });
 }

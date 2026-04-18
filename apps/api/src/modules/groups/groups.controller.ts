@@ -20,6 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { DashboardTodayMatchDto } from '@pichichi/shared';
 import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { GroupsService } from './groups.service.js';
@@ -205,6 +206,27 @@ export class GroupsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.groupsService.getGroupTournaments(id, user.sub);
+  }
+
+  @Get(':id/upcoming-predictions')
+  @ApiOperation({ summary: 'Get today\'s unpredicted matches in a group' })
+  @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
+  @ApiQuery({
+    name: 'tz',
+    required: false,
+    description: 'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC.',
+    example: 'America/Argentina/Buenos_Aires',
+  })
+  @ApiResponse({ status: 200, description: 'List of upcoming matches to predict' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of the group' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
+  async getUpcomingPredictions(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('tz') tz?: string,
+  ): Promise<DashboardTodayMatchDto[]> {
+    return this.groupsService.getUpcomingPredictions(id, user.sub, tz);
   }
 
   @Get(':id/tournaments/:tournamentId/check-remove')
