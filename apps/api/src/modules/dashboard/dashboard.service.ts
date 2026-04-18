@@ -55,13 +55,11 @@ interface RawUserStatsRow {
 // Constants
 // ---------------------------------------------------------------------------
 
-/**
- * Maximum number of upcoming matches to return.
- * The client filters by "today" using the device timezone, so
- * the backend is deliberately generous — returning all upcoming matches
- * avoids UTC vs. local-time mismatches.
- */
-const MAX_UPCOMING_MATCHES = 20;
+/** Regex to validate IANA timezone identifiers (basic check). */
+const IANA_TZ_REGEX = /^[A-Za-z_]+\/[A-Za-z_\/]+$/;
+
+/** Fallback timezone when none provided. */
+const DEFAULT_TZ = 'UTC';
 
 // ---------------------------------------------------------------------------
 // Service
@@ -77,9 +75,11 @@ export class DashboardService {
   // Public API
   // ---------------------------------------------------------------------------
 
-  async getDashboard(userId: string): Promise<DashboardResponseDto> {
+  async getDashboard(userId: string, tz?: string): Promise<DashboardResponseDto> {
+    const timezone = tz && IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
+
     const results = await Promise.allSettled([
-      this.getTodayMatches(userId),
+      this.getTodayMatches(userId, timezone),
       this.getUserStats(userId),
       this.getGroupRankings(userId),
     ]);
@@ -105,13 +105,12 @@ export class DashboardService {
 
   private async getTodayMatches(
     userId: string,
+    timezone: string,
   ): Promise<DashboardTodayMatchDto[]> {
-    // Return all upcoming (not finished/cancelled/postponed) matches from the
-    // user's active groups, plus any currently LIVE match.
-    //
-    // The client filters by "today" using the device timezone — this is the
-    // same pattern the tournament screen uses (fetch all, group by local date).
-    // The backend is deliberately timezone-agnostic here.
+    // Filter matches whose scheduled_at falls within "today" in the client's
+    // timezone, plus any currently LIVE match regardless of date.
+    // PostgreSQL's AT TIME ZONE converts the UTC timestamp to local time
+    // so we can compare the date portion accurately.
     const rows = await this.prisma.$queryRaw<RawTodayMatchRow[]>`
       SELECT
         m.id,
@@ -154,11 +153,11 @@ export class DashboardService {
       LEFT JOIN teams ht ON ht.id = m.home_team_id
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE (
-        m.status NOT IN ('FINISHED', 'CANCELLED', 'POSTPONED')
+        (m.scheduled_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
         OR m.status = 'LIVE'
       )
+      AND m.status NOT IN ('CANCELLED', 'POSTPONED')
       ORDER BY m.scheduled_at ASC, g.name ASC
-      LIMIT ${MAX_UPCOMING_MATCHES}
     `;
 
     return rows.map((row) => ({

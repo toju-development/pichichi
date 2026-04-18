@@ -50,6 +50,10 @@ export function useUpsertPrediction() {
       qc.invalidateQueries({
         queryKey: queryKeys.leaderboard.byGroup(variables.groupId),
       });
+      // Refresh home dashboard (today matches predictions)
+      qc.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
