@@ -163,7 +163,7 @@ export class DashboardService {
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE m.status IN ('SCHEDULED', 'LIVE')
       AND (
-        (m.scheduled_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
+        (m.scheduled_at AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
         OR m.status = 'LIVE'
       )
       ORDER BY m.scheduled_at ASC, g.name ASC

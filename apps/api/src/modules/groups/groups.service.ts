@@ -795,7 +795,7 @@ export class GroupsService {
       LEFT JOIN teams ht ON ht.id = m.home_team_id
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE gt.group_id = ${groupId}::uuid
-        AND (m.scheduled_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
+        AND (m.scheduled_at AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
         AND m.status = 'SCHEDULED'
         AND NOT EXISTS (
           SELECT 1 FROM predictions p

@@ -205,7 +205,7 @@ model Match {
   phase               MatchPhase
   groupName           String?     @map("group_name") @db.VarChar(50)
   matchNumber         Int?        @map("match_number")
-  scheduledAt         DateTime    @map("scheduled_at")
+  scheduledAt         DateTime    @map("scheduled_at") @db.Timestamptz(3)
   venue               String?     @db.VarChar(200)
   city                String?     @db.VarChar(100)
   status              MatchStatus @default(SCHEDULED)
