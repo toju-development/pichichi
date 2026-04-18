@@ -238,6 +238,41 @@ export interface GroupPredictionsDto {
   predictions: UserPredictionDto[];
 }
 
+// ─── Member Predictions ──────────────────────────────────────────────────
+
+export interface MemberPredictionItemDto {
+  id: string;
+  matchId: string;
+  predictedHome: number;
+  predictedAway: number;
+  pointsEarned: number;
+  pointType: PredictionPointType | null;
+  match: {
+    scheduledAt: string;
+    status: MatchStatus;
+    homeScore: number | null;
+    awayScore: number | null;
+    phase: MatchPhase;
+    homeTeamName: string | null;
+    awayTeamName: string | null;
+    homeTeamShortName: string | null;
+    awayTeamShortName: string | null;
+    homeTeamFlagUrl: string | null;
+    awayTeamFlagUrl: string | null;
+  };
+  tournamentId: string;
+  tournamentName: string;
+  tournamentLogoUrl: string | null;
+}
+
+export interface MemberPredictionsResponseDto {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  totalPoints: number;
+  predictions: MemberPredictionItemDto[];
+}
+
 // ─── Leaderboard ─────────────────────────────────────────────────────────────
 
 export interface LeaderboardEntryDto {

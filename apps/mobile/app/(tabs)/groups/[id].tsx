@@ -297,6 +297,16 @@ export default function GroupDetailScreen() {
     );
   }
 
+  function handleNavigateToMemberPredictions(member: {
+    userId: string;
+    displayName: string;
+  }) {
+    router.push({
+      pathname: '/(tabs)/groups/member-predictions',
+      params: { groupId: id, userId: member.userId, displayName: member.displayName },
+    });
+  }
+
   function handleMemberAction(member: {
     userId: string;
     displayName: string;
@@ -571,8 +581,9 @@ export default function GroupDetailScreen() {
               return (
                 <View key={member.id} style={[s.card, s.cardShadow]}>
                   <Pressable
-                    onPress={canManage ? () => handleMemberAction(member) : undefined}
-                    style={({ pressed }) => (pressed && canManage) ? s.pressedOpacity : undefined}
+                    onPress={() => handleNavigateToMemberPredictions(member)}
+                    onLongPress={canManage ? () => handleMemberAction(member) : undefined}
+                    style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
                   >
                     <View style={s.memberCardRow}>
                       {/* Avatar */}
@@ -710,8 +721,9 @@ export default function GroupDetailScreen() {
               return (
                 <View style={[s.card, s.cardShadow]}>
                   <Pressable
-                    onPress={canManage ? () => handleMemberAction(member) : undefined}
-                    style={({ pressed }) => (pressed && canManage) ? s.pressedOpacity : undefined}
+                    onPress={() => handleNavigateToMemberPredictions(member)}
+                    onLongPress={canManage ? () => handleMemberAction(member) : undefined}
+                    style={({ pressed }) => pressed ? s.pressedOpacity : undefined}
                   >
                     <View style={s.memberCardRow}>
                       {/* Avatar */}

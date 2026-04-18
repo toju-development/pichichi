@@ -161,11 +161,11 @@ export class DashboardService {
         AND gm.is_active = true
       LEFT JOIN teams ht ON ht.id = m.home_team_id
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
-      WHERE (
+      WHERE m.status IN ('SCHEDULED', 'LIVE')
+      AND (
         (m.scheduled_at AT TIME ZONE 'UTC' AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
         OR m.status = 'LIVE'
       )
-      AND m.status NOT IN ('CANCELLED', 'POSTPONED')
       ORDER BY m.scheduled_at ASC, g.name ASC
     `;
 

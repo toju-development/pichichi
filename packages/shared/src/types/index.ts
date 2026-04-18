@@ -136,4 +136,6 @@ export type {
   DashboardTodayMatchDto,
   DashboardUserStatsDto,
   DashboardResponseDto,
+  MemberPredictionItemDto,
+  MemberPredictionsResponseDto,
 } from './dto.js';

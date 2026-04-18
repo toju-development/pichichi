@@ -16,6 +16,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { MemberPredictionsResponseDto } from '@pichichi/shared';
 import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { PredictionsService } from './predictions.service.js';
@@ -77,6 +78,22 @@ export class PredictionsController {
     @Param('matchId', ParseUUIDPipe) matchId: string,
   ): Promise<GroupPredictionsResponseDto> {
     return this.predictionsService.findByMatchAndGroup(matchId, groupId, user.sub);
+  }
+
+  @Get('group/:groupId/member/:userId')
+  @ApiOperation({ summary: 'Get a member\'s predictions in a group (visible to all members)' })
+  @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
+  @ApiParam({ name: 'userId', description: 'Target user ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Member predictions' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not a member of the group' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async findByGroupAndMember(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<MemberPredictionsResponseDto> {
+    return this.predictionsService.findByGroupAndMember(groupId, userId, user.sub);
   }
 
   @Get('group/:groupId/stats')

@@ -1,5 +1,6 @@
 import type {
   GroupPredictionsDto,
+  MemberPredictionsResponseDto,
   PredictionDto,
   PredictionStatsDto,
 } from '@pichichi/shared';
@@ -40,6 +41,16 @@ export async function getMyStats(
 ): Promise<PredictionStatsDto> {
   const { data } = await api.get<PredictionStatsDto>(
     `/predictions/group/${groupId}/stats`,
+  );
+  return data;
+}
+
+export async function getMemberPredictions(
+  groupId: string,
+  userId: string,
+): Promise<MemberPredictionsResponseDto> {
+  const { data } = await api.get<MemberPredictionsResponseDto>(
+    `/predictions/group/${groupId}/member/${userId}`,
   );
   return data;
 }

@@ -28,6 +28,14 @@ export function usePredictionStats(groupId: string) {
   });
 }
 
+export function useMemberPredictions(groupId: string, userId: string) {
+  return useQuery({
+    queryKey: queryKeys.predictions.memberPredictions(groupId, userId),
+    queryFn: () => predictionsApi.getMemberPredictions(groupId, userId),
+    enabled: !!groupId && !!userId,
+  });
+}
+
 export function useUpsertPrediction() {
   const qc = useQueryClient();
 

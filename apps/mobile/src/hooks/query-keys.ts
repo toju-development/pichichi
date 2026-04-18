@@ -49,6 +49,8 @@ export const queryKeys = {
     groupMatch: (groupId: string, matchId: string) =>
       ['predictions', groupId, matchId] as const,
     stats: (groupId: string) => ['predictions', groupId, 'stats'] as const,
+    memberPredictions: (groupId: string, userId: string) =>
+      ['predictions', groupId, 'member', userId] as const,
   },
 
   // ─── Leaderboard ───────────────────────────────────────────────────────────
