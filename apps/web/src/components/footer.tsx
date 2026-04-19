@@ -2,8 +2,8 @@ import { Logo } from "@/components/logo";
 
 const FOOTER_LINKS = [
   { label: "FAQ", href: "/faq" },
-  { label: "Términos y Condiciones", href: "#" },
-  { label: "Política de Privacidad", href: "#" },
+  { label: "Términos y Condiciones", href: "/terms" },
+  { label: "Política de Privacidad", href: "/privacy-policy" },
 ] as const;
 
 const SOCIAL_LINKS = [
