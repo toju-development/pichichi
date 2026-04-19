@@ -223,6 +223,78 @@ export function RevealIcon({ className = defaultClass, size = 24 }: IconProps) {
   );
 }
 
+/** Palette / Branding — artist palette */
+export function PaletteIcon({ className = defaultClass, size = 24 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="8" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="14" r="1" fill="currentColor" stroke="none" />
+      <path d="M7.5 15.5a2 2 0 0 1 0-3" />
+    </svg>
+  );
+}
+
+/** Users / Team — three people for unlimited players */
+export function UsersIcon({ className = defaultClass, size = 24 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="7" r="3" />
+      <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
+      <circle cx="5" cy="9" r="2" />
+      <path d="M3 21v-1a3 3 0 0 1 2-2.83" />
+      <circle cx="19" cy="9" r="2" />
+      <path d="M21 21v-1a3 3 0 0 0-2-2.83" />
+    </svg>
+  );
+}
+
+/** Calendar / Events — calendar with star */
+export function CalendarIcon({ className = defaultClass, size = 24 }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="17" rx="2" />
+      <path d="M16 2v4M8 2v4M3 9h18" />
+      <path d="M12 13l1.5 1.2L15 13l-.5 1.8L16 16h-1.8L12 17l-2.2-1H8l1.5-1.2L9 13l1.5 1.2z" />
+    </svg>
+  );
+}
+
 /** Dashboard / Stats — layout grid with chart */
 export function DashboardIcon({ className = defaultClass, size = 24 }: IconProps) {
   return (

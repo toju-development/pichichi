@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { label: "Cómo funciona", href: "/#como-funciona" },
   { label: "Características", href: "/#caracteristicas" },
   { label: "Partidos", href: "/#partidos" },
+  { label: "Premium", href: "/#premium" },
   { label: "FAQ", href: "/faq" },
 ] as const;
 
