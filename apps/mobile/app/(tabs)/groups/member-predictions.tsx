@@ -375,19 +375,16 @@ const s = StyleSheet.create({
   matchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   teamSide: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: 6,
   },
   teamSideAway: {
     flexDirection: 'row-reverse',
-    justifyContent: 'flex-end',
   },
   teamFlag: {
     width: 22,

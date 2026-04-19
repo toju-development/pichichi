@@ -148,7 +148,8 @@ function TeamSide({
 
   return (
     <View style={[styles.teamSide, reverse && styles.teamSideReverse]}>
-      {reverse ? <>{name}{avatar}</> : <>{avatar}{name}</>}
+      {avatar}
+      {name}
     </View>
   );
 }
@@ -644,14 +645,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: COLORS.text.primary,
-    width: 90,
+    flexShrink: 1,
   },
   placeholderName: {
     fontSize: 11,
     fontWeight: '500',
     fontStyle: 'italic',
     color: COLORS.text.muted,
-    width: 90,
+    flexShrink: 1,
   },
 
   // ── Time / Score blocks ─────────────────────────────────────────────────
