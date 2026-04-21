@@ -70,6 +70,23 @@ function normalizeTimezone(tz?: string): string {
   return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
 }
 
+/**
+ * Returns the UTC start and end of "today" in the given IANA timezone.
+ * Avoids AT TIME ZONE in SQL (Railway PostgreSQL lacks tzdata).
+ */
+function getTodayUTCBounds(tz: string): { start: Date; end: Date } {
+  const now = new Date();
+  // Today's date string in target tz, e.g. "2026-04-21"
+  const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
+  // Compute offset: difference between local time and UTC at this moment
+  const localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const offsetMs = localNow.getTime() - now.getTime();
+  // Midnight and end-of-day as if they were UTC, then subtract offset
+  const startUTC = new Date(new Date(`${localDateStr}T00:00:00.000`).getTime() - offsetMs);
+  const endUTC = new Date(new Date(`${localDateStr}T23:59:59.999`).getTime() - offsetMs);
+  return { start: startUTC, end: endUTC };
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -117,9 +134,9 @@ export class DashboardService {
     timezone: string,
   ): Promise<DashboardTodayMatchDto[]> {
     // Filter matches whose scheduled_at falls within "today" in the client's
-    // timezone, plus any currently LIVE match regardless of date.
-    // PostgreSQL's AT TIME ZONE converts the UTC timestamp to local time
-    // so we can compare the date portion accurately.
+    // timezone. We compute the UTC bounds in Node.js to avoid AT TIME ZONE
+    // (Railway PostgreSQL lacks tzdata for IANA timezone names).
+    const { start, end } = getTodayUTCBounds(timezone);
     const rows = await this.prisma.$queryRaw<RawTodayMatchRow[]>`
       SELECT
         m.id,
@@ -163,7 +180,7 @@ export class DashboardService {
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE m.status IN ('SCHEDULED', 'LIVE')
       AND (
-        (m.scheduled_at AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
+        (m.scheduled_at >= ${start} AND m.scheduled_at <= ${end})
         OR m.status = 'LIVE'
       )
       ORDER BY m.scheduled_at ASC, g.name ASC

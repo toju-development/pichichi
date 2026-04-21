@@ -61,6 +61,20 @@ function normalizeTimezone(tz?: string): string {
   return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
 }
 
+/**
+ * Returns the UTC start and end of "today" in the given IANA timezone.
+ * Avoids AT TIME ZONE in SQL (Railway PostgreSQL lacks tzdata for IANA names).
+ */
+function getTodayUTCBounds(tz: string): { start: Date; end: Date } {
+  const now = new Date();
+  const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
+  const localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const offsetMs = localNow.getTime() - now.getTime();
+  const startUTC = new Date(new Date(`${localDateStr}T00:00:00.000`).getTime() - offsetMs);
+  const endUTC = new Date(new Date(`${localDateStr}T23:59:59.999`).getTime() - offsetMs);
+  return { start: startUTC, end: endUTC };
+}
+
 // Characters that avoid ambiguity: no 0/O, 1/I/L
 const INVITE_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const INVITE_CODE_LENGTH = 8;
@@ -764,6 +778,7 @@ export class GroupsService {
     tz?: string,
   ): Promise<DashboardTodayMatchDto[]> {
     const timezone = normalizeTimezone(tz);
+    const { start, end } = getTodayUTCBounds(timezone);
 
     await this.requireMembership(groupId, userId);
 
@@ -795,7 +810,7 @@ export class GroupsService {
       LEFT JOIN teams ht ON ht.id = m.home_team_id
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE gt.group_id = ${groupId}::uuid
-        AND (m.scheduled_at AT TIME ZONE ${timezone})::date = (NOW() AT TIME ZONE ${timezone})::date
+        AND m.scheduled_at >= ${start} AND m.scheduled_at <= ${end}
         AND m.status = 'SCHEDULED'
         AND NOT EXISTS (
           SELECT 1 FROM predictions p
