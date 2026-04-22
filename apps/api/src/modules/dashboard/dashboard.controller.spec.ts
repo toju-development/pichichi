@@ -120,6 +120,20 @@ describe('DashboardController', () => {
       );
     });
 
+    it('should pass invalid tz value through for service fallback handling', async () => {
+      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+
+      await controller.getDashboard(
+        { sub: mockUserId, email: 'test@test.com' },
+        'Invalid/Not_Real_Zone_123!',
+      );
+
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
+        mockUserId,
+        'Invalid/Not_Real_Zone_123!',
+      );
+    });
+
     it('should pass undefined tz when not provided', async () => {
       mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
 

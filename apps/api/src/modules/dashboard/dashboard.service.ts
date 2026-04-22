@@ -6,6 +6,10 @@ import type {
   DashboardUserStatsDto,
 } from '@pichichi/shared';
 import { PrismaService } from '../../config/prisma.service.js';
+import {
+  resolveTimezoneOrFallback,
+  getLocalDayBoundsUtc,
+} from '../../common/timezone/timezone.utils.js';
 
 // ---------------------------------------------------------------------------
 // Raw query result types
@@ -52,42 +56,6 @@ interface RawUserStatsRow {
 }
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Regex to validate IANA timezone identifiers (basic check). */
-const IANA_TZ_REGEX = /^[A-Za-z_]+\/[A-Za-z_\/]+$/;
-
-/** Fallback timezone when none provided. */
-const DEFAULT_TZ = 'UTC';
-
-/** Normalize shorthand timezone values (GMT, UTC) that lack a slash. */
-function normalizeTimezone(tz?: string): string {
-  if (!tz) return DEFAULT_TZ;
-  const upper = tz.trim().toUpperCase();
-  if (upper === 'GMT' || upper === 'UTC') return 'UTC';
-  if (upper.startsWith('ETC/')) return tz.trim(); // Etc/GMT, Etc/UTC — valid IANA
-  return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
-}
-
-/**
- * Returns the UTC start and end of "today" in the given IANA timezone.
- * Avoids AT TIME ZONE in SQL (Railway PostgreSQL lacks tzdata).
- */
-function getTodayUTCBounds(tz: string): { start: Date; end: Date } {
-  const now = new Date();
-  // Today's date string in target tz, e.g. "2026-04-21"
-  const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
-  // Compute offset: difference between local time and UTC at this moment
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-  const offsetMs = localNow.getTime() - now.getTime();
-  // Midnight and end-of-day as if they were UTC, then subtract offset
-  const startUTC = new Date(new Date(`${localDateStr}T00:00:00.000`).getTime() - offsetMs);
-  const endUTC = new Date(new Date(`${localDateStr}T23:59:59.999`).getTime() - offsetMs);
-  return { start: startUTC, end: endUTC };
-}
-
-// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -102,10 +70,20 @@ export class DashboardService {
   // ---------------------------------------------------------------------------
 
   async getDashboard(userId: string, tz?: string): Promise<DashboardResponseDto> {
-    const timezone = normalizeTimezone(tz);
+    const timezoneResolution = resolveTimezoneOrFallback(tz);
+
+    if (
+      timezoneResolution.fallbackApplied
+      && timezoneResolution.reason
+      && timezoneResolution.reason !== 'missing'
+    ) {
+      this.logger.warn(
+        `Invalid timezone fallback applied on dashboard endpoint: userId=${userId}, input=${timezoneResolution.input ?? 'undefined'}, normalized=${timezoneResolution.normalized}, reason=${timezoneResolution.reason}`,
+      );
+    }
 
     const results = await Promise.allSettled([
-      this.getTodayMatches(userId, timezone),
+      this.getTodayMatches(userId, timezoneResolution.normalized),
       this.getUserStats(userId),
       this.getGroupRankings(userId),
     ]);
@@ -136,7 +114,7 @@ export class DashboardService {
     // Filter matches whose scheduled_at falls within "today" in the client's
     // timezone. We compute the UTC bounds in Node.js to avoid AT TIME ZONE
     // (Railway PostgreSQL lacks tzdata for IANA timezone names).
-    const { start, end } = getTodayUTCBounds(timezone);
+    const { startUtc, endUtcExclusive } = getLocalDayBoundsUtc(timezone);
     const rows = await this.prisma.$queryRaw<RawTodayMatchRow[]>`
       SELECT
         m.id,
@@ -180,7 +158,7 @@ export class DashboardService {
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE m.status IN ('SCHEDULED', 'LIVE')
       AND (
-        (m.scheduled_at >= ${start} AND m.scheduled_at <= ${end})
+        (m.scheduled_at >= ${startUtc} AND m.scheduled_at < ${endUtcExclusive})
         OR m.status = 'LIVE'
       )
       ORDER BY m.scheduled_at ASC, g.name ASC

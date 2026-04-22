@@ -15,6 +15,10 @@ import type { CreateGroupDto } from './dto/create-group.dto.js';
 import type { UpdateGroupDto } from './dto/update-group.dto.js';
 import type { GroupResponseDto } from './dto/group-response.dto.js';
 import type { GroupMemberResponseDto } from './dto/group-member-response.dto.js';
+import {
+  resolveTimezoneOrFallback,
+  getLocalDayBoundsUtc,
+} from '../../common/timezone/timezone.utils.js';
 
 // ---------------------------------------------------------------------------
 // Raw query result types
@@ -40,39 +44,6 @@ interface RawUpcomingMatchRow {
   tournament_slug: string;
   group_id: string;
   group_name: string;
-}
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Regex to validate IANA timezone identifiers (basic check). */
-const IANA_TZ_REGEX = /^[A-Za-z_]+\/[A-Za-z_\/]+$/;
-
-/** Fallback timezone when none provided or invalid. */
-const DEFAULT_TZ = 'UTC';
-
-/** Normalize shorthand timezone values (GMT, UTC) that lack a slash. */
-function normalizeTimezone(tz?: string): string {
-  if (!tz) return DEFAULT_TZ;
-  const upper = tz.trim().toUpperCase();
-  if (upper === 'GMT' || upper === 'UTC') return 'UTC';
-  if (upper.startsWith('ETC/')) return tz.trim(); // Etc/GMT, Etc/UTC — valid IANA
-  return IANA_TZ_REGEX.test(tz) ? tz : DEFAULT_TZ;
-}
-
-/**
- * Returns the UTC start and end of "today" in the given IANA timezone.
- * Avoids AT TIME ZONE in SQL (Railway PostgreSQL lacks tzdata for IANA names).
- */
-function getTodayUTCBounds(tz: string): { start: Date; end: Date } {
-  const now = new Date();
-  const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-  const offsetMs = localNow.getTime() - now.getTime();
-  const startUTC = new Date(new Date(`${localDateStr}T00:00:00.000`).getTime() - offsetMs);
-  const endUTC = new Date(new Date(`${localDateStr}T23:59:59.999`).getTime() - offsetMs);
-  return { start: startUTC, end: endUTC };
 }
 
 // Characters that avoid ambiguity: no 0/O, 1/I/L
@@ -777,8 +748,19 @@ export class GroupsService {
     userId: string,
     tz?: string,
   ): Promise<DashboardTodayMatchDto[]> {
-    const timezone = normalizeTimezone(tz);
-    const { start, end } = getTodayUTCBounds(timezone);
+    const timezoneResolution = resolveTimezoneOrFallback(tz);
+
+    if (
+      timezoneResolution.fallbackApplied
+      && timezoneResolution.reason
+      && timezoneResolution.reason !== 'missing'
+    ) {
+      this.logger.warn(
+        `Invalid timezone fallback applied on groups upcoming-predictions endpoint: userId=${userId}, groupId=${groupId}, input=${timezoneResolution.input ?? 'undefined'}, normalized=${timezoneResolution.normalized}, reason=${timezoneResolution.reason}`,
+      );
+    }
+
+    const { startUtc, endUtcExclusive } = getLocalDayBoundsUtc(timezoneResolution.normalized);
 
     await this.requireMembership(groupId, userId);
 
@@ -810,7 +792,7 @@ export class GroupsService {
       LEFT JOIN teams ht ON ht.id = m.home_team_id
       LEFT JOIN teams at2 ON at2.id = m.away_team_id
       WHERE gt.group_id = ${groupId}::uuid
-        AND m.scheduled_at >= ${start} AND m.scheduled_at <= ${end}
+        AND m.scheduled_at >= ${startUtc} AND m.scheduled_at < ${endUtcExclusive}
         AND m.status = 'SCHEDULED'
         AND NOT EXISTS (
           SELECT 1 FROM predictions p

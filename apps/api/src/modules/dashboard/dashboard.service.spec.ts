@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../../config/prisma.service';
 
@@ -679,13 +680,20 @@ describe('DashboardService', () => {
   // ---------------------------------------------------------------------------
 
   describe('getDashboard — timezone handling', () => {
+    let warnSpy: jest.SpyInstance;
+
     beforeEach(() => {
+      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
       prisma.groupMember.findMany.mockResolvedValue([]);
       prisma.groupMember.count.mockResolvedValue(0);
       setupQueryRawMock(prisma.$queryRaw, {
         todayMatches: [],
         stats: [makeStatsRow()],
       });
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
     });
 
     it('should accept a valid IANA timezone and pass it through', async () => {
@@ -724,18 +732,43 @@ describe('DashboardService', () => {
       const result = await service.getDashboard('user-1', 'Invalid/Not_Real_Zone_123!');
 
       expect(result).toBeDefined();
+      expect(warnSpy).toHaveBeenCalled();
     });
 
     it('should default random string to UTC', async () => {
       const result = await service.getDashboard('user-1', 'foobar');
 
       expect(result).toBeDefined();
+      expect(warnSpy).toHaveBeenCalled();
     });
 
     it('should accept Etc/ prefix timezones as valid IANA', async () => {
       const result = await service.getDashboard('user-1', 'Etc/GMT');
 
       expect(result).toBeDefined();
+    });
+
+    it('should not log warning when timezone is missing (default UTC path)', async () => {
+      await service.getDashboard('user-1');
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('should use semi-open SQL range for today matches', async () => {
+      await service.getDashboard('user-1', 'UTC');
+
+      const queryCall = prisma.$queryRaw.mock.calls.find((call) => {
+        const strings = call[0] as TemplateStringsArray;
+        const sql = Array.isArray(strings) ? strings.join(' ') : String(strings);
+        return sql.includes('FROM matches m');
+      });
+
+      expect(queryCall).toBeDefined();
+
+      const sql = (queryCall?.[0] as TemplateStringsArray).join(' ');
+      expect(sql).toContain('m.scheduled_at >=');
+      expect(sql).toContain('m.scheduled_at <');
+      expect(sql).not.toContain('m.scheduled_at <=');
     });
   });
 

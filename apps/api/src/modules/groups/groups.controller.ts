@@ -214,7 +214,7 @@ export class GroupsController {
   @ApiQuery({
     name: 'tz',
     required: false,
-    description: 'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC.',
+    description: 'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC; invalid values fallback to UTC.',
     example: 'America/Argentina/Buenos_Aires',
   })
   @ApiResponse({ status: 200, description: 'List of upcoming matches to predict' })

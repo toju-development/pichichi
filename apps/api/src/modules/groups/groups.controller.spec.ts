@@ -88,6 +88,18 @@ describe('GroupsController', () => {
       );
     });
 
+    it('should pass invalid tz value through for service fallback handling', async () => {
+      mockGroupsService.getUpcomingPredictions.mockResolvedValue([]);
+
+      await controller.getUpcomingPredictions(mockUser, groupId, 'invalid-tz');
+
+      expect(mockGroupsService.getUpcomingPredictions).toHaveBeenCalledWith(
+        groupId,
+        mockUser.sub,
+        'invalid-tz',
+      );
+    });
+
     it('should return matches from service', async () => {
       const mockMatches = [
         {

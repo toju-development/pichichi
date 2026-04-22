@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   ConflictException,
   ForbiddenException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { GroupMemberRole } from '@prisma/client';
@@ -317,8 +318,10 @@ describe('GroupsService', () => {
   describe('getUpcomingPredictions', () => {
     const groupId = 'group-1';
     const userId = 'user-1';
+    let warnSpy: jest.SpyInstance;
 
     beforeEach(() => {
+      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
       prisma.group.findUnique.mockResolvedValue({
         id: groupId,
         isActive: true,
@@ -329,6 +332,10 @@ describe('GroupsService', () => {
         groupId,
         isActive: true,
       });
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
     });
 
     it('should return unpredicted SCHEDULED matches for today', async () => {
@@ -422,6 +429,29 @@ describe('GroupsService', () => {
       );
 
       expect(result).toEqual([]);
+      expect(warnSpy).toHaveBeenCalled();
+    });
+
+    it('should not warn when timezone is missing', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      await service.getUpcomingPredictions(groupId, userId);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('should use semi-open SQL range for upcoming predictions', async () => {
+      prisma.$queryRaw.mockResolvedValue([]);
+
+      await service.getUpcomingPredictions(groupId, userId, 'UTC');
+
+      const queryCall = prisma.$queryRaw.mock.calls[0];
+      expect(queryCall).toBeDefined();
+
+      const sql = (queryCall[0] as TemplateStringsArray).join(' ');
+      expect(sql).toContain('m.scheduled_at >=');
+      expect(sql).toContain('m.scheduled_at <');
+      expect(sql).not.toContain('m.scheduled_at <=');
     });
   });
 });
