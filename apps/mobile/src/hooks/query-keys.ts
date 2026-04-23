@@ -29,6 +29,7 @@ export const queryKeys = {
   // ─── Tournaments ───────────────────────────────────────────────────────────
   tournaments: {
     all: ['tournaments'] as const,
+    playable: ['tournaments', 'playable'] as const,
     bySlug: (slug: string) => ['tournaments', slug] as const,
     teams: (id: string) => ['tournaments', id, 'teams'] as const,
     players: (id: string) => ['tournaments', id, 'players'] as const,

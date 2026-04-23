@@ -38,7 +38,7 @@ import { useSafeAreaInsets, SafeAreaProvider } from 'react-native-safe-area-cont
 import { TrophyIcon } from '@/components/brand/icons';
 import { useCreateGroup } from '@/hooks/use-groups';
 import { queryKeys } from '@/hooks/query-keys';
-import { useTournaments } from '@/hooks/use-tournaments';
+import { usePlayableTournaments } from '@/hooks/use-tournaments';
 import { useAuthStore } from '@/stores/auth-store';
 import { COLORS } from '@/theme/colors';
 import {
@@ -90,8 +90,10 @@ function CreateGroupModalContent({ onClose, parentBottomInset }: { onClose: () =
   const [selectedTournaments, setSelectedTournaments] = useState<string[]>([]);
 
   const createGroup = useCreateGroup();
-  const { data: availableTournaments } = useTournaments();
+  const { data: tournaments } = usePlayableTournaments();
   const qc = useQueryClient();
+
+  const selectableTournaments = tournaments ?? [];
 
   function resetForm() {
     setName('');
@@ -247,12 +249,12 @@ function CreateGroupModalContent({ onClose, parentBottomInset }: { onClose: () =
             {/* Field 3 — Torneos */}
             <View style={s.fieldGroup}>
               <Text style={s.label}>
-                Torneos{availableTournaments?.length
-                  ? ` (${selectedTournaments.length} de ${availableTournaments.length} seleccionados)`
+                Torneos{selectableTournaments.length
+                  ? ` (${selectedTournaments.length} de ${selectableTournaments.length} seleccionados)`
                   : ''}
               </Text>
 
-              {availableTournaments?.map((tournament: TournamentDto) => {
+              {selectableTournaments.map((tournament: TournamentDto) => {
                 const isSelected = selectedTournaments.includes(tournament.id);
                 const typeLabel = TOURNAMENT_TYPE_LABELS[tournament.type] ?? tournament.type;
                 const statusLabel = TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status;

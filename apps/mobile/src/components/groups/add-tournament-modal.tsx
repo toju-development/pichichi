@@ -25,7 +25,7 @@ import {
 
 import { TrophyIcon } from '@/components/brand/icons';
 import { useAddTournament } from '@/hooks/use-groups';
-import { useTournaments } from '@/hooks/use-tournaments';
+import { usePlayableTournaments } from '@/hooks/use-tournaments';
 import { COLORS } from '@/theme/colors';
 import {
   TOURNAMENT_STATUS_LABELS,
@@ -52,11 +52,14 @@ export function AddTournamentModal({
   currentTournamentIds,
   onClose,
 }: AddTournamentModalProps) {
-  const { data: allTournaments, isLoading } = useTournaments();
+  const { data: playableTournaments, isLoading } = usePlayableTournaments();
   const addTournament = useAddTournament();
 
   const availableTournaments =
-    allTournaments?.filter((t) => !currentTournamentIds.includes(t.id)) ?? [];
+    playableTournaments?.filter(
+      (t) =>
+        !currentTournamentIds.includes(t.id),
+    ) ?? [];
 
   function handleAdd(tournamentId: string) {
     addTournament.mutate(

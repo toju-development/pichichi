@@ -49,6 +49,10 @@ interface RawUpcomingMatchRow {
 // Characters that avoid ambiguity: no 0/O, 1/I/L
 const INVITE_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const INVITE_CODE_LENGTH = 8;
+const ASSOCIABLE_TOURNAMENT_STATUSES: TournamentStatus[] = [
+  TournamentStatus.UPCOMING,
+  TournamentStatus.IN_PROGRESS,
+];
 
 @Injectable()
 export class GroupsService {
@@ -78,6 +82,18 @@ export class GroupsService {
       : planMaxMembers;
 
     const inviteCode = await this.generateUniqueInviteCode();
+
+    if (dto.tournamentId) {
+      const tournament = await this.prisma.tournament.findUnique({
+        where: { id: dto.tournamentId, isActive: true },
+      });
+
+      if (!tournament) {
+        throw new NotFoundException('Tournament not found');
+      }
+
+      this.ensureTournamentCanBeAssociated(tournament.status);
+    }
 
     const group = await this.prisma.group.create({
       data: {
@@ -598,6 +614,8 @@ export class GroupsService {
       throw new NotFoundException('Tournament not found');
     }
 
+    this.ensureTournamentCanBeAssociated(tournament.status);
+
     const existing = await this.prisma.groupTournament.findUnique({
       where: { groupId_tournamentId: { groupId, tournamentId } },
     });
@@ -952,5 +970,15 @@ export class GroupsService {
     if (membership.role !== GroupMemberRole.ADMIN) {
       throw new ForbiddenException('Only group admins can perform this action');
     }
+  }
+
+  private ensureTournamentCanBeAssociated(status: TournamentStatus): void {
+    if (ASSOCIABLE_TOURNAMENT_STATUSES.includes(status)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'Only UPCOMING or IN_PROGRESS tournaments can be associated with a group',
+    );
   }
 }

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TOURNAMENT_STATUS } from '@pichichi/shared';
 
 import * as tournamentsApi from '@/api/tournaments';
 
@@ -7,7 +8,17 @@ import { queryKeys } from './query-keys';
 export function useTournaments() {
   return useQuery({
     queryKey: queryKeys.tournaments.all,
-    queryFn: tournamentsApi.getTournaments,
+    queryFn: () => tournamentsApi.getTournaments(),
+  });
+}
+
+export function usePlayableTournaments() {
+  return useQuery({
+    queryKey: queryKeys.tournaments.playable,
+    queryFn: () =>
+      tournamentsApi.getTournaments({
+        statuses: [TOURNAMENT_STATUS.UPCOMING, TOURNAMENT_STATUS.IN_PROGRESS],
+      }),
   });
 }
 

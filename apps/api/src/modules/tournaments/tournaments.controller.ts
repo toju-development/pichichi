@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -35,16 +36,66 @@ import { TournamentPlayerResponseDto } from './dto/tournament-player-response.dt
 export class TournamentsController {
   constructor(private readonly tournamentsService: TournamentsService) {}
 
+  private readonly allowedStatuses: TournamentStatus[] = [
+    'DRAFT',
+    'UPCOMING',
+    'IN_PROGRESS',
+    'FINISHED',
+    'CANCELLED',
+  ];
+
+  private parseStatusesParam(statuses?: string | string[]): TournamentStatus[] | undefined {
+    if (!statuses) return undefined;
+
+    const rawValues = Array.isArray(statuses)
+      ? statuses.flatMap((entry) => entry.split(','))
+      : statuses.split(',');
+
+    const normalized = rawValues
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (normalized.length === 0) return undefined;
+
+    const invalid = normalized.filter(
+      (value): value is string =>
+        !this.allowedStatuses.includes(value as TournamentStatus),
+    );
+
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `Invalid tournament statuses: ${invalid.join(', ')}`,
+      );
+    }
+
+    return [...new Set(normalized)] as TournamentStatus[];
+  }
+
   @Get()
   @ApiOperation({ summary: 'List all tournaments' })
   @ApiQuery({ name: 'status', required: false, enum: ['DRAFT', 'UPCOMING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'] })
+  @ApiQuery({
+    name: 'statuses',
+    required: false,
+    description:
+      'Tournament status filter. Accepts CSV (statuses=UPCOMING,IN_PROGRESS) or repeated params (statuses=UPCOMING&statuses=IN_PROGRESS).',
+    enum: ['DRAFT', 'UPCOMING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'],
+    isArray: true,
+  })
   @ApiQuery({ name: 'type', required: false, enum: ['WORLD_CUP', 'COPA_AMERICA', 'EURO', 'CHAMPIONS_LEAGUE', 'CUSTOM'] })
   @ApiResponse({ status: 200, description: 'List of tournaments', type: [TournamentResponseDto] })
   async findAll(
     @Query('status') status?: TournamentStatus,
+    @Query('statuses') statuses?: string | string[],
     @Query('type') type?: TournamentType,
   ): Promise<TournamentResponseDto[]> {
-    return this.tournamentsService.findAll({ status, type });
+    const parsedStatuses = this.parseStatusesParam(statuses);
+
+    return this.tournamentsService.findAll({
+      type,
+      status: parsedStatuses?.length ? undefined : status,
+      statuses: parsedStatuses,
+    });
   }
 
   @Get(':slug')

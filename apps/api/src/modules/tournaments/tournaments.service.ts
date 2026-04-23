@@ -79,12 +79,17 @@ export class TournamentsService {
 
   async findAll(filters?: {
     status?: TournamentStatus;
+    statuses?: TournamentStatus[];
     type?: TournamentType;
   }): Promise<TournamentResponseDto[]> {
+    const statuses = filters?.statuses?.length
+      ? filters.statuses
+      : (filters?.status ? [filters.status] : undefined);
+
     const tournaments = await this.prisma.tournament.findMany({
       where: {
         isActive: true,
-        ...(filters?.status ? { status: filters.status } : {}),
+        ...(statuses ? { status: { in: statuses } } : {}),
         ...(filters?.type ? { type: filters.type } : {}),
       },
       include: {

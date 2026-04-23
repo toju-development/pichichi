@@ -17,7 +17,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import type { Plan } from '@prisma/client';
+import { TournamentStatus, type Plan } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import type { PlanResponseDto } from './dto/plan-response.dto.js';
 
@@ -160,7 +160,14 @@ export class PlansService {
     const plan = await this.getUserPlan(creatorId);
 
     const tournamentCount = await this.prisma.groupTournament.count({
-      where: { groupId },
+      where: {
+        groupId,
+        tournament: {
+          status: {
+            in: [TournamentStatus.UPCOMING, TournamentStatus.IN_PROGRESS],
+          },
+        },
+      },
     });
 
     if (tournamentCount >= plan.maxTournamentsPerGroup) {

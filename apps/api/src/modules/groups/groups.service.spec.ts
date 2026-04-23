@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GroupMemberRole } from '@prisma/client';
+import { GroupMemberRole, TournamentStatus } from '@prisma/client';
 import { GroupsService } from './groups.service';
 import { PrismaService } from '../../config/prisma.service';
 import { PlansService } from '../plans/plans.service';
@@ -31,6 +31,13 @@ const mockPrisma = {
     updateMany: jest.fn(),
     count: jest.fn(),
   },
+  tournament: {
+    findUnique: jest.fn(),
+  },
+  groupTournament: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+  },
   user: {
     findUnique: jest.fn(),
   },
@@ -43,6 +50,7 @@ const mockPrisma = {
 const mockPlansService = {
   enforceCanCreateGroup: jest.fn(),
   enforceCanJoinGroup: jest.fn(),
+  enforceCanAddTournament: jest.fn(),
   getMaxMembersPerGroup: jest.fn(),
   getUserPlan: jest.fn(),
 };
@@ -308,6 +316,81 @@ describe('GroupsService', () => {
       ).rejects.toThrow(ForbiddenException);
 
       expect(notifications.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tournament association status validation
+  // ---------------------------------------------------------------------------
+
+  describe('tournament association status validation', () => {
+    it('should block create when tournament status is FINISHED', async () => {
+      plans.enforceCanCreateGroup.mockResolvedValue(undefined);
+      plans.getMaxMembersPerGroup.mockResolvedValue(50);
+      prisma.tournament.findUnique.mockResolvedValue({
+        id: 'tournament-1',
+        status: TournamentStatus.FINISHED,
+      });
+
+      await expect(
+        service.create('user-1', {
+          name: 'Grupo Test',
+          tournamentId: 'tournament-1',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.group.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow create when tournament status is IN_PROGRESS', async () => {
+      plans.enforceCanCreateGroup.mockResolvedValue(undefined);
+      plans.getMaxMembersPerGroup.mockResolvedValue(50);
+      prisma.tournament.findUnique.mockResolvedValue({
+        id: 'tournament-1',
+        status: TournamentStatus.IN_PROGRESS,
+      });
+      prisma.group.create.mockResolvedValue({
+        id: 'group-1',
+        name: 'Grupo Test',
+        description: null,
+        inviteCode: 'ABCD1234',
+        createdBy: 'user-1',
+        maxMembers: 50,
+        createdAt: new Date('2026-01-01'),
+        _count: { members: 1 },
+      });
+
+      const result = await service.create('user-1', {
+        name: 'Grupo Test',
+        tournamentId: 'tournament-1',
+      });
+
+      expect(result.id).toBe('group-1');
+      expect(prisma.group.create).toHaveBeenCalled();
+    });
+
+    it('should block addTournament when tournament status is CANCELLED', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        createdBy: 'creator-1',
+        isActive: true,
+      });
+      prisma.groupMember.findFirst.mockResolvedValue({
+        id: 'member-1',
+        role: GroupMemberRole.ADMIN,
+        isActive: true,
+      });
+      plans.enforceCanAddTournament.mockResolvedValue(undefined);
+      prisma.tournament.findUnique.mockResolvedValue({
+        id: 'tournament-1',
+        status: TournamentStatus.CANCELLED,
+      });
+
+      await expect(
+        service.addTournament('group-1', 'user-1', 'tournament-1'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.groupTournament.create).not.toHaveBeenCalled();
     });
   });
 

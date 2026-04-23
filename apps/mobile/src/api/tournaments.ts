@@ -1,13 +1,28 @@
 import type {
   TournamentDto,
   TournamentPlayerResponseDto,
+  TournamentStatus,
   TournamentTeamDto,
 } from '@pichichi/shared';
 
 import { api } from './client';
 
-export async function getTournaments(): Promise<TournamentDto[]> {
-  const { data } = await api.get<TournamentDto[]>('/tournaments');
+type GetTournamentsFilters = {
+  statuses?: TournamentStatus[];
+};
+
+export async function getTournaments(
+  filters?: GetTournamentsFilters,
+): Promise<TournamentDto[]> {
+  const params = filters?.statuses?.length
+    ? {
+        // API supports CSV and repeated params. Mobile uses CSV for
+        // predictable query keys and simpler client serialization.
+        statuses: filters.statuses.join(','),
+      }
+    : undefined;
+
+  const { data } = await api.get<TournamentDto[]>('/tournaments', { params });
   return data;
 }
 
