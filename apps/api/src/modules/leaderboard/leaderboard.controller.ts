@@ -15,7 +15,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { LeaderboardService } from './leaderboard.service.js';
 import { LeaderboardResponseDto } from './dto/leaderboard-response.dto.js';
@@ -43,7 +46,11 @@ export class LeaderboardController {
     description: 'Number of entries to skip (default 0)',
     example: 0,
   })
-  @ApiResponse({ status: 200, description: 'Global leaderboard', type: GlobalLeaderboardResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Global leaderboard',
+    type: GlobalLeaderboardResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getGlobalLeaderboard(
     @CurrentUser() user: JwtUserPayload,
@@ -51,7 +58,10 @@ export class LeaderboardController {
     @Query('offset') rawOffset?: string,
   ): Promise<GlobalLeaderboardResponseDto> {
     const parsedLimit = Number(rawLimit);
-    const limit = Math.min(Math.max(Number.isNaN(parsedLimit) ? 20 : parsedLimit, 1), 50);
+    const limit = Math.min(
+      Math.max(Number.isNaN(parsedLimit) ? 20 : parsedLimit, 1),
+      50,
+    );
     const parsedOffset = Number(rawOffset);
     const offset = Math.max(Number.isNaN(parsedOffset) ? 0 : parsedOffset, 0);
 
@@ -65,8 +75,16 @@ export class LeaderboardController {
   @Get('group/:groupId')
   @ApiOperation({ summary: 'Get group leaderboard' })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiQuery({ name: 'tournamentId', required: false, description: 'Filter by tournament ID' })
-  @ApiResponse({ status: 200, description: 'Group leaderboard', type: LeaderboardResponseDto })
+  @ApiQuery({
+    name: 'tournamentId',
+    required: false,
+    description: 'Filter by tournament ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Group leaderboard',
+    type: LeaderboardResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -85,9 +103,20 @@ export class LeaderboardController {
   @Get('group/:groupId/phase/:phase')
   @ApiOperation({ summary: 'Get group leaderboard filtered by match phase' })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiParam({ name: 'phase', description: 'Match phase (e.g. GROUP_STAGE, ROUND_OF_16)' })
-  @ApiQuery({ name: 'tournamentId', required: true, description: 'Tournament ID (required for phase filter)' })
-  @ApiResponse({ status: 200, description: 'Phase leaderboard', type: LeaderboardResponseDto })
+  @ApiParam({
+    name: 'phase',
+    description: 'Match phase (e.g. GROUP_STAGE, ROUND_OF_16)',
+  })
+  @ApiQuery({
+    name: 'tournamentId',
+    required: true,
+    description: 'Tournament ID (required for phase filter)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Phase leaderboard',
+    type: LeaderboardResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -108,8 +137,16 @@ export class LeaderboardController {
   @Get('group/:groupId/me')
   @ApiOperation({ summary: 'Get my position in the group leaderboard' })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiQuery({ name: 'tournamentId', required: false, description: 'Filter by tournament ID' })
-  @ApiResponse({ status: 200, description: 'User position and points', type: LeaderboardEntryDto })
+  @ApiQuery({
+    name: 'tournamentId',
+    required: false,
+    description: 'Filter by tournament ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User position and points',
+    type: LeaderboardEntryDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })

@@ -51,7 +51,9 @@ export class BonusPredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     // 2. Validate bonus type exists and get its tournament
@@ -116,7 +118,9 @@ export class BonusPredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     const predictions = await this.prisma.bonusPrediction.findMany({
@@ -149,7 +153,9 @@ export class BonusPredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     // Check if tournament has started (first match scheduledAt > now → not started)
@@ -343,27 +349,25 @@ export class BonusPredictionsService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private toResponseDto(
-    prediction: {
+  private toResponseDto(prediction: {
+    id: string;
+    userId: string;
+    groupId: string;
+    bonusTypeId: string;
+    predictedValue: string;
+    isCorrect: boolean | null;
+    pointsEarned: number;
+    lockedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    bonusType?: {
       id: string;
-      userId: string;
-      groupId: string;
-      bonusTypeId: string;
-      predictedValue: string;
-      isCorrect: boolean | null;
-      pointsEarned: number;
-      lockedAt: Date | null;
-      createdAt: Date;
-      updatedAt: Date;
-      bonusType?: {
-        id: string;
-        key: string;
-        label: string;
-        points: number;
-        sortOrder: number;
-      };
-    },
-  ): BonusPredictionResponseDto {
+      key: string;
+      label: string;
+      points: number;
+      sortOrder: number;
+    };
+  }): BonusPredictionResponseDto {
     const bonusTypeDto: BonusTypeDto | undefined = prediction.bonusType
       ? {
           id: prediction.bonusType.id,
@@ -389,17 +393,15 @@ export class BonusPredictionsService {
     };
   }
 
-  private toUserBonusPredictionDto(
-    prediction: {
-      id: string;
-      userId: string;
-      bonusTypeId: string;
-      predictedValue: string;
-      isCorrect: boolean | null;
-      pointsEarned: number;
-      user: { id: string; displayName: string; avatarUrl: string | null };
-    },
-  ): UserBonusPredictionDto {
+  private toUserBonusPredictionDto(prediction: {
+    id: string;
+    userId: string;
+    bonusTypeId: string;
+    predictedValue: string;
+    isCorrect: boolean | null;
+    pointsEarned: number;
+    user: { id: string; displayName: string; avatarUrl: string | null };
+  }): UserBonusPredictionDto {
     return {
       id: prediction.id,
       userId: prediction.userId,

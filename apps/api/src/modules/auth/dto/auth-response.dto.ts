@@ -14,6 +14,9 @@ export class AuthResponseDto {
   })
   refreshToken!: string;
 
-  @ApiProperty({ description: 'Authenticated user data', type: UserResponseDto })
+  @ApiProperty({
+    description: 'Authenticated user data',
+    type: UserResponseDto,
+  })
   user!: UserResponseDto;
 }

@@ -99,7 +99,10 @@ async function cleanDatabase(): Promise<void> {
 
   // 9. GroupTournament (refs: Group, Tournament — link table)
   const groupTournaments = await prisma.groupTournament.deleteMany();
-  results.push({ label: 'Group-tournament links', count: groupTournaments.count });
+  results.push({
+    label: 'Group-tournament links',
+    count: groupTournaments.count,
+  });
 
   // 10. TournamentTeam (refs: Tournament, Team)
   const tournamentTeams = await prisma.tournamentTeam.deleteMany();

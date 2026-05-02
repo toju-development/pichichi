@@ -12,7 +12,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { DevOnlyGuard } from '../../common/guards/dev-only.guard.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
@@ -30,45 +33,59 @@ export class AuthController {
   @Post('dev-login')
   @HttpCode(HttpStatus.OK)
   @UseGuards(DevOnlyGuard)
-  @ApiOperation({ summary: 'Dev-only login (bypasses OAuth, disabled in production)' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiOperation({
+    summary: 'Dev-only login (bypasses OAuth, disabled in production)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 403, description: 'Not available in production' })
-  async devLogin(
-    @Body() dto: DevLoginDto,
-  ): Promise<AuthResponseDto> {
+  async devLogin(@Body() dto: DevLoginDto): Promise<AuthResponseDto> {
     return this.authService.devLogin(dto.email, dto.displayName);
   }
 
   @Post('google')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with Google OAuth token' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid Google token' })
-  async loginWithGoogle(
-    @Body() dto: GoogleAuthDto,
-  ): Promise<AuthResponseDto> {
+  async loginWithGoogle(@Body() dto: GoogleAuthDto): Promise<AuthResponseDto> {
     return this.authService.loginWithGoogle(dto.token);
   }
 
   @Post('apple')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with Apple OAuth token' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid Apple token' })
-  async loginWithApple(
-    @Body() dto: AppleAuthDto,
-  ): Promise<AuthResponseDto> {
-    return this.authService.loginWithApple(dto.token, dto.firstName, dto.lastName);
+  async loginWithApple(@Body() dto: AppleAuthDto): Promise<AuthResponseDto> {
+    return this.authService.loginWithApple(
+      dto.token,
+      dto.firstName,
+      dto.lastName,
+    );
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
-  @ApiResponse({ status: 200, description: 'Tokens refreshed', type: AuthResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens refreshed',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refreshTokens(
-    @Body() dto: RefreshTokenDto,
-  ): Promise<AuthResponseDto> {
+  async refreshTokens(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
     return this.authService.refreshTokens(dto.refreshToken);
   }
 

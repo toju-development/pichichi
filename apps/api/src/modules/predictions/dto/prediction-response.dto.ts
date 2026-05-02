@@ -8,7 +8,10 @@ export class PredictionMatchDto {
   @ApiProperty({ description: 'Scheduled date and time' })
   scheduledAt!: Date;
 
-  @ApiProperty({ description: 'Match status', enum: ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'] })
+  @ApiProperty({
+    description: 'Match status',
+    enum: ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'],
+  })
   status!: string;
 
   @ApiPropertyOptional({ description: 'Home team name' })

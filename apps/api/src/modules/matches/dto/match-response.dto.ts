@@ -2,7 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { MatchPhase, MatchStatus } from '@prisma/client';
 
 export class MatchTeamResponseDto {
-  @ApiProperty({ description: 'Team ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({
+    description: 'Team ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   id!: string;
 
   @ApiProperty({ description: 'Team name', example: 'Argentina' })
@@ -11,24 +14,50 @@ export class MatchTeamResponseDto {
   @ApiProperty({ description: 'Team short name', example: 'ARG' })
   shortName!: string;
 
-  @ApiPropertyOptional({ description: 'Team logo URL', example: 'https://media.api-sports.io/teams/26.png' })
+  @ApiPropertyOptional({
+    description: 'Team logo URL',
+    example: 'https://media.api-sports.io/teams/26.png',
+  })
   logoUrl?: string | null;
 }
 
 export class MatchResponseDto {
-  @ApiProperty({ description: 'Match ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({
+    description: 'Match ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   id!: string;
 
-  @ApiProperty({ description: 'Tournament ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({
+    description: 'Tournament ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   tournamentId!: string;
 
-  @ApiPropertyOptional({ description: 'Home team info', type: MatchTeamResponseDto })
+  @ApiPropertyOptional({
+    description: 'Home team info',
+    type: MatchTeamResponseDto,
+  })
   homeTeam?: MatchTeamResponseDto | null;
 
-  @ApiPropertyOptional({ description: 'Away team info', type: MatchTeamResponseDto })
+  @ApiPropertyOptional({
+    description: 'Away team info',
+    type: MatchTeamResponseDto,
+  })
   awayTeam?: MatchTeamResponseDto | null;
 
-  @ApiProperty({ description: 'Match phase', enum: ['GROUP_STAGE', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL'] })
+  @ApiProperty({
+    description: 'Match phase',
+    enum: [
+      'GROUP_STAGE',
+      'ROUND_OF_32',
+      'ROUND_OF_16',
+      'QUARTER_FINAL',
+      'SEMI_FINAL',
+      'THIRD_PLACE',
+      'FINAL',
+    ],
+  })
   phase!: MatchPhase;
 
   @ApiPropertyOptional({ description: 'Group name', example: 'Group A' })
@@ -46,7 +75,10 @@ export class MatchResponseDto {
   @ApiPropertyOptional({ description: 'City', example: 'Mexico City' })
   city?: string | null;
 
-  @ApiProperty({ description: 'Match status', enum: ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'] })
+  @ApiProperty({
+    description: 'Match status',
+    enum: ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED', 'CANCELLED'],
+  })
   status!: MatchStatus;
 
   @ApiPropertyOptional({ description: 'Home team score', example: 2 })
@@ -61,16 +93,28 @@ export class MatchResponseDto {
   @ApiPropertyOptional({ description: 'Away team penalty score', example: 3 })
   awayScorePenalties?: number | null;
 
-  @ApiProperty({ description: 'Whether the match went to extra time', example: false })
+  @ApiProperty({
+    description: 'Whether the match went to extra time',
+    example: false,
+  })
   isExtraTime!: boolean;
 
-  @ApiPropertyOptional({ description: 'Home team placeholder label', example: 'Winner Group A' })
+  @ApiPropertyOptional({
+    description: 'Home team placeholder label',
+    example: 'Winner Group A',
+  })
   homeTeamPlaceholder?: string | null;
 
-  @ApiPropertyOptional({ description: 'Away team placeholder label', example: 'Runner-up Group B' })
+  @ApiPropertyOptional({
+    description: 'Away team placeholder label',
+    example: 'Runner-up Group B',
+  })
   awayTeamPlaceholder?: string | null;
 
-  @ApiPropertyOptional({ description: 'API-Football fixture ID', example: 1208614 })
+  @ApiPropertyOptional({
+    description: 'API-Football fixture ID',
+    example: 1208614,
+  })
   externalId?: number | null;
 
   @ApiProperty({ description: 'Creation date' })

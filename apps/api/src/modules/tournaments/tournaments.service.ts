@@ -4,7 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import type { MatchPhase, TournamentStatus, TournamentType } from '@prisma/client';
+import type {
+  MatchPhase,
+  TournamentStatus,
+  TournamentType,
+} from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import type { CreateTournamentDto } from './dto/create-tournament.dto.js';
 import type { UpdateTournamentDto } from './dto/update-tournament.dto.js';
@@ -28,7 +32,9 @@ export class TournamentsService {
     });
 
     if (existingSlug) {
-      throw new ConflictException(`A tournament with slug "${dto.slug}" already exists`);
+      throw new ConflictException(
+        `A tournament with slug "${dto.slug}" already exists`,
+      );
     }
 
     const tournament = await this.prisma.$transaction(async (tx) => {
@@ -84,7 +90,9 @@ export class TournamentsService {
   }): Promise<TournamentResponseDto[]> {
     const statuses = filters?.statuses?.length
       ? filters.statuses
-      : (filters?.status ? [filters.status] : undefined);
+      : filters?.status
+        ? [filters.status]
+        : undefined;
 
     const tournaments = await this.prisma.tournament.findMany({
       where: {
@@ -182,7 +190,9 @@ export class TournamentsService {
       });
 
       if (slugTaken) {
-        throw new ConflictException(`A tournament with slug "${dto.slug}" already exists`);
+        throw new ConflictException(
+          `A tournament with slug "${dto.slug}" already exists`,
+        );
       }
     }
 
@@ -226,10 +236,16 @@ export class TournamentsService {
           ...(dto.name !== undefined ? { name: dto.name } : {}),
           ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
           ...(dto.type !== undefined ? { type: dto.type } : {}),
-          ...(dto.description !== undefined ? { description: dto.description } : {}),
+          ...(dto.description !== undefined
+            ? { description: dto.description }
+            : {}),
           ...(dto.logoUrl !== undefined ? { logoUrl: dto.logoUrl } : {}),
-          ...(dto.startDate !== undefined ? { startDate: new Date(dto.startDate) } : {}),
-          ...(dto.endDate !== undefined ? { endDate: new Date(dto.endDate) } : {}),
+          ...(dto.startDate !== undefined
+            ? { startDate: new Date(dto.startDate) }
+            : {}),
+          ...(dto.endDate !== undefined
+            ? { endDate: new Date(dto.endDate) }
+            : {}),
         },
         include: {
           phases: { orderBy: { sortOrder: 'asc' } },
@@ -388,10 +404,7 @@ export class TournamentsService {
         player: true,
         team: true,
       },
-      orderBy: [
-        { team: { name: 'asc' } },
-        { player: { name: 'asc' } },
-      ],
+      orderBy: [{ team: { name: 'asc' } }, { player: { name: 'asc' } }],
     });
 
     return tournamentPlayers.map((tp) => ({
@@ -413,24 +426,33 @@ export class TournamentsService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private toResponseDto(
-    tournament: {
+  private toResponseDto(tournament: {
+    id: string;
+    name: string;
+    slug: string;
+    type: TournamentType;
+    description: string | null;
+    logoUrl: string | null;
+    startDate: Date;
+    endDate: Date;
+    status: TournamentStatus;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    phases?: {
       id: string;
-      name: string;
-      slug: string;
-      type: TournamentType;
-      description: string | null;
-      logoUrl: string | null;
-      startDate: Date;
-      endDate: Date;
-      status: TournamentStatus;
-      isActive: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-      phases?: { id: string; phase: MatchPhase; multiplier: number; sortOrder: number }[];
-      bonusTypes?: { id: string; key: string; label: string; points: number; sortOrder: number }[];
-    },
-  ): TournamentResponseDto {
+      phase: MatchPhase;
+      multiplier: number;
+      sortOrder: number;
+    }[];
+    bonusTypes?: {
+      id: string;
+      key: string;
+      label: string;
+      points: number;
+      sortOrder: number;
+    }[];
+  }): TournamentResponseDto {
     return {
       id: tournament.id,
       name: tournament.name,

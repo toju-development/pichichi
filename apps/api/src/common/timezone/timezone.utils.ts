@@ -101,7 +101,8 @@ export function getLocalDayBoundsUtc(
   timeZone: string,
   now: Date = new Date(),
 ): UtcDayBounds {
-  const resolvedTimezone = getCanonicalIanaTimezone(timeZone) ?? DEFAULT_TIMEZONE;
+  const resolvedTimezone =
+    getCanonicalIanaTimezone(timeZone) ?? DEFAULT_TIMEZONE;
   const localNowParts = getTimePartsInZone(now, resolvedTimezone);
 
   const startUtc = zonedDateTimeToUtc(
@@ -143,7 +144,9 @@ function getCanonicalIanaTimezone(tz: string): string | null {
   }
 
   try {
-    return new Intl.DateTimeFormat(DEFAULT_LOCALE, { timeZone: tz }).resolvedOptions().timeZone;
+    return new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+      timeZone: tz,
+    }).resolvedOptions().timeZone;
   } catch {
     return null;
   }
@@ -228,7 +231,11 @@ function zonedDateTimeToUtc(
   return new Date(guess);
 }
 
-function addOneLocalDay(year: number, month: number, day: number): {
+function addOneLocalDay(
+  year: number,
+  month: number,
+  day: number,
+): {
   year: number;
   month: number;
   day: number;

@@ -46,21 +46,23 @@ function makeDbMatch(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeApiFixture(overrides: {
-  id?: number;
-  statusShort?: string;
-  statusLong?: string;
-  homeGoals?: number | null;
-  awayGoals?: number | null;
-  homeWinner?: boolean | null;
-  awayWinner?: boolean | null;
-  homeTeamId?: number | null;
-  awayTeamId?: number | null;
-  homeTeamName?: string;
-  awayTeamName?: string;
-  penaltyHome?: number | null;
-  penaltyAway?: number | null;
-} = {}): ApiFootballFixture {
+function makeApiFixture(
+  overrides: {
+    id?: number;
+    statusShort?: string;
+    statusLong?: string;
+    homeGoals?: number | null;
+    awayGoals?: number | null;
+    homeWinner?: boolean | null;
+    awayWinner?: boolean | null;
+    homeTeamId?: number | null;
+    awayTeamId?: number | null;
+    homeTeamName?: string;
+    awayTeamName?: string;
+    penaltyHome?: number | null;
+    penaltyAway?: number | null;
+  } = {},
+): ApiFootballFixture {
   return {
     fixture: {
       id: overrides.id ?? 100,
@@ -1252,9 +1254,7 @@ describe('MatchSyncService', () => {
       };
 
       mockPrisma.match.findMany.mockResolvedValue([match]);
-      mockPrisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'user-1' },
-      ]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([{ userId: 'user-1' }]);
       mockNotificationsService.createMany.mockResolvedValue({ count: 1 });
       mockPrisma.match.update.mockResolvedValue({});
 
@@ -1315,9 +1315,7 @@ describe('MatchSyncService', () => {
 
       await service.handleMatchReminders();
 
-      const expectedWindowEnd = new Date(
-        now.getTime() + 30 * 60 * 1000,
-      );
+      const expectedWindowEnd = new Date(now.getTime() + 30 * 60 * 1000);
 
       expect(mockPrisma.match.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1419,9 +1417,7 @@ describe('MatchSyncService', () => {
       };
 
       mockPrisma.match.findMany.mockResolvedValue([match]);
-      mockPrisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'user-1' },
-      ]);
+      mockPrisma.groupMember.findMany.mockResolvedValue([{ userId: 'user-1' }]);
       mockNotificationsService.createMany.mockResolvedValue({ count: 1 });
       mockPrisma.match.update.mockResolvedValue({});
 
@@ -1437,9 +1433,7 @@ describe('MatchSyncService', () => {
     it('should not throw when the entire cron handler errors', async () => {
       mockPrisma.match.findMany.mockRejectedValue(new Error('DB down'));
 
-      await expect(
-        service.handleMatchReminders(),
-      ).resolves.toBeUndefined();
+      await expect(service.handleMatchReminders()).resolves.toBeUndefined();
     });
   });
 });

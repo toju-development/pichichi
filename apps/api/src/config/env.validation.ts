@@ -53,16 +53,16 @@ export function validateEnv(
     JWT_SECRET: config.JWT_SECRET as string,
     DATABASE_URL: config.DATABASE_URL as string,
     ...(typeof config.REDIS_URL === 'string' && config.REDIS_URL.trim() !== ''
-      ? { REDIS_URL: config.REDIS_URL as string }
+      ? { REDIS_URL: config.REDIS_URL }
       : {}),
     ...(typeof config.API_FOOTBALL_KEY === 'string' &&
     config.API_FOOTBALL_KEY.trim() !== ''
-      ? { API_FOOTBALL_KEY: config.API_FOOTBALL_KEY as string }
+      ? { API_FOOTBALL_KEY: config.API_FOOTBALL_KEY }
       : {}),
     SYNC_ENABLED:
       typeof config.SYNC_ENABLED === 'string' &&
       config.SYNC_ENABLED.trim() !== ''
-        ? config.SYNC_ENABLED as string
+        ? config.SYNC_ENABLED
         : 'false',
   };
 }

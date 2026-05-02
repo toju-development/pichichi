@@ -6,7 +6,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GroupMemberRole, NotificationType, TournamentStatus } from '@prisma/client';
+import {
+  GroupMemberRole,
+  NotificationType,
+  TournamentStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { PlansService } from '../plans/plans.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -68,18 +72,17 @@ export class GroupsService {
   // Create group
   // ---------------------------------------------------------------------------
 
-  async create(
-    userId: string,
-    dto: CreateGroupDto,
-  ): Promise<GroupResponseDto> {
+  async create(userId: string, dto: CreateGroupDto): Promise<GroupResponseDto> {
     // Plan limit checks
     await this.plansService.enforceCanCreateGroup(userId);
 
     // Cap maxMembers to the plan's limit
-    const planMaxMembers = await this.plansService.getMaxMembersPerGroup(userId);
-    const effectiveMaxMembers = dto.maxMembers !== undefined
-      ? Math.min(dto.maxMembers, planMaxMembers)
-      : planMaxMembers;
+    const planMaxMembers =
+      await this.plansService.getMaxMembersPerGroup(userId);
+    const effectiveMaxMembers =
+      dto.maxMembers !== undefined
+        ? Math.min(dto.maxMembers, planMaxMembers)
+        : planMaxMembers;
 
     const inviteCode = await this.generateUniqueInviteCode();
 
@@ -244,7 +247,7 @@ export class GroupsService {
       if (dto.maxMembers < currentMembers) {
         throw new BadRequestException(
           `No podés establecer el máximo en ${dto.maxMembers} porque el grupo ` +
-          `ya tiene ${currentMembers} miembros activos.`,
+            `ya tiene ${currentMembers} miembros activos.`,
         );
       }
 
@@ -366,13 +369,13 @@ export class GroupsService {
         });
 
         if (existing?.isActive) {
-          throw new ConflictException(
-            'You are already a member of this group',
-          );
+          throw new ConflictException('You are already a member of this group');
         }
 
         // Check group capacity against creator's plan limit — inside tx
-        const creatorPlan = await this.plansService.getUserPlan(group.createdBy);
+        const creatorPlan = await this.plansService.getUserPlan(
+          group.createdBy,
+        );
         const effectiveLimit = Math.min(
           group.maxMembers,
           creatorPlan.maxMembersPerGroup,
@@ -769,16 +772,18 @@ export class GroupsService {
     const timezoneResolution = resolveTimezoneOrFallback(tz);
 
     if (
-      timezoneResolution.fallbackApplied
-      && timezoneResolution.reason
-      && timezoneResolution.reason !== 'missing'
+      timezoneResolution.fallbackApplied &&
+      timezoneResolution.reason &&
+      timezoneResolution.reason !== 'missing'
     ) {
       this.logger.warn(
         `Invalid timezone fallback applied on groups upcoming-predictions endpoint: userId=${userId}, groupId=${groupId}, input=${timezoneResolution.input ?? 'undefined'}, normalized=${timezoneResolution.normalized}, reason=${timezoneResolution.reason}`,
       );
     }
 
-    const { startUtc, endUtcExclusive } = getLocalDayBoundsUtc(timezoneResolution.normalized);
+    const { startUtc, endUtcExclusive } = getLocalDayBoundsUtc(
+      timezoneResolution.normalized,
+    );
 
     await this.requireMembership(groupId, userId);
 
@@ -822,12 +827,22 @@ export class GroupsService {
     return rows.map((row) => ({
       matchId: row.id,
       externalId: row.external_id,
-      homeTeam: row.home_team_id && row.home_team_name
-        ? { id: row.home_team_id, name: row.home_team_name, logoUrl: row.home_team_logo_url }
-        : null,
-      awayTeam: row.away_team_id && row.away_team_name
-        ? { id: row.away_team_id, name: row.away_team_name, logoUrl: row.away_team_logo_url }
-        : null,
+      homeTeam:
+        row.home_team_id && row.home_team_name
+          ? {
+              id: row.home_team_id,
+              name: row.home_team_name,
+              logoUrl: row.home_team_logo_url,
+            }
+          : null,
+      awayTeam:
+        row.away_team_id && row.away_team_name
+          ? {
+              id: row.away_team_id,
+              name: row.away_team_name,
+              logoUrl: row.away_team_logo_url,
+            }
+          : null,
       homePlaceholder: row.home_team_placeholder,
       awayPlaceholder: row.away_team_placeholder,
       scheduledAt: row.scheduled_at.toISOString(),
@@ -920,7 +935,9 @@ export class GroupsService {
       .slice(-INVITE_CODE_LENGTH)
       .padStart(INVITE_CODE_LENGTH, 'A');
 
-    this.logger.warn('Invite code generation exhausted retries, using fallback');
+    this.logger.warn(
+      'Invite code generation exhausted retries, using fallback',
+    );
     return fallback;
   }
 
@@ -949,10 +966,7 @@ export class GroupsService {
     }
   }
 
-  private async requireAdmin(
-    groupId: string,
-    userId: string,
-  ): Promise<void> {
+  private async requireAdmin(groupId: string, userId: string): Promise<void> {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId, isActive: true },
     });

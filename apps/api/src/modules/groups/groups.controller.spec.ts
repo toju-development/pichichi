@@ -30,9 +30,7 @@ const mockGroupsService = {
 async function createController(): Promise<GroupsController> {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [GroupsController],
-    providers: [
-      { provide: GroupsService, useValue: mockGroupsService },
-    ],
+    providers: [{ provide: GroupsService, useValue: mockGroupsService }],
   }).compile();
 
   return module.get<GroupsController>(GroupsController);

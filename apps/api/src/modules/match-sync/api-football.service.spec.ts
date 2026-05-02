@@ -18,9 +18,7 @@ const mockConfigService = {
   get: jest.fn(),
 };
 
-async function createService(
-  apiKey: string = FAKE_API_KEY,
-): Promise<{
+async function createService(apiKey: string = FAKE_API_KEY): Promise<{
   service: ApiFootballService;
   config: typeof mockConfigService;
 }> {
@@ -83,8 +81,18 @@ function makeFixture(id: number): ApiFootballFixture {
       round: 'Group A - 1',
     },
     teams: {
-      home: { id: 1, name: 'Team A', logo: 'https://example.com/a.png', winner: null },
-      away: { id: 2, name: 'Team B', logo: 'https://example.com/b.png', winner: null },
+      home: {
+        id: 1,
+        name: 'Team A',
+        logo: 'https://example.com/a.png',
+        winner: null,
+      },
+      away: {
+        id: 2,
+        name: 'Team B',
+        logo: 'https://example.com/b.png',
+        winner: null,
+      },
     },
     goals: { home: null, away: null },
     score: {

@@ -66,7 +66,9 @@ describe('PredictionsController', () => {
         totalPoints: 42,
         predictions: [],
       };
-      mockPredictionsService.findByGroupAndMember.mockResolvedValue(mockResponse);
+      mockPredictionsService.findByGroupAndMember.mockResolvedValue(
+        mockResponse,
+      );
 
       const result = await controller.findByGroupAndMember(
         mockUser,
@@ -125,7 +127,9 @@ describe('PredictionsController', () => {
           },
         ],
       };
-      mockPredictionsService.findByGroupAndMember.mockResolvedValue(mockResponse);
+      mockPredictionsService.findByGroupAndMember.mockResolvedValue(
+        mockResponse,
+      );
 
       const result = await controller.findByGroupAndMember(
         mockUser,

@@ -212,7 +212,9 @@ async function activateTournament(slug: string): Promise<void> {
   console.log(`  Current status: ${tournament.status}`);
   console.log(`  Matches: ${tournament.matches.length}`);
   console.log(`  First match: ${formatDate(firstMatch.scheduledAt)}`);
-  console.log(`  Offset: ${(offsetMs / (1000 * 60 * 60 * 24)).toFixed(1)} days`);
+  console.log(
+    `  Offset: ${(offsetMs / (1000 * 60 * 60 * 24)).toFixed(1)} days`,
+  );
 
   const newStartDate = shiftDate(tournament.startDate, offsetMs);
   const newEndDate = shiftDate(tournament.endDate, offsetMs);
@@ -220,7 +222,9 @@ async function activateTournament(slug: string): Promise<void> {
   const lastMatch = tournament.matches[tournament.matches.length - 1];
   const newLastMatch = shiftDate(lastMatch.scheduledAt, offsetMs);
 
-  console.log(`\n  New date range: ${formatDate(newFirstMatch)} → ${formatDate(newLastMatch)}`);
+  console.log(
+    `\n  New date range: ${formatDate(newFirstMatch)} → ${formatDate(newLastMatch)}`,
+  );
 
   // Execute in transaction
   await prisma.$transaction(async (tx) => {
@@ -252,9 +256,13 @@ async function activateTournament(slug: string): Promise<void> {
   });
 
   console.log(`\n✅ Tournament ACTIVATED`);
-  console.log(`  ${tournament.matches.length} matches updated → status: SCHEDULED, scores: reset`);
+  console.log(
+    `  ${tournament.matches.length} matches updated → status: SCHEDULED, scores: reset`,
+  );
   console.log(`  Tournament status → UPCOMING`);
-  console.log(`  Date range: ${formatDate(newStartDate)} → ${formatDate(newEndDate)}`);
+  console.log(
+    `  Date range: ${formatDate(newStartDate)} → ${formatDate(newEndDate)}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -290,7 +298,9 @@ async function deactivateTournament(slug: string): Promise<void> {
   console.log(`  Current status: ${tournament.status}`);
   console.log(`  Matches: ${tournament.matches.length}`);
   console.log(`  Last match: ${formatDate(lastMatch.scheduledAt)}`);
-  console.log(`  Offset: ${(offsetMs / (1000 * 60 * 60 * 24)).toFixed(1)} days`);
+  console.log(
+    `  Offset: ${(offsetMs / (1000 * 60 * 60 * 24)).toFixed(1)} days`,
+  );
 
   const newStartDate = shiftDate(tournament.startDate, offsetMs);
   const newEndDate = shiftDate(tournament.endDate, offsetMs);
@@ -298,7 +308,9 @@ async function deactivateTournament(slug: string): Promise<void> {
   const newFirstMatch = shiftDate(firstMatch.scheduledAt, offsetMs);
   const newLastMatch = shiftDate(lastMatch.scheduledAt, offsetMs);
 
-  console.log(`\n  New date range: ${formatDate(newFirstMatch)} → ${formatDate(newLastMatch)}`);
+  console.log(
+    `\n  New date range: ${formatDate(newFirstMatch)} → ${formatDate(newLastMatch)}`,
+  );
 
   // Execute in transaction
   await prisma.$transaction(async (tx) => {
@@ -330,9 +342,13 @@ async function deactivateTournament(slug: string): Promise<void> {
   });
 
   console.log(`\n✅ Tournament DEACTIVATED`);
-  console.log(`  ${tournament.matches.length} matches updated → status: FINISHED, scores: 0-0`);
+  console.log(
+    `  ${tournament.matches.length} matches updated → status: FINISHED, scores: 0-0`,
+  );
   console.log(`  Tournament status → FINISHED`);
-  console.log(`  Date range: ${formatDate(newStartDate)} → ${formatDate(newEndDate)}`);
+  console.log(
+    `  Date range: ${formatDate(newStartDate)} → ${formatDate(newEndDate)}`,
+  );
 }
 
 // ---------------------------------------------------------------------------

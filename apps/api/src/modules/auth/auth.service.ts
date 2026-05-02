@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthProvider } from '@prisma/client';
@@ -55,18 +51,23 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
-    this.googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID', '');
+    this.googleClientId = this.configService.get<string>(
+      'GOOGLE_CLIENT_ID',
+      '',
+    );
     this.appleClientId = this.configService.get<string>('APPLE_CLIENT_ID', '');
     this.googleClient = new OAuth2Client(this.googleClientId);
   }
 
   async loginWithGoogle(token: string): Promise<AuthResponseDto> {
-    const ticket = await this.googleClient.verifyIdToken({
-      idToken: token,
-      audience: this.googleClientId,
-    }).catch(() => {
-      throw new UnauthorizedException('Invalid Google token');
-    });
+    const ticket = await this.googleClient
+      .verifyIdToken({
+        idToken: token,
+        audience: this.googleClientId,
+      })
+      .catch(() => {
+        throw new UnauthorizedException('Invalid Google token');
+      });
 
     const payload = ticket.getPayload();
 
@@ -102,7 +103,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Apple token payload');
     }
 
-    const email = applePayload.email ?? `${applePayload.sub}@privaterelay.appleid.com`;
+    const email =
+      applePayload.email ?? `${applePayload.sub}@privaterelay.appleid.com`;
     const nameParts = [firstName, lastName].filter(Boolean).join(' ');
     const displayName = nameParts || (email.split('@')[0] ?? 'User');
 
@@ -123,9 +125,12 @@ export class AuthService {
     let payload: { sub: string; email: string };
 
     try {
-      payload = this.jwtService.verify<{ sub: string; email: string }>(refreshToken, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      });
+      payload = this.jwtService.verify<{ sub: string; email: string }>(
+        refreshToken,
+        {
+          secret: this.configService.get<string>('JWT_SECRET'),
+        },
+      );
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -164,7 +169,10 @@ export class AuthService {
     return this.buildAuthResponse(tokens, user);
   }
 
-  async devLogin(email: string, displayName?: string): Promise<AuthResponseDto> {
+  async devLogin(
+    email: string,
+    displayName?: string,
+  ): Promise<AuthResponseDto> {
     const name = displayName ?? email.split('@')[0] ?? 'Dev User';
     const syntheticProviderId = `dev-${email}`;
 
@@ -260,10 +268,11 @@ export class AuthService {
   }
 
   private async generateUsername(displayName: string): Promise<string> {
-    const base = displayName
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 20) || 'user';
+    const base =
+      displayName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .slice(0, 20) || 'user';
 
     const MAX_RETRIES = 10;
 
@@ -421,5 +430,4 @@ export class AuthService {
       createdAt: user.createdAt,
     };
   }
-
 }

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import type { NotificationResponseDto } from './dto/notification-response.dto.js';
@@ -11,9 +7,7 @@ import type { NotificationResponseDto } from './dto/notification-response.dto.js
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ---------------------------------------------------------------------------
   // Create notification + emit via WebSocket + push (if fcmToken)
@@ -177,17 +171,15 @@ export class NotificationsService {
     );
   }
 
-  private toResponseDto(
-    notification: {
-      id: string;
-      type: NotificationType;
-      title: string;
-      body: string;
-      data: unknown;
-      isRead: boolean;
-      createdAt: Date;
-    },
-  ): NotificationResponseDto {
+  private toResponseDto(notification: {
+    id: string;
+    type: NotificationType;
+    title: string;
+    body: string;
+    data: unknown;
+    isRead: boolean;
+    createdAt: Date;
+  }): NotificationResponseDto {
     return {
       id: notification.id,
       type: notification.type,

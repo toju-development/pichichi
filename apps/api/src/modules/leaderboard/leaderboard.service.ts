@@ -227,13 +227,13 @@ export class LeaderboardService {
     let currentPosition = 1;
 
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]!;
+      const row = rows[i];
       const totalPoints = Number(row.total_points);
       const exactCount = Number(row.exact_count);
 
       // If this is NOT the first row, check if different from previous
       if (i > 0) {
-        const prevRow = rows[i - 1]!;
+        const prevRow = rows[i - 1];
         const prevTotalPoints = Number(prevRow.total_points);
         const prevExactCount = Number(prevRow.exact_count);
 
@@ -514,7 +514,7 @@ export class LeaderboardService {
       return null;
     }
 
-    const row = rows[0]!;
+    const row = rows[0];
     return {
       position: Number(row.position),
       userId: row.user_id,

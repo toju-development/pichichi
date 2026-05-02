@@ -71,7 +71,9 @@ export class ScoringService {
   // Orchestrates: fetch match -> calculate all predictions -> update DB -> emit
   // ---------------------------------------------------------------------------
 
-  async calculatePointsForMatch(matchId: string): Promise<CalculatePointsResult> {
+  async calculatePointsForMatch(
+    matchId: string,
+  ): Promise<CalculatePointsResult> {
     // 1. Get the match with tournament and phases
     const match = await this.prisma.match.findUnique({
       where: { id: matchId },
@@ -109,7 +111,10 @@ export class ScoringService {
     const results = { exact: 0, goalDiff: 0, winner: 0, miss: 0 };
 
     // 4. Calculate points for each prediction and group by (pointType, points)
-    const groups = new Map<string, { pointType: PredictionPointType; points: number; ids: string[] }>();
+    const groups = new Map<
+      string,
+      { pointType: PredictionPointType; points: number; ids: string[] }
+    >();
     // Track total points per user (aggregated across groups) for notifications
     const pointsByUser = new Map<string, number>();
 
@@ -154,16 +159,14 @@ export class ScoringService {
 
     this.logger.log(
       `Points calculated for match ${matchId}: ${predictions.length} predictions ` +
-      `(exact: ${results.exact}, goalDiff: ${results.goalDiff}, winner: ${results.winner}, miss: ${results.miss})`,
+        `(exact: ${results.exact}, goalDiff: ${results.goalDiff}, winner: ${results.winner}, miss: ${results.miss})`,
     );
 
     // Broadcast a single match:updated event (clients refetch their own data)
     this.eventsGateway.emitMatchUpdated(matchId);
 
     // Invalidate leaderboard caches for affected groups
-    const affectedGroupIds = [
-      ...new Set(predictions.map((p) => p.groupId)),
-    ];
+    const affectedGroupIds = [...new Set(predictions.map((p) => p.groupId))];
 
     await this.invalidateLeaderboardCache(
       affectedGroupIds,

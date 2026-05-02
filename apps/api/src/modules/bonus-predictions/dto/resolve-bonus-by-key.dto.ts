@@ -11,7 +11,8 @@ export class ResolveBonusByKeyDto {
   tournamentId!: string;
 
   @ApiProperty({
-    description: "Bonus type key (e.g. 'CHAMPION', 'TOP_SCORER', 'MVP', 'REVELATION')",
+    description:
+      "Bonus type key (e.g. 'CHAMPION', 'TOP_SCORER', 'MVP', 'REVELATION')",
     example: 'CHAMPION',
   })
   @IsString()

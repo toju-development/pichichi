@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateGroupDto {
   @ApiPropertyOptional({
@@ -23,7 +30,8 @@ export class UpdateGroupDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Maximum number of members allowed (2–500, capped by plan limit)',
+    description:
+      'Maximum number of members allowed (2–500, capped by plan limit)',
     example: 20,
     minimum: 2,
     maximum: 500,

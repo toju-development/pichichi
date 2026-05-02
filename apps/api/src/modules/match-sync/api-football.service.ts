@@ -54,10 +54,9 @@ export class ApiFootballService {
 
     for (const batch of batches) {
       const dashSeparatedIds = batch.join('-');
-      const fixtures = await this.request<ApiFootballFixture>(
-        '/fixtures',
-        { ids: dashSeparatedIds },
-      );
+      const fixtures = await this.request<ApiFootballFixture>('/fixtures', {
+        ids: dashSeparatedIds,
+      });
       results.push(...fixtures);
     }
 
@@ -169,8 +168,7 @@ export class ApiFootballService {
 
       return body.response;
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(
         `Network error on ${endpoint}: ${message}. Returning empty result.`,
       );

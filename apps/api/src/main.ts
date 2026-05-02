@@ -41,8 +41,9 @@ async function bootstrap(): Promise<void> {
     ) => {
       // null/undefined origin: WebViews (send literal string "null"), same-origin, curl, etc.
       if (!origin || origin === 'null') return callback(null, true);
-      const allowed =
-        process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001'];
+      const allowed = process.env.CORS_ORIGINS?.split(',') ?? [
+        'http://localhost:3001',
+      ];
       if (allowed.includes(origin)) return callback(null, true);
       callback(new Error('Not allowed by CORS'));
     },

@@ -21,9 +21,7 @@ const mockMatchSyncService = {
 async function createController(): Promise<MatchSyncController> {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [MatchSyncController],
-    providers: [
-      { provide: MatchSyncService, useValue: mockMatchSyncService },
-    ],
+    providers: [{ provide: MatchSyncService, useValue: mockMatchSyncService }],
   }).compile();
 
   return module.get<MatchSyncController>(MatchSyncController);

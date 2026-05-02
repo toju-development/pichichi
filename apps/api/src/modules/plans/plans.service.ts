@@ -87,7 +87,7 @@ export class PlansService {
     if (groupsCreated >= plan.maxGroupsCreated) {
       throw new ForbiddenException(
         `Tu plan ${plan.name} permite crear hasta ${plan.maxGroupsCreated} grupos. ` +
-        `Ya tenés ${groupsCreated}.`,
+          `Ya tenés ${groupsCreated}.`,
       );
     }
   }
@@ -106,7 +106,7 @@ export class PlansService {
     if (memberships >= plan.maxMemberships) {
       throw new ForbiddenException(
         `Tu plan ${plan.name} permite participar en hasta ${plan.maxMemberships} grupos. ` +
-        `Ya estás en ${memberships}.`,
+          `Ya estás en ${memberships}.`,
       );
     }
   }
@@ -132,7 +132,9 @@ export class PlansService {
 
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      include: { _count: { select: { members: { where: { isActive: true } } } } },
+      include: {
+        _count: { select: { members: { where: { isActive: true } } } },
+      },
     });
 
     if (!group) {
@@ -173,7 +175,7 @@ export class PlansService {
     if (tournamentCount >= plan.maxTournamentsPerGroup) {
       throw new ForbiddenException(
         `El plan ${plan.name} permite hasta ${plan.maxTournamentsPerGroup} ` +
-        `torneos por grupo. Este grupo ya tiene ${tournamentCount}.`,
+          `torneos por grupo. Este grupo ya tiene ${tournamentCount}.`,
       );
     }
   }

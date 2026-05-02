@@ -326,9 +326,7 @@ describe('BonusPredictionsService', () => {
     });
 
     it('should return zeroes when no unresolved predictions exist', async () => {
-      prisma.tournamentBonusType.findMany.mockResolvedValue([
-        makeBonusType(),
-      ]);
+      prisma.tournamentBonusType.findMany.mockResolvedValue([makeBonusType()]);
       prisma.bonusPrediction.findMany.mockResolvedValue([]);
 
       const result = await service.resolveByKey(
@@ -482,9 +480,7 @@ describe('BonusPredictionsService', () => {
     });
 
     it('should not call $transaction when no predictions to resolve', async () => {
-      prisma.tournamentBonusType.findMany.mockResolvedValue([
-        makeBonusType(),
-      ]);
+      prisma.tournamentBonusType.findMany.mockResolvedValue([makeBonusType()]);
       prisma.bonusPrediction.findMany.mockResolvedValue([]);
 
       await service.resolveByKey('tournament-1', 'TOP_SCORER', 'Messi');

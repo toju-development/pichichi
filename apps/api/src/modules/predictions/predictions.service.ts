@@ -8,19 +8,26 @@ import {
 import type { PredictionPointType } from '@prisma/client';
 import { LOCK_BUFFER_MINUTES } from '@pichichi/shared';
 import { PrismaService } from '../../config/prisma.service.js';
-import type { MemberPredictionItemDto, MemberPredictionsResponseDto } from '@pichichi/shared';
+import type {
+  MemberPredictionItemDto,
+  MemberPredictionsResponseDto,
+} from '@pichichi/shared';
 import type { CreatePredictionDto } from './dto/create-prediction.dto.js';
-import type { PredictionResponseDto, PredictionMatchDto } from './dto/prediction-response.dto.js';
-import type { GroupPredictionsResponseDto, UserPredictionDto } from './dto/group-predictions-response.dto.js';
+import type {
+  PredictionResponseDto,
+  PredictionMatchDto,
+} from './dto/prediction-response.dto.js';
+import type {
+  GroupPredictionsResponseDto,
+  UserPredictionDto,
+} from './dto/group-predictions-response.dto.js';
 import type { PredictionStatsResponseDto } from './dto/prediction-stats-response.dto.js';
 
 @Injectable()
 export class PredictionsService {
   private readonly logger = new Logger(PredictionsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ---------------------------------------------------------------------------
   // Upsert prediction (create or update)
@@ -36,7 +43,9 @@ export class PredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     // 2. Validate match exists and is SCHEDULED
@@ -72,9 +81,7 @@ export class PredictionsService {
     });
 
     if (!groupTournament) {
-      throw new ForbiddenException(
-        'This tournament is not part of this group',
-      );
+      throw new ForbiddenException('This tournament is not part of this group');
     }
 
     // 4. Upsert prediction (unique constraint: userId + matchId + groupId)
@@ -121,7 +128,9 @@ export class PredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     const predictions = await this.prisma.prediction.findMany({
@@ -152,7 +161,9 @@ export class PredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     const match = await this.prisma.match.findUnique({
@@ -230,7 +241,9 @@ export class PredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     const predictions = await this.prisma.prediction.findMany({
@@ -278,7 +291,9 @@ export class PredictionsService {
     });
 
     if (!membership) {
-      throw new ForbiddenException('You are not an active member of this group');
+      throw new ForbiddenException(
+        'You are not an active member of this group',
+      );
     }
 
     // Fetch target user info
@@ -402,30 +417,36 @@ export class PredictionsService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private toResponseDto(
-    prediction: {
+  private toResponseDto(prediction: {
+    id: string;
+    userId: string;
+    matchId: string;
+    groupId: string;
+    predictedHome: number;
+    predictedAway: number;
+    pointsEarned: number;
+    pointType: PredictionPointType | null;
+    createdAt: Date;
+    updatedAt: Date;
+    match?: {
       id: string;
-      userId: string;
-      matchId: string;
-      groupId: string;
-      predictedHome: number;
-      predictedAway: number;
-      pointsEarned: number;
-      pointType: PredictionPointType | null;
-      createdAt: Date;
-      updatedAt: Date;
-      match?: {
-        id: string;
-        scheduledAt: Date;
-        status: string;
-        homeScore: number | null;
-        awayScore: number | null;
-        phase: string;
-        homeTeam?: { name: string; shortName: string; logoUrl: string | null } | null;
-        awayTeam?: { name: string; shortName: string; logoUrl: string | null } | null;
-      };
-    },
-  ): PredictionResponseDto {
+      scheduledAt: Date;
+      status: string;
+      homeScore: number | null;
+      awayScore: number | null;
+      phase: string;
+      homeTeam?: {
+        name: string;
+        shortName: string;
+        logoUrl: string | null;
+      } | null;
+      awayTeam?: {
+        name: string;
+        shortName: string;
+        logoUrl: string | null;
+      } | null;
+    };
+  }): PredictionResponseDto {
     const matchDto: PredictionMatchDto | undefined = prediction.match
       ? {
           id: prediction.match.id,
@@ -458,17 +479,15 @@ export class PredictionsService {
     };
   }
 
-  private toUserPredictionDto(
-    prediction: {
-      id: string;
-      userId: string;
-      predictedHome: number;
-      predictedAway: number;
-      pointsEarned: number;
-      pointType: PredictionPointType | null;
-      user: { id: string; displayName: string; avatarUrl: string | null };
-    },
-  ): UserPredictionDto {
+  private toUserPredictionDto(prediction: {
+    id: string;
+    userId: string;
+    predictedHome: number;
+    predictedAway: number;
+    pointsEarned: number;
+    pointType: PredictionPointType | null;
+    user: { id: string; displayName: string; avatarUrl: string | null };
+  }): UserPredictionDto {
     return {
       id: prediction.id,
       userId: prediction.userId,

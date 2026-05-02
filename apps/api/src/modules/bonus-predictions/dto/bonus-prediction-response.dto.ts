@@ -92,7 +92,7 @@ export class GroupBonusPredictionsResponseDto {
   revealed!: boolean;
 
   @ApiProperty({
-    description: 'All users\' bonus predictions (only own if not revealed)',
+    description: "All users' bonus predictions (only own if not revealed)",
     type: [UserBonusPredictionDto],
   })
   predictions!: UserBonusPredictionDto[];

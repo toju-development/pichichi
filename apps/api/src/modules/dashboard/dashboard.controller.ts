@@ -6,7 +6,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { DashboardService } from './dashboard.service.js';
 import type { DashboardResponseDto } from '@pichichi/shared';
@@ -23,7 +26,8 @@ export class DashboardController {
   @ApiQuery({
     name: 'tz',
     required: false,
-    description: 'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC; invalid values fallback to UTC.',
+    description:
+      'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC; invalid values fallback to UTC.',
     example: 'America/Argentina/Buenos_Aires',
   })
   @ApiResponse({ status: 200, description: 'Dashboard data' })

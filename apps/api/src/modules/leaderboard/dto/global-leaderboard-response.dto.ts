@@ -15,7 +15,8 @@ export class GlobalLeaderboardResponseDto {
   total!: number;
 
   @ApiPropertyOptional({
-    description: 'Current authenticated user position (null if user has 0 points)',
+    description:
+      'Current authenticated user position (null if user has 0 points)',
     type: LeaderboardEntryDto,
     nullable: true,
   })

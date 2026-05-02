@@ -58,9 +58,7 @@ const mockDashboardResponse: DashboardResponseDto = {
 async function createController(): Promise<DashboardController> {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [DashboardController],
-    providers: [
-      { provide: DashboardService, useValue: mockDashboardService },
-    ],
+    providers: [{ provide: DashboardService, useValue: mockDashboardService }],
   }).compile();
 
   return module.get<DashboardController>(DashboardController);
@@ -84,7 +82,9 @@ describe('DashboardController', () => {
 
   describe('getDashboard', () => {
     it('should return dashboard data from service', async () => {
-      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+      mockDashboardService.getDashboard.mockResolvedValue(
+        mockDashboardResponse,
+      );
 
       const result = await controller.getDashboard({
         sub: mockUserId,
@@ -95,7 +95,9 @@ describe('DashboardController', () => {
     });
 
     it('should pass the correct userId (user.sub) to the service', async () => {
-      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+      mockDashboardService.getDashboard.mockResolvedValue(
+        mockDashboardResponse,
+      );
 
       await controller.getDashboard({
         sub: mockUserId,
@@ -103,11 +105,16 @@ describe('DashboardController', () => {
       });
 
       expect(mockDashboardService.getDashboard).toHaveBeenCalledTimes(1);
-      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(mockUserId, undefined);
+      expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
+        mockUserId,
+        undefined,
+      );
     });
 
     it('should pass tz query parameter to the service', async () => {
-      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+      mockDashboardService.getDashboard.mockResolvedValue(
+        mockDashboardResponse,
+      );
 
       await controller.getDashboard(
         { sub: mockUserId, email: 'test@test.com' },
@@ -121,7 +128,9 @@ describe('DashboardController', () => {
     });
 
     it('should pass invalid tz value through for service fallback handling', async () => {
-      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+      mockDashboardService.getDashboard.mockResolvedValue(
+        mockDashboardResponse,
+      );
 
       await controller.getDashboard(
         { sub: mockUserId, email: 'test@test.com' },
@@ -135,9 +144,14 @@ describe('DashboardController', () => {
     });
 
     it('should pass undefined tz when not provided', async () => {
-      mockDashboardService.getDashboard.mockResolvedValue(mockDashboardResponse);
+      mockDashboardService.getDashboard.mockResolvedValue(
+        mockDashboardResponse,
+      );
 
-      await controller.getDashboard({ sub: mockUserId, email: 'test@test.com' });
+      await controller.getDashboard({
+        sub: mockUserId,
+        email: 'test@test.com',
+      });
 
       expect(mockDashboardService.getDashboard).toHaveBeenCalledWith(
         mockUserId,

@@ -19,16 +19,28 @@ export class NotificationResponseDto {
   })
   type!: NotificationType;
 
-  @ApiProperty({ description: 'Notification title', example: 'Match starting soon!' })
+  @ApiProperty({
+    description: 'Notification title',
+    example: 'Match starting soon!',
+  })
   title!: string;
 
-  @ApiProperty({ description: 'Notification body', example: 'Argentina vs Brazil starts in 30 minutes' })
+  @ApiProperty({
+    description: 'Notification body',
+    example: 'Argentina vs Brazil starts in 30 minutes',
+  })
   body!: string;
 
-  @ApiPropertyOptional({ description: 'Additional data (JSON)', example: { matchId: '550e8400-e29b-41d4-a716-446655440000' } })
+  @ApiPropertyOptional({
+    description: 'Additional data (JSON)',
+    example: { matchId: '550e8400-e29b-41d4-a716-446655440000' },
+  })
   data?: Record<string, unknown> | null;
 
-  @ApiProperty({ description: 'Whether the notification has been read', example: false })
+  @ApiProperty({
+    description: 'Whether the notification has been read',
+    example: false,
+  })
   isRead!: boolean;
 
   @ApiProperty({ description: 'Creation date' })

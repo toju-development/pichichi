@@ -21,7 +21,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { NotificationsService } from './notifications.service.js';
 import { NotificationResponseDto } from './dto/notification-response.dto.js';
@@ -36,9 +39,23 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'List my notifications (paginated)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max items to return (default 50)' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Items to skip (default 0)' })
-  @ApiResponse({ status: 200, description: 'List of notifications', type: [NotificationResponseDto] })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max items to return (default 50)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Items to skip (default 0)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of notifications',
+    type: [NotificationResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findMine(
     @CurrentUser() user: JwtUserPayload,
@@ -62,7 +79,11 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark a notification as read' })
   @ApiParam({ name: 'id', description: 'Notification ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Notification marked as read', type: NotificationResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification marked as read',
+    type: NotificationResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Notification not found' })
   async markAsRead(

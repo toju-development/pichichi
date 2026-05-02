@@ -72,8 +72,12 @@ describe('timezone.utils', () => {
 
       expect(bounds.localDate).toBe('2026-06-15');
       expect(bounds.startUtc.toISOString()).toBe('2026-06-15T00:00:00.000Z');
-      expect(bounds.endUtcExclusive.toISOString()).toBe('2026-06-16T00:00:00.000Z');
-      expect(bounds.startUtc.getTime()).toBeLessThan(bounds.endUtcExclusive.getTime());
+      expect(bounds.endUtcExclusive.toISOString()).toBe(
+        '2026-06-16T00:00:00.000Z',
+      );
+      expect(bounds.startUtc.getTime()).toBeLessThan(
+        bounds.endUtcExclusive.getTime(),
+      );
     });
 
     it('should handle UTC+ offsets correctly (Asia/Tokyo)', () => {
@@ -84,7 +88,9 @@ describe('timezone.utils', () => {
 
       expect(bounds.localDate).toBe('2026-06-15');
       expect(bounds.startUtc.toISOString()).toBe('2026-06-14T15:00:00.000Z');
-      expect(bounds.endUtcExclusive.toISOString()).toBe('2026-06-15T15:00:00.000Z');
+      expect(bounds.endUtcExclusive.toISOString()).toBe(
+        '2026-06-15T15:00:00.000Z',
+      );
     });
 
     it('should handle DST spring-forward day in America/New_York', () => {
@@ -95,7 +101,9 @@ describe('timezone.utils', () => {
 
       expect(bounds.localDate).toBe('2026-03-08');
       expect(bounds.startUtc.toISOString()).toBe('2026-03-08T05:00:00.000Z');
-      expect(bounds.endUtcExclusive.toISOString()).toBe('2026-03-09T04:00:00.000Z');
+      expect(bounds.endUtcExclusive.toISOString()).toBe(
+        '2026-03-09T04:00:00.000Z',
+      );
       expect(bounds.endUtcExclusive.getTime() - bounds.startUtc.getTime()).toBe(
         23 * 60 * 60 * 1000,
       );
@@ -109,7 +117,9 @@ describe('timezone.utils', () => {
 
       expect(bounds.localDate).toBe('2026-11-01');
       expect(bounds.startUtc.toISOString()).toBe('2026-11-01T04:00:00.000Z');
-      expect(bounds.endUtcExclusive.toISOString()).toBe('2026-11-02T05:00:00.000Z');
+      expect(bounds.endUtcExclusive.toISOString()).toBe(
+        '2026-11-02T05:00:00.000Z',
+      );
       expect(bounds.endUtcExclusive.getTime() - bounds.startUtc.getTime()).toBe(
         25 * 60 * 60 * 1000,
       );

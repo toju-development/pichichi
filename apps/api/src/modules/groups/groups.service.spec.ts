@@ -192,9 +192,7 @@ describe('GroupsService', () => {
       prisma.user.findUnique.mockResolvedValue({
         displayName: 'Nuevo',
       });
-      prisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'creator-id' },
-      ]);
+      prisma.groupMember.findMany.mockResolvedValue([{ userId: 'creator-id' }]);
 
       await service.joinByCode(userId, inviteCode);
       await new Promise((resolve) => setImmediate(resolve));
@@ -211,9 +209,7 @@ describe('GroupsService', () => {
 
       // Verify the joiner is NOT in the notifications
       const notifs = notifications.createMany.mock.calls[0][0];
-      const recipientIds = notifs.map(
-        (n: { userId: string }) => n.userId,
-      );
+      const recipientIds = notifs.map((n: { userId: string }) => n.userId);
       expect(recipientIds).not.toContain(userId);
     });
 
@@ -233,9 +229,7 @@ describe('GroupsService', () => {
       prisma.user.findUnique.mockResolvedValue({
         displayName: 'Error User',
       });
-      prisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'member-1' },
-      ]);
+      prisma.groupMember.findMany.mockResolvedValue([{ userId: 'member-1' }]);
       notifications.createMany.mockRejectedValue(
         new Error('Notification service down'),
       );
@@ -255,9 +249,7 @@ describe('GroupsService', () => {
       prisma.user.findUnique.mockResolvedValue({
         displayName: 'Juan Román Riquelme',
       });
-      prisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'member-1' },
-      ]);
+      prisma.groupMember.findMany.mockResolvedValue([{ userId: 'member-1' }]);
 
       await service.joinByCode(userId, inviteCode);
       await new Promise((resolve) => setImmediate(resolve));
@@ -271,9 +263,7 @@ describe('GroupsService', () => {
 
     it('should fallback to "Alguien" when user not found', async () => {
       prisma.user.findUnique.mockResolvedValue(null); // user not found
-      prisma.groupMember.findMany.mockResolvedValue([
-        { userId: 'member-1' },
-      ]);
+      prisma.groupMember.findMany.mockResolvedValue([{ userId: 'member-1' }]);
 
       await service.joinByCode(userId, inviteCode);
       await new Promise((resolve) => setImmediate(resolve));
@@ -285,9 +275,9 @@ describe('GroupsService', () => {
     it('should still throw NotFoundException for invalid invite code', async () => {
       txMock.group.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.joinByCode(userId, 'INVALID'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.joinByCode(userId, 'INVALID')).rejects.toThrow(
+        NotFoundException,
+      );
 
       // No notifications should be created
       expect(notifications.createMany).not.toHaveBeenCalled();
@@ -298,9 +288,9 @@ describe('GroupsService', () => {
         isActive: true,
       });
 
-      await expect(
-        service.joinByCode(userId, inviteCode),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.joinByCode(userId, inviteCode)).rejects.toThrow(
+        ConflictException,
+      );
 
       expect(notifications.createMany).not.toHaveBeenCalled();
     });
@@ -311,9 +301,9 @@ describe('GroupsService', () => {
         _count: { members: 20 },
       });
 
-      await expect(
-        service.joinByCode(userId, inviteCode),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.joinByCode(userId, inviteCode)).rejects.toThrow(
+        ForbiddenException,
+      );
 
       expect(notifications.createMany).not.toHaveBeenCalled();
     });
@@ -404,7 +394,9 @@ describe('GroupsService', () => {
     let warnSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      warnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
       prisma.group.findUnique.mockResolvedValue({
         id: groupId,
         isActive: true,
@@ -497,7 +489,11 @@ describe('GroupsService', () => {
     it('should normalize GMT to UTC', async () => {
       prisma.$queryRaw.mockResolvedValue([]);
 
-      const result = await service.getUpcomingPredictions(groupId, userId, 'GMT');
+      const result = await service.getUpcomingPredictions(
+        groupId,
+        userId,
+        'GMT',
+      );
 
       expect(result).toEqual([]);
     });

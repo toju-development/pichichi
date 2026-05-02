@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { MatchStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { ScoringService } from '../scoring/scoring.service.js';
@@ -172,21 +168,41 @@ export class MatchesService {
     const match = await this.prisma.match.update({
       where: { id },
       data: {
-        ...(dto.homeTeamId !== undefined ? { homeTeamId: dto.homeTeamId ?? null } : {}),
-        ...(dto.awayTeamId !== undefined ? { awayTeamId: dto.awayTeamId ?? null } : {}),
+        ...(dto.homeTeamId !== undefined
+          ? { homeTeamId: dto.homeTeamId ?? null }
+          : {}),
+        ...(dto.awayTeamId !== undefined
+          ? { awayTeamId: dto.awayTeamId ?? null }
+          : {}),
         ...(dto.phase !== undefined ? { phase: dto.phase } : {}),
-        ...(dto.groupName !== undefined ? { groupName: dto.groupName ?? null } : {}),
-        ...(dto.matchNumber !== undefined ? { matchNumber: dto.matchNumber ?? null } : {}),
-        ...(dto.scheduledAt !== undefined ? { scheduledAt: new Date(dto.scheduledAt) } : {}),
+        ...(dto.groupName !== undefined
+          ? { groupName: dto.groupName ?? null }
+          : {}),
+        ...(dto.matchNumber !== undefined
+          ? { matchNumber: dto.matchNumber ?? null }
+          : {}),
+        ...(dto.scheduledAt !== undefined
+          ? { scheduledAt: new Date(dto.scheduledAt) }
+          : {}),
         ...(dto.venue !== undefined ? { venue: dto.venue ?? null } : {}),
         ...(dto.city !== undefined ? { city: dto.city ?? null } : {}),
-        ...(dto.homeTeamPlaceholder !== undefined ? { homeTeamPlaceholder: dto.homeTeamPlaceholder ?? null } : {}),
-        ...(dto.awayTeamPlaceholder !== undefined ? { awayTeamPlaceholder: dto.awayTeamPlaceholder ?? null } : {}),
+        ...(dto.homeTeamPlaceholder !== undefined
+          ? { homeTeamPlaceholder: dto.homeTeamPlaceholder ?? null }
+          : {}),
+        ...(dto.awayTeamPlaceholder !== undefined
+          ? { awayTeamPlaceholder: dto.awayTeamPlaceholder ?? null }
+          : {}),
         ...(dto.homeScore !== undefined ? { homeScore: dto.homeScore } : {}),
         ...(dto.awayScore !== undefined ? { awayScore: dto.awayScore } : {}),
-        ...(dto.homeScorePenalties !== undefined ? { homeScorePenalties: dto.homeScorePenalties } : {}),
-        ...(dto.awayScorePenalties !== undefined ? { awayScorePenalties: dto.awayScorePenalties } : {}),
-        ...(dto.isExtraTime !== undefined ? { isExtraTime: dto.isExtraTime } : {}),
+        ...(dto.homeScorePenalties !== undefined
+          ? { homeScorePenalties: dto.homeScorePenalties }
+          : {}),
+        ...(dto.awayScorePenalties !== undefined
+          ? { awayScorePenalties: dto.awayScorePenalties }
+          : {}),
+        ...(dto.isExtraTime !== undefined
+          ? { isExtraTime: dto.isExtraTime }
+          : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
       include: MATCH_INCLUDE,
@@ -254,33 +270,41 @@ export class MatchesService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private toResponseDto(
-    match: {
+  private toResponseDto(match: {
+    id: string;
+    tournamentId: string;
+    homeTeamId: string | null;
+    awayTeamId: string | null;
+    phase: string;
+    groupName: string | null;
+    matchNumber: number | null;
+    scheduledAt: Date;
+    venue: string | null;
+    city: string | null;
+    status: string;
+    homeScore: number | null;
+    awayScore: number | null;
+    homeScorePenalties: number | null;
+    awayScorePenalties: number | null;
+    isExtraTime: boolean;
+    homeTeamPlaceholder: string | null;
+    awayTeamPlaceholder: string | null;
+    externalId?: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    homeTeam?: {
       id: string;
-      tournamentId: string;
-      homeTeamId: string | null;
-      awayTeamId: string | null;
-      phase: string;
-      groupName: string | null;
-      matchNumber: number | null;
-      scheduledAt: Date;
-      venue: string | null;
-      city: string | null;
-      status: string;
-      homeScore: number | null;
-      awayScore: number | null;
-      homeScorePenalties: number | null;
-      awayScorePenalties: number | null;
-      isExtraTime: boolean;
-      homeTeamPlaceholder: string | null;
-      awayTeamPlaceholder: string | null;
-      externalId?: number | null;
-      createdAt: Date;
-      updatedAt: Date;
-      homeTeam?: { id: string; name: string; shortName: string; logoUrl: string | null } | null;
-      awayTeam?: { id: string; name: string; shortName: string; logoUrl: string | null } | null;
-    },
-  ): MatchResponseDto {
+      name: string;
+      shortName: string;
+      logoUrl: string | null;
+    } | null;
+    awayTeam?: {
+      id: string;
+      name: string;
+      shortName: string;
+      logoUrl: string | null;
+    } | null;
+  }): MatchResponseDto {
     return {
       id: match.id,
       tournamentId: match.tournamentId,

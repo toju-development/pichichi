@@ -69,13 +69,16 @@ export class DashboardService {
   // Public API
   // ---------------------------------------------------------------------------
 
-  async getDashboard(userId: string, tz?: string): Promise<DashboardResponseDto> {
+  async getDashboard(
+    userId: string,
+    tz?: string,
+  ): Promise<DashboardResponseDto> {
     const timezoneResolution = resolveTimezoneOrFallback(tz);
 
     if (
-      timezoneResolution.fallbackApplied
-      && timezoneResolution.reason
-      && timezoneResolution.reason !== 'missing'
+      timezoneResolution.fallbackApplied &&
+      timezoneResolution.reason &&
+      timezoneResolution.reason !== 'missing'
     ) {
       this.logger.warn(
         `Invalid timezone fallback applied on dashboard endpoint: userId=${userId}, input=${timezoneResolution.input ?? 'undefined'}, normalized=${timezoneResolution.normalized}, reason=${timezoneResolution.reason}`,
@@ -167,12 +170,22 @@ export class DashboardService {
     return rows.map((row) => ({
       matchId: row.id,
       externalId: row.external_id,
-      homeTeam: row.home_team_id && row.home_team_name
-        ? { id: row.home_team_id, name: row.home_team_name, logoUrl: row.home_team_logo_url }
-        : null,
-      awayTeam: row.away_team_id && row.away_team_name
-        ? { id: row.away_team_id, name: row.away_team_name, logoUrl: row.away_team_logo_url }
-        : null,
+      homeTeam:
+        row.home_team_id && row.home_team_name
+          ? {
+              id: row.home_team_id,
+              name: row.home_team_name,
+              logoUrl: row.home_team_logo_url,
+            }
+          : null,
+      awayTeam:
+        row.away_team_id && row.away_team_name
+          ? {
+              id: row.away_team_id,
+              name: row.away_team_name,
+              logoUrl: row.away_team_logo_url,
+            }
+          : null,
       homePlaceholder: row.home_team_placeholder,
       awayPlaceholder: row.away_team_placeholder,
       scheduledAt: row.scheduled_at.toISOString(),
@@ -235,10 +248,10 @@ export class DashboardService {
       const entries = rows.map((row, index) => {
         let position = index + 1;
         if (index > 0) {
-          const prev = rows[index - 1]!;
+          const prev = rows[index - 1];
           if (Number(row.total_points) === Number(prev.total_points)) {
             for (let j = index - 1; j >= 0; j--) {
-              if (Number(rows[j]!.total_points) === Number(row.total_points)) {
+              if (Number(rows[j].total_points) === Number(row.total_points)) {
                 position = j + 1;
               } else {
                 break;
@@ -286,9 +299,7 @@ export class DashboardService {
   // User stats (aggregated across all groups)
   // ---------------------------------------------------------------------------
 
-  private async getUserStats(
-    userId: string,
-  ): Promise<DashboardUserStatsDto> {
+  private async getUserStats(userId: string): Promise<DashboardUserStatsDto> {
     const rows = await this.prisma.$queryRaw<RawUserStatsRow[]>`
       SELECT
         COALESCE(SUM(points_earned), 0)                          AS total_points,

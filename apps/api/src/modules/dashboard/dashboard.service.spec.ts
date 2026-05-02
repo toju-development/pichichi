@@ -22,10 +22,7 @@ type QueryRawResponses = {
   stats?: unknown[] | Error;
 };
 
-function setupQueryRawMock(
-  mockFn: jest.Mock,
-  responses: QueryRawResponses,
-) {
+function setupQueryRawMock(mockFn: jest.Mock, responses: QueryRawResponses) {
   let leaderboardCallIndex = 0;
 
   mockFn.mockImplementation((strings: TemplateStringsArray) => {
@@ -51,8 +48,20 @@ function setupQueryRawMock(
     }
 
     // User stats query: point_type = 'EXACT'
-    if (sql.includes("point_type = 'EXACT'") || sql.includes('total_predictions')) {
-      const val = responses.stats ?? [makeStatsRow({ total_points: BigInt(0), total_predictions: BigInt(0), exact_count: BigInt(0), goal_diff_count: BigInt(0), winner_count: BigInt(0), miss_count: BigInt(0) })];
+    if (
+      sql.includes("point_type = 'EXACT'") ||
+      sql.includes('total_predictions')
+    ) {
+      const val = responses.stats ?? [
+        makeStatsRow({
+          total_points: BigInt(0),
+          total_predictions: BigInt(0),
+          exact_count: BigInt(0),
+          goal_diff_count: BigInt(0),
+          winner_count: BigInt(0),
+          miss_count: BigInt(0),
+        }),
+      ];
       if (val instanceof Error) return Promise.reject(val);
       return Promise.resolve(val);
     }
@@ -347,7 +356,11 @@ describe('DashboardService', () => {
     });
 
     it('should set isLocked=true for LIVE matches', async () => {
-      const row = makeTodayMatchRow({ status: 'LIVE', home_score: 1, away_score: 0 });
+      const row = makeTodayMatchRow({
+        status: 'LIVE',
+        home_score: 1,
+        away_score: 0,
+      });
 
       setupQueryRawMock(prisma.$queryRaw, {
         todayMatches: [row],
@@ -387,8 +400,14 @@ describe('DashboardService', () => {
 
     it('should return matches in chronological order (as returned by SQL)', async () => {
       const rows = [
-        makeTodayMatchRow({ id: 'match-early', scheduled_at: new Date('2026-06-15T14:00:00Z') }),
-        makeTodayMatchRow({ id: 'match-late', scheduled_at: new Date('2026-06-15T20:00:00Z') }),
+        makeTodayMatchRow({
+          id: 'match-early',
+          scheduled_at: new Date('2026-06-15T14:00:00Z'),
+        }),
+        makeTodayMatchRow({
+          id: 'match-late',
+          scheduled_at: new Date('2026-06-15T20:00:00Z'),
+        }),
       ];
 
       setupQueryRawMock(prisma.$queryRaw, {
@@ -504,10 +523,26 @@ describe('DashboardService', () => {
       ]);
 
       const leaderboardRows = [
-        makeLeaderboardRow({ user_id: 'user-2', display_name: 'Top User', total_points: BigInt(50) }),
-        makeLeaderboardRow({ user_id: 'user-3', display_name: 'Second User', total_points: BigInt(40) }),
-        makeLeaderboardRow({ user_id: 'user-4', display_name: 'Third User', total_points: BigInt(30) }),
-        makeLeaderboardRow({ user_id: 'user-1', display_name: 'Test User', total_points: BigInt(10) }),
+        makeLeaderboardRow({
+          user_id: 'user-2',
+          display_name: 'Top User',
+          total_points: BigInt(50),
+        }),
+        makeLeaderboardRow({
+          user_id: 'user-3',
+          display_name: 'Second User',
+          total_points: BigInt(40),
+        }),
+        makeLeaderboardRow({
+          user_id: 'user-4',
+          display_name: 'Third User',
+          total_points: BigInt(30),
+        }),
+        makeLeaderboardRow({
+          user_id: 'user-1',
+          display_name: 'Test User',
+          total_points: BigInt(10),
+        }),
       ];
 
       setupQueryRawMock(prisma.$queryRaw, {
@@ -530,11 +565,22 @@ describe('DashboardService', () => {
 
     it('should limit groups to 2', async () => {
       prisma.groupMember.findMany.mockResolvedValueOnce([
-        { group: { id: 'group-1', name: 'Amigos' }, userId: 'user-1', isActive: true },
-        { group: { id: 'group-2', name: 'Trabajo' }, userId: 'user-1', isActive: true },
+        {
+          group: { id: 'group-1', name: 'Amigos' },
+          userId: 'user-1',
+          isActive: true,
+        },
+        {
+          group: { id: 'group-2', name: 'Trabajo' },
+          userId: 'user-1',
+          isActive: true,
+        },
       ]);
 
-      const row = makeLeaderboardRow({ user_id: 'user-1', total_points: BigInt(10) });
+      const row = makeLeaderboardRow({
+        user_id: 'user-1',
+        total_points: BigInt(10),
+      });
 
       setupQueryRawMock(prisma.$queryRaw, {
         todayMatches: [],
@@ -563,13 +609,29 @@ describe('DashboardService', () => {
 
     it('should handle ties in position assignment', async () => {
       prisma.groupMember.findMany.mockResolvedValueOnce([
-        { group: { id: 'group-1', name: 'Amigos' }, userId: 'user-1', isActive: true },
+        {
+          group: { id: 'group-1', name: 'Amigos' },
+          userId: 'user-1',
+          isActive: true,
+        },
       ]);
 
       const rows = [
-        makeLeaderboardRow({ user_id: 'user-2', display_name: 'A', total_points: BigInt(20) }),
-        makeLeaderboardRow({ user_id: 'user-3', display_name: 'B', total_points: BigInt(20) }), // tie
-        makeLeaderboardRow({ user_id: 'user-1', display_name: 'C', total_points: BigInt(10) }),
+        makeLeaderboardRow({
+          user_id: 'user-2',
+          display_name: 'A',
+          total_points: BigInt(20),
+        }),
+        makeLeaderboardRow({
+          user_id: 'user-3',
+          display_name: 'B',
+          total_points: BigInt(20),
+        }), // tie
+        makeLeaderboardRow({
+          user_id: 'user-1',
+          display_name: 'C',
+          total_points: BigInt(10),
+        }),
       ];
 
       setupQueryRawMock(prisma.$queryRaw, {
@@ -683,7 +745,9 @@ describe('DashboardService', () => {
     let warnSpy: jest.SpyInstance;
 
     beforeEach(() => {
-      warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      warnSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
       prisma.groupMember.findMany.mockResolvedValue([]);
       prisma.groupMember.count.mockResolvedValue(0);
       setupQueryRawMock(prisma.$queryRaw, {
@@ -729,7 +793,10 @@ describe('DashboardService', () => {
     });
 
     it('should default invalid timezone to UTC', async () => {
-      const result = await service.getDashboard('user-1', 'Invalid/Not_Real_Zone_123!');
+      const result = await service.getDashboard(
+        'user-1',
+        'Invalid/Not_Real_Zone_123!',
+      );
 
       expect(result).toBeDefined();
       expect(warnSpy).toHaveBeenCalled();
@@ -759,7 +826,9 @@ describe('DashboardService', () => {
 
       const queryCall = prisma.$queryRaw.mock.calls.find((call) => {
         const strings = call[0] as TemplateStringsArray;
-        const sql = Array.isArray(strings) ? strings.join(' ') : String(strings);
+        const sql = Array.isArray(strings)
+          ? strings.join(' ')
+          : String(strings);
         return sql.includes('FROM matches m');
       });
 
@@ -796,7 +865,11 @@ describe('DashboardService', () => {
     });
 
     it('should include LIVE matches', async () => {
-      const row = makeTodayMatchRow({ status: 'LIVE', home_score: 1, away_score: 0 });
+      const row = makeTodayMatchRow({
+        status: 'LIVE',
+        home_score: 1,
+        away_score: 0,
+      });
       setupQueryRawMock(prisma.$queryRaw, {
         todayMatches: [row],
         stats: [makeStatsRow()],
@@ -865,7 +938,9 @@ describe('DashboardService', () => {
         stats: [makeStatsRow()],
       });
 
-      prisma.groupMember.findMany.mockRejectedValueOnce(new Error('Groups query failed'));
+      prisma.groupMember.findMany.mockRejectedValueOnce(
+        new Error('Groups query failed'),
+      );
       prisma.groupMember.count.mockResolvedValueOnce(0);
 
       const result = await service.getDashboard('user-1');

@@ -48,7 +48,10 @@ export class UsersService {
     });
   }
 
-  async updateProfile(id: string, data: UpdateProfileDto): Promise<UserWithPlan> {
+  async updateProfile(
+    id: string,
+    data: UpdateProfileDto,
+  ): Promise<UserWithPlan> {
     await this.findById(id); // Throws if not found
 
     return this.prisma.user.update({

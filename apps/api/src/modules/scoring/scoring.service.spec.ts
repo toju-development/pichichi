@@ -398,9 +398,7 @@ describe('ScoringService', () => {
       ];
 
       mockPrisma.match.findUnique.mockResolvedValue(baseMatch);
-      mockPrisma.prediction.findMany.mockResolvedValue(
-        sameCategoryPredictions,
-      );
+      mockPrisma.prediction.findMany.mockResolvedValue(sameCategoryPredictions);
       mockPrisma.$transaction.mockResolvedValue([]);
 
       await service.calculatePointsForMatch(matchId);
@@ -436,14 +434,10 @@ describe('ScoringService', () => {
       expect(deletedKeys).toHaveLength(7);
       expect(deletedKeys).toContain('lb:group-a:all:all');
       expect(deletedKeys).toContain(`lb:group-a:${tournamentId}:all`);
-      expect(deletedKeys).toContain(
-        `lb:group-a:${tournamentId}:GROUP_STAGE`,
-      );
+      expect(deletedKeys).toContain(`lb:group-a:${tournamentId}:GROUP_STAGE`);
       expect(deletedKeys).toContain('lb:group-b:all:all');
       expect(deletedKeys).toContain(`lb:group-b:${tournamentId}:all`);
-      expect(deletedKeys).toContain(
-        `lb:group-b:${tournamentId}:GROUP_STAGE`,
-      );
+      expect(deletedKeys).toContain(`lb:group-b:${tournamentId}:GROUP_STAGE`);
       expect(deletedKeys).toContain('lb:global:all');
     });
 
@@ -553,7 +547,8 @@ describe('ScoringService', () => {
         await new Promise((resolve) => setImmediate(resolve));
 
         expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
-        const notifications = mockNotificationsService.createMany.mock.calls[0][0];
+        const notifications =
+          mockNotificationsService.createMany.mock.calls[0][0];
         expect(notifications).toHaveLength(4); // 4 unique users
         expect(notifications[0]).toEqual({
           userId: 'user-1',
@@ -603,7 +598,8 @@ describe('ScoringService', () => {
         await new Promise((resolve) => setImmediate(resolve));
 
         expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
-        const notifications = mockNotificationsService.createMany.mock.calls[0][0];
+        const notifications =
+          mockNotificationsService.createMany.mock.calls[0][0];
         // ONE notification for user-1, not 3
         expect(notifications).toHaveLength(1);
         expect(notifications[0]).toEqual({

@@ -17,10 +17,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { MemberPredictionsResponseDto } from '@pichichi/shared';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { PredictionsService } from './predictions.service.js';
-import { ScoringService, type CalculatePointsResult } from '../scoring/scoring.service.js';
+import {
+  ScoringService,
+  type CalculatePointsResult,
+} from '../scoring/scoring.service.js';
 import { CreatePredictionDto } from './dto/create-prediction.dto.js';
 import { PredictionResponseDto } from './dto/prediction-response.dto.js';
 import { GroupPredictionsResponseDto } from './dto/group-predictions-response.dto.js';
@@ -38,8 +44,14 @@ export class PredictionsController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create or update a prediction (auto-save / upsert)' })
-  @ApiResponse({ status: 200, description: 'Prediction saved', type: PredictionResponseDto })
+  @ApiOperation({
+    summary: 'Create or update a prediction (auto-save / upsert)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Prediction saved',
+    type: PredictionResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Match not found' })
@@ -54,7 +66,11 @@ export class PredictionsController {
   @Get('group/:groupId')
   @ApiOperation({ summary: 'Get all my predictions in a group' })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'List of predictions', type: [PredictionResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of predictions',
+    type: [PredictionResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   async findByGroupAndUser(
@@ -65,10 +81,17 @@ export class PredictionsController {
   }
 
   @Get('group/:groupId/match/:matchId')
-  @ApiOperation({ summary: 'Get predictions for a match in a group (respects visibility rules)' })
+  @ApiOperation({
+    summary:
+      'Get predictions for a match in a group (respects visibility rules)',
+  })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
   @ApiParam({ name: 'matchId', description: 'Match ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Group predictions for match', type: GroupPredictionsResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Group predictions for match',
+    type: GroupPredictionsResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Match not found' })
@@ -77,11 +100,17 @@ export class PredictionsController {
     @Param('groupId', ParseUUIDPipe) groupId: string,
     @Param('matchId', ParseUUIDPipe) matchId: string,
   ): Promise<GroupPredictionsResponseDto> {
-    return this.predictionsService.findByMatchAndGroup(matchId, groupId, user.sub);
+    return this.predictionsService.findByMatchAndGroup(
+      matchId,
+      groupId,
+      user.sub,
+    );
   }
 
   @Get('group/:groupId/member/:userId')
-  @ApiOperation({ summary: 'Get a member\'s predictions in a group (visible to all members)' })
+  @ApiOperation({
+    summary: "Get a member's predictions in a group (visible to all members)",
+  })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
   @ApiParam({ name: 'userId', description: 'Target user ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Member predictions' })
@@ -93,13 +122,21 @@ export class PredictionsController {
     @Param('groupId', ParseUUIDPipe) groupId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<MemberPredictionsResponseDto> {
-    return this.predictionsService.findByGroupAndMember(groupId, userId, user.sub);
+    return this.predictionsService.findByGroupAndMember(
+      groupId,
+      userId,
+      user.sub,
+    );
   }
 
   @Get('group/:groupId/stats')
   @ApiOperation({ summary: 'Get my prediction stats in a group' })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Prediction stats', type: PredictionStatsResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Prediction stats',
+    type: PredictionStatsResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   async getStats(
@@ -111,12 +148,17 @@ export class PredictionsController {
 
   @Post('calculate/:matchId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Trigger point calculation for a match (admin-only intent)' })
+  @ApiOperation({
+    summary: 'Trigger point calculation for a match (admin-only intent)',
+  })
   @ApiParam({ name: 'matchId', description: 'Match ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Points calculated' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Match not found' })
-  @ApiResponse({ status: 409, description: 'Match does not have a final score' })
+  @ApiResponse({
+    status: 409,
+    description: 'Match does not have a final score',
+  })
   async calculatePoints(
     @Param('matchId', ParseUUIDPipe) matchId: string,
   ): Promise<CalculatePointsResult> {

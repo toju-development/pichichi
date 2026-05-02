@@ -29,7 +29,11 @@ export class MatchSyncController {
   @Post('trigger')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Manually trigger a match sync cycle' })
-  @ApiResponse({ status: 200, description: 'Sync completed', type: SyncResultDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync completed',
+    type: SyncResultDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async triggerSync(): Promise<SyncResultDto> {
     const result = await this.matchSyncService.triggerManualSync();

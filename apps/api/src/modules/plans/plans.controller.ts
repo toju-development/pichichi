@@ -5,7 +5,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { PlansService } from './plans.service.js';
 import { PlanResponseDto } from './dto/plan-response.dto.js';
@@ -19,7 +22,11 @@ export class PlansController {
 
   @Get()
   @ApiOperation({ summary: 'List all available plans' })
-  @ApiResponse({ status: 200, description: 'List of plans', type: [PlanResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of plans',
+    type: [PlanResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(): Promise<PlanResponseDto[]> {
     return this.plansService.findAll();

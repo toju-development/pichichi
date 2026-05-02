@@ -1,7 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LeaderboardEntryDto {
-  @ApiProperty({ description: 'Position in the leaderboard (shared for ties)', example: 1 })
+  @ApiProperty({
+    description: 'Position in the leaderboard (shared for ties)',
+    example: 1,
+  })
   position!: number;
 
   @ApiProperty({ description: 'User ID' })
@@ -16,13 +19,19 @@ export class LeaderboardEntryDto {
   @ApiPropertyOptional({ description: 'User avatar URL' })
   avatarUrl?: string | null;
 
-  @ApiProperty({ description: 'Total points (predictions + bonus)', example: 42 })
+  @ApiProperty({
+    description: 'Total points (predictions + bonus)',
+    example: 42,
+  })
   totalPoints!: number;
 
   @ApiProperty({ description: 'Number of exact score predictions', example: 3 })
   exactCount!: number;
 
-  @ApiProperty({ description: 'Number of goal difference predictions', example: 5 })
+  @ApiProperty({
+    description: 'Number of goal difference predictions',
+    example: 5,
+  })
   goalDiffCount!: number;
 
   @ApiProperty({ description: 'Number of winner-only predictions', example: 4 })

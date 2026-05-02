@@ -162,8 +162,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         );
       }
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Heartbeat failed: ${message}`);
     }
   }
@@ -208,8 +207,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`handleMatchReminders failed: ${message}`);
     }
   }
@@ -218,14 +216,12 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
    * For a given match, find users who haven't predicted and send them reminders.
    * Always sets `reminderSentAt` to prevent duplicates, even when 0 users need notifying.
    */
-  private async sendRemindersForMatch(
-    match: {
-      id: string;
-      tournamentId: string;
-      homeTeam: { name: string } | null;
-      awayTeam: { name: string } | null;
-    },
-  ): Promise<void> {
+  private async sendRemindersForMatch(match: {
+    id: string;
+    tournamentId: string;
+    homeTeam: { name: string } | null;
+    awayTeam: { name: string } | null;
+  }): Promise<void> {
     // Find users who are in groups linked to this match's tournament
     // but who do NOT have a prediction for this match in any group
     const usersWithoutPredictions = await this.prisma.groupMember.findMany({
@@ -260,9 +256,8 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         data: { matchId: match.id },
       }));
 
-      const { count } = await this.notificationsService.createMany(
-        notifications,
-      );
+      const { count } =
+        await this.notificationsService.createMany(notifications);
       this.logger.log(
         `Match ${match.id}: sent ${count} MATCH_REMINDER notification(s)`,
       );
@@ -307,7 +302,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
 
       if (matches.length === 0) {
         this.destroyDynamicInterval();
-        this.logger.log('syncTick: no syncable matches — self-destroying interval');
+        this.logger.log(
+          'syncTick: no syncable matches — self-destroying interval',
+        );
         return result;
       }
 
@@ -317,19 +314,26 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
         .filter((id): id is number => id !== null);
 
       if (externalIds.length === 0) {
-        this.logger.log('syncTick: no matches with externalId — skipping API call');
+        this.logger.log(
+          'syncTick: no matches with externalId — skipping API call',
+        );
         return result;
       }
 
       // Fetch fixtures from API-Football
-      this.logger.debug(`syncTick: fetching ${externalIds.length} fixtures: [${externalIds.join(', ')}]`);
-      const fixtures = await this.apiFootballService.fetchFixturesByIds(externalIds);
+      this.logger.debug(
+        `syncTick: fetching ${externalIds.length} fixtures: [${externalIds.join(', ')}]`,
+      );
+      const fixtures =
+        await this.apiFootballService.fetchFixturesByIds(externalIds);
       result.apiCallsMade = Math.ceil(externalIds.length / 20); // batches of 20
 
       this.logger.debug(`syncTick: API returned ${fixtures.length} fixture(s)`);
 
       if (fixtures.length === 0) {
-        this.logger.warn('syncTick: API returned 0 fixtures — skipping this tick');
+        this.logger.warn(
+          'syncTick: API returned 0 fixtures — skipping this tick',
+        );
         return result;
       }
 
@@ -347,7 +351,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
 
         const apiFixture = fixtureMap.get(dbMatch.externalId);
         if (!apiFixture) {
-          this.logger.warn(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — fixture not found in API response, skipping`);
+          this.logger.warn(
+            `Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — fixture not found in API response, skipping`,
+          );
           continue;
         }
 
@@ -361,8 +367,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
               apiFixture.fixture.status.short,
             );
             if (newStatus === 'FINISHED' && dbMatch.status !== 'FINISHED') {
-              const tournamentFinished =
-                await this.checkTournamentAutoFinish(dbMatch.tournamentId);
+              const tournamentFinished = await this.checkTournamentAutoFinish(
+                dbMatch.tournamentId,
+              );
               if (tournamentFinished) {
                 result.tournamentsFinished++;
               }
@@ -372,7 +379,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
               }
             }
           } else {
-            this.logger.debug(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — no changes detected, skipping`);
+            this.logger.debug(
+              `Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — no changes detected, skipping`,
+            );
           }
 
           // Update lastSyncedAt regardless of change
@@ -380,7 +389,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
             where: { id: dbMatch.id },
             data: { lastSyncedAt: new Date() },
           });
-          this.logger.debug(`Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — lastSyncedAt updated`);
+          this.logger.debug(
+            `Match ${dbMatch.id} (ext: ${dbMatch.externalId}) — lastSyncedAt updated`,
+          );
         } catch (error: unknown) {
           const message =
             error instanceof Error ? error.message : 'Unknown error';
@@ -398,8 +409,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
           `rateLimit=${rateLimitNow}`,
       );
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`syncTick failed: ${message}`);
       result.errors.push(`syncTick failed: ${message}`);
     }
@@ -431,7 +441,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
       this.destroyDynamicInterval();
       this.logger.log('Sync disabled at runtime — dynamic interval destroyed');
     } else {
-      this.logger.log('Sync enabled at runtime — next heartbeat will check for matches');
+      this.logger.log(
+        'Sync enabled at runtime — next heartbeat will check for matches',
+      );
       // Run heartbeat check immediately when enabling
       this.handleHeartbeat().catch((error: unknown) => {
         const message =
@@ -522,7 +534,9 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (unfinishedCount > 0) {
-      this.logger.debug(`Tournament ${tournamentId}: ${unfinishedCount} unfinished match(es) remaining`);
+      this.logger.debug(
+        `Tournament ${tournamentId}: ${unfinishedCount} unfinished match(es) remaining`,
+      );
       return false;
     }
 
@@ -708,8 +722,7 @@ export class MatchSyncService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('Dynamic interval destroyed');
     } catch (error: unknown) {
       // SchedulerRegistry.deleteInterval throws if interval doesn't exist
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(`Failed to destroy dynamic interval: ${message}`);
     }
   }

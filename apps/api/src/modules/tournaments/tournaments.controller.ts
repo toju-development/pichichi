@@ -44,7 +44,9 @@ export class TournamentsController {
     'CANCELLED',
   ];
 
-  private parseStatusesParam(statuses?: string | string[]): TournamentStatus[] | undefined {
+  private parseStatusesParam(
+    statuses?: string | string[],
+  ): TournamentStatus[] | undefined {
     if (!statuses) return undefined;
 
     const rawValues = Array.isArray(statuses)
@@ -73,7 +75,11 @@ export class TournamentsController {
 
   @Get()
   @ApiOperation({ summary: 'List all tournaments' })
-  @ApiQuery({ name: 'status', required: false, enum: ['DRAFT', 'UPCOMING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['DRAFT', 'UPCOMING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'],
+  })
   @ApiQuery({
     name: 'statuses',
     required: false,
@@ -82,8 +88,16 @@ export class TournamentsController {
     enum: ['DRAFT', 'UPCOMING', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'],
     isArray: true,
   })
-  @ApiQuery({ name: 'type', required: false, enum: ['WORLD_CUP', 'COPA_AMERICA', 'EURO', 'CHAMPIONS_LEAGUE', 'CUSTOM'] })
-  @ApiResponse({ status: 200, description: 'List of tournaments', type: [TournamentResponseDto] })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['WORLD_CUP', 'COPA_AMERICA', 'EURO', 'CHAMPIONS_LEAGUE', 'CUSTOM'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of tournaments',
+    type: [TournamentResponseDto],
+  })
   async findAll(
     @Query('status') status?: TournamentStatus,
     @Query('statuses') statuses?: string | string[],
@@ -101,7 +115,11 @@ export class TournamentsController {
   @Get(':slug')
   @ApiOperation({ summary: 'Get tournament by slug' })
   @ApiParam({ name: 'slug', description: 'Tournament slug' })
-  @ApiResponse({ status: 200, description: 'Tournament details', type: TournamentResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Tournament details',
+    type: TournamentResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Tournament not found' })
   async findBySlug(
     @Param('slug') slug: string,
@@ -114,7 +132,11 @@ export class TournamentsController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new tournament' })
-  @ApiResponse({ status: 201, description: 'Tournament created', type: TournamentResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Tournament created',
+    type: TournamentResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 409, description: 'Slug already taken' })
   async create(
@@ -128,7 +150,11 @@ export class TournamentsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a tournament' })
   @ApiParam({ name: 'id', description: 'Tournament ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Tournament updated', type: TournamentResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Tournament updated',
+    type: TournamentResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Tournament not found' })
   @ApiResponse({ status: 409, description: 'Slug already taken' })
@@ -148,16 +174,18 @@ export class TournamentsController {
   @ApiResponse({ status: 204, description: 'Tournament deleted' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Tournament not found' })
-  async delete(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<void> {
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.tournamentsService.delete(id);
   }
 
   @Get(':id/teams')
   @ApiOperation({ summary: 'List teams in a tournament' })
   @ApiParam({ name: 'id', description: 'Tournament ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'List of teams', type: [TournamentTeamResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of teams',
+    type: [TournamentTeamResponseDto],
+  })
   @ApiResponse({ status: 404, description: 'Tournament not found' })
   async getTeams(
     @Param('id', ParseUUIDPipe) id: string,
@@ -168,8 +196,16 @@ export class TournamentsController {
   @Get(':id/players')
   @ApiOperation({ summary: 'List players in a tournament' })
   @ApiParam({ name: 'id', description: 'Tournament ID (UUID)' })
-  @ApiQuery({ name: 'teamId', required: false, description: 'Filter by team ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'List of players', type: [TournamentPlayerResponseDto] })
+  @ApiQuery({
+    name: 'teamId',
+    required: false,
+    description: 'Filter by team ID (UUID)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of players',
+    type: [TournamentPlayerResponseDto],
+  })
   @ApiResponse({ status: 404, description: 'Tournament not found' })
   async getPlayers(
     @Param('id', ParseUUIDPipe) id: string,
@@ -184,7 +220,11 @@ export class TournamentsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add a team to a tournament' })
   @ApiParam({ name: 'id', description: 'Tournament ID (UUID)' })
-  @ApiResponse({ status: 201, description: 'Team added', type: TournamentTeamResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Team added',
+    type: TournamentTeamResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Tournament or team not found' })
   @ApiResponse({ status: 409, description: 'Team already in tournament' })

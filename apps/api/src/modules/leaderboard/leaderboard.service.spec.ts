@@ -113,15 +113,15 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.queryGlobalLeaderboard(20, 0);
 
       expect(result.entries).toHaveLength(3);
-      expect(result.entries[0]!.userId).toBe('user-a');
-      expect(result.entries[0]!.totalPoints).toBe(50);
-      expect(result.entries[0]!.position).toBe(1);
-      expect(result.entries[1]!.userId).toBe('user-b');
-      expect(result.entries[1]!.totalPoints).toBe(30);
-      expect(result.entries[1]!.position).toBe(2);
-      expect(result.entries[2]!.userId).toBe('user-c');
-      expect(result.entries[2]!.totalPoints).toBe(10);
-      expect(result.entries[2]!.position).toBe(3);
+      expect(result.entries[0].userId).toBe('user-a');
+      expect(result.entries[0].totalPoints).toBe(50);
+      expect(result.entries[0].position).toBe(1);
+      expect(result.entries[1].userId).toBe('user-b');
+      expect(result.entries[1].totalPoints).toBe(30);
+      expect(result.entries[1].position).toBe(2);
+      expect(result.entries[2].userId).toBe('user-c');
+      expect(result.entries[2].totalPoints).toBe(10);
+      expect(result.entries[2].position).toBe(3);
       expect(result.total).toBe(3);
     });
   });
@@ -154,8 +154,8 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.queryGlobalLeaderboard(20, 0);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0]!.totalPoints).toBe(5);
-      expect(result.entries[0]!.exactCount).toBe(1);
+      expect(result.entries[0].totalPoints).toBe(5);
+      expect(result.entries[0].exactCount).toBe(1);
     });
 
     it('should deduplicate bonus predictions: same bonus type across groups counted once (via SQL CTE)', async () => {
@@ -178,8 +178,8 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.queryGlobalLeaderboard(20, 0);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0]!.bonusPoints).toBe(10);
-      expect(result.entries[0]!.totalPoints).toBe(10);
+      expect(result.entries[0].bonusPoints).toBe(10);
+      expect(result.entries[0].totalPoints).toBe(10);
     });
   });
 
@@ -216,7 +216,7 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.queryGlobalLeaderboard(20, 0);
 
       expect(result.entries).toHaveLength(1);
-      const entry = result.entries[0]!;
+      const entry = result.entries[0];
       // Key assertion: total_points must NOT be inflated
       expect(entry.totalPoints).toBe(3); // NOT 12
       expect(entry.bonusPoints).toBe(0);
@@ -248,7 +248,7 @@ describe('LeaderboardService — Global Ranking', () => {
 
       const result = await service.queryGlobalLeaderboard(20, 0);
 
-      const entry = result.entries[0]!;
+      const entry = result.entries[0];
       expect(entry.totalPoints).toBe(15); // NOT 36
       expect(entry.bonusPoints).toBe(9); // NOT 18
       expect(entry.exactCount).toBe(1); // NOT 3
@@ -310,9 +310,9 @@ describe('LeaderboardService — Global Ranking', () => {
 
       const result = await service.queryGlobalLeaderboard(20, 0);
 
-      expect(result.entries[0]!.position).toBe(1);
-      expect(result.entries[1]!.position).toBe(1);
-      expect(result.entries[2]!.position).toBe(2); // DENSE_RANK, not 3
+      expect(result.entries[0].position).toBe(1);
+      expect(result.entries[1].position).toBe(1);
+      expect(result.entries[2].position).toBe(2); // DENSE_RANK, not 3
     });
   });
 
@@ -338,7 +338,7 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.queryGlobalLeaderboard(20, 20);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0]!.position).toBe(21);
+      expect(result.entries[0].position).toBe(21);
       expect(result.total).toBe(50);
 
       // Verify $queryRaw was called twice (main query + count)
@@ -374,7 +374,7 @@ describe('LeaderboardService — Global Ranking', () => {
 
       const result = await service.queryGlobalLeaderboard(20, 0);
 
-      const entry = result.entries[0]!;
+      const entry = result.entries[0];
       expect(entry.userId).toBe('user-map');
       expect(entry.displayName).toBe('Map Test');
       expect(entry.username).toBe('maptest');
@@ -409,7 +409,8 @@ describe('LeaderboardService — Global Ranking', () => {
 
       prisma.$queryRaw.mockResolvedValueOnce(rows);
 
-      const result = await service.queryCurrentUserGlobalPosition('current-user');
+      const result =
+        await service.queryCurrentUserGlobalPosition('current-user');
 
       expect(result).not.toBeNull();
       expect(result!.userId).toBe('current-user');
@@ -421,7 +422,8 @@ describe('LeaderboardService — Global Ranking', () => {
     it('should return null when user has 0 points (not in ranking)', async () => {
       prisma.$queryRaw.mockResolvedValueOnce([]);
 
-      const result = await service.queryCurrentUserGlobalPosition('no-points-user');
+      const result =
+        await service.queryCurrentUserGlobalPosition('no-points-user');
 
       expect(result).toBeNull();
     });
@@ -492,8 +494,8 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.getGlobalLeaderboard('user-1', 2, 0);
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries[0]!.userId).toBe('user-1');
-      expect(result.entries[1]!.userId).toBe('user-2');
+      expect(result.entries[0].userId).toBe('user-1');
+      expect(result.entries[1].userId).toBe('user-2');
       expect(result.total).toBe(5);
       expect(result.currentUserEntry).not.toBeNull();
       expect(result.currentUserEntry!.userId).toBe('user-1');
@@ -528,8 +530,8 @@ describe('LeaderboardService — Global Ranking', () => {
 
       // Verify paginated result
       expect(result.entries).toHaveLength(2);
-      expect(result.entries[0]!.userId).toBe('user-1');
-      expect(result.entries[1]!.userId).toBe('user-2');
+      expect(result.entries[0].userId).toBe('user-1');
+      expect(result.entries[1].userId).toBe('user-2');
       expect(result.total).toBe(5);
     });
 
@@ -562,7 +564,7 @@ describe('LeaderboardService — Global Ranking', () => {
       const result = await service.getGlobalLeaderboard('user-3', 2, 2);
 
       expect(result.entries).toHaveLength(2);
-      expect(result.entries[0]!.userId).toBe('user-3');
+      expect(result.entries[0].userId).toBe('user-3');
       expect(result.currentUserEntry).not.toBeNull();
       expect(result.currentUserEntry!.userId).toBe('user-3');
       expect(result.currentUserEntry!.position).toBe(3);
@@ -594,7 +596,11 @@ describe('LeaderboardService — Global Ranking', () => {
       // queryCurrentUserGlobalPosition returns null (user has 0 points)
       prisma.$queryRaw.mockResolvedValueOnce([]);
 
-      const result = await service.getGlobalLeaderboard('no-points-user', 20, 0);
+      const result = await service.getGlobalLeaderboard(
+        'no-points-user',
+        20,
+        0,
+      );
 
       expect(result.currentUserEntry).toBeNull();
       // DB was called for user position lookup
@@ -607,7 +613,9 @@ describe('LeaderboardService — Global Ranking', () => {
 
     it('should gracefully degrade when Redis is down (falls through to DB)', async () => {
       // Cache get throws (Redis down)
-      mockCache.get.mockRejectedValueOnce(new Error('Redis connection refused'));
+      mockCache.get.mockRejectedValueOnce(
+        new Error('Redis connection refused'),
+      );
 
       // DB returns all entries
       prisma.$queryRaw

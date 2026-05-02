@@ -69,7 +69,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   // ---------------------------------------------------------------------------
 
   it('should call service with default limit=20 and offset=0 when no query params', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     const result = await controller.getGlobalLeaderboard(mockUser);
 
@@ -82,7 +84,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   });
 
   it('should pass custom limit and offset to service', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     await controller.getGlobalLeaderboard(mockUser, '10', '40');
 
@@ -98,7 +102,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   // ---------------------------------------------------------------------------
 
   it('should clamp limit to max 50', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     await controller.getGlobalLeaderboard(mockUser, '100', '0');
 
@@ -110,7 +116,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   });
 
   it('should clamp limit to min 1', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     await controller.getGlobalLeaderboard(mockUser, '0', '0');
 
@@ -126,7 +134,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   // ---------------------------------------------------------------------------
 
   it('should default to 20 when limit is not a number', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     await controller.getGlobalLeaderboard(mockUser, 'abc', 'xyz');
 
@@ -138,7 +148,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
   });
 
   it('should handle negative offset by clamping to 0', async () => {
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(mockGlobalResponse);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      mockGlobalResponse,
+    );
 
     await controller.getGlobalLeaderboard(mockUser, '20', '-10');
 
@@ -172,7 +184,9 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
       },
     };
 
-    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(responseWithUser);
+    mockLeaderboardService.getGlobalLeaderboard.mockResolvedValue(
+      responseWithUser,
+    );
 
     const result = await controller.getGlobalLeaderboard(mockUser);
 
@@ -191,8 +205,8 @@ describe('LeaderboardController — GET /leaderboard/global', () => {
       new Error('Database error'),
     );
 
-    await expect(
-      controller.getGlobalLeaderboard(mockUser),
-    ).rejects.toThrow('Database error');
+    await expect(controller.getGlobalLeaderboard(mockUser)).rejects.toThrow(
+      'Database error',
+    );
   });
 });

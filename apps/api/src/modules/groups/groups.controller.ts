@@ -21,7 +21,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { DashboardTodayMatchDto } from '@pichichi/shared';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { GroupsService } from './groups.service.js';
 import { CreateGroupDto } from './dto/create-group.dto.js';
@@ -41,7 +44,11 @@ export class GroupsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new group' })
-  @ApiResponse({ status: 201, description: 'Group created', type: GroupResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Group created',
+    type: GroupResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(
     @CurrentUser() user: JwtUserPayload,
@@ -52,8 +59,16 @@ export class GroupsController {
 
   @Get()
   @ApiOperation({ summary: 'List all groups the current user belongs to' })
-  @ApiQuery({ name: 'tournamentId', required: false, description: 'Filter groups by tournament ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'List of groups', type: [GroupResponseDto] })
+  @ApiQuery({
+    name: 'tournamentId',
+    required: false,
+    description: 'Filter groups by tournament ID (UUID)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of groups',
+    type: [GroupResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
     @CurrentUser() user: JwtUserPayload,
@@ -65,7 +80,11 @@ export class GroupsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get group details by ID' })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Group details', type: GroupResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Group details',
+    type: GroupResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -79,7 +98,11 @@ export class GroupsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update group details (admin only)' })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'Group updated', type: GroupResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Group updated',
+    type: GroupResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Only admins can update the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -117,7 +140,11 @@ export class GroupsController {
   @Post('join')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Join a group using an invite code' })
-  @ApiResponse({ status: 200, description: 'Joined group successfully', type: GroupResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Joined group successfully',
+    type: GroupResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Group is full' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Invalid invite code' })
@@ -132,7 +159,11 @@ export class GroupsController {
   @Get(':id/members')
   @ApiOperation({ summary: 'Get group members' })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
-  @ApiResponse({ status: 200, description: 'List of members', type: [GroupMemberResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of members',
+    type: [GroupMemberResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -209,15 +240,19 @@ export class GroupsController {
   }
 
   @Get(':id/upcoming-predictions')
-  @ApiOperation({ summary: 'Get today\'s unpredicted matches in a group' })
+  @ApiOperation({ summary: "Get today's unpredicted matches in a group" })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
   @ApiQuery({
     name: 'tz',
     required: false,
-    description: 'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC; invalid values fallback to UTC.',
+    description:
+      'IANA timezone (e.g. America/Argentina/Buenos_Aires). Defaults to UTC; invalid values fallback to UTC.',
     example: 'America/Argentina/Buenos_Aires',
   })
-  @ApiResponse({ status: 200, description: 'List of upcoming matches to predict' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of upcoming matches to predict',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -230,7 +265,9 @@ export class GroupsController {
   }
 
   @Get(':id/tournaments/:tournamentId/check-remove')
-  @ApiOperation({ summary: 'Check if a tournament can be removed from the group (admin only)' })
+  @ApiOperation({
+    summary: 'Check if a tournament can be removed from the group (admin only)',
+  })
   @ApiParam({ name: 'id', description: 'Group ID (UUID)' })
   @ApiParam({ name: 'tournamentId', description: 'Tournament ID (UUID)' })
   @ApiResponse({
@@ -245,13 +282,20 @@ export class GroupsController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Only admins can check tournament removal' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only admins can check tournament removal',
+  })
   @ApiResponse({ status: 404, description: 'Group or tournament not found' })
   async checkRemoveTournament(
     @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('tournamentId', ParseUUIDPipe) tournamentId: string,
-  ): Promise<{ canRemove: boolean; predictionsCount: number; reason: string | null }> {
+  ): Promise<{
+    canRemove: boolean;
+    predictionsCount: number;
+    reason: string | null;
+  }> {
     return this.groupsService.checkRemoveTournament(id, tournamentId, user.sub);
   }
 
@@ -271,7 +315,11 @@ export class GroupsController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Only admins can remove tournaments / tournament status blocked' })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Only admins can remove tournaments / tournament status blocked',
+  })
   @ApiResponse({ status: 404, description: 'Group or tournament not found' })
   async removeTournament(
     @CurrentUser() user: JwtUserPayload,

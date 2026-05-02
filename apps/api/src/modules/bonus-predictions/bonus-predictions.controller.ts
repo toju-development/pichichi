@@ -19,11 +19,21 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, type JwtUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
-import { BonusPredictionsService, type ResolveResult, type BulkResolveResult } from './bonus-predictions.service.js';
+import {
+  BonusPredictionsService,
+  type ResolveResult,
+  type BulkResolveResult,
+} from './bonus-predictions.service.js';
 import { CreateBonusPredictionDto } from './dto/create-bonus-prediction.dto.js';
-import { BonusPredictionResponseDto, GroupBonusPredictionsResponseDto } from './dto/bonus-prediction-response.dto.js';
+import {
+  BonusPredictionResponseDto,
+  GroupBonusPredictionsResponseDto,
+} from './dto/bonus-prediction-response.dto.js';
 import { ResolveBonusDto } from './dto/resolve-bonus.dto.js';
 import { ResolveBonusByKeyDto } from './dto/resolve-bonus-by-key.dto.js';
 
@@ -32,12 +42,18 @@ import { ResolveBonusByKeyDto } from './dto/resolve-bonus-by-key.dto.js';
 @UseGuards(JwtAuthGuard)
 @Controller('bonus-predictions')
 export class BonusPredictionsController {
-  constructor(private readonly bonusPredictionsService: BonusPredictionsService) {}
+  constructor(
+    private readonly bonusPredictionsService: BonusPredictionsService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Create or update a bonus prediction (upsert)' })
-  @ApiResponse({ status: 200, description: 'Bonus prediction saved', type: BonusPredictionResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Bonus prediction saved',
+    type: BonusPredictionResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   @ApiResponse({ status: 404, description: 'Bonus type not found' })
@@ -50,10 +66,20 @@ export class BonusPredictionsController {
   }
 
   @Get('group/:groupId')
-  @ApiOperation({ summary: 'Get my bonus predictions in a group for a tournament' })
+  @ApiOperation({
+    summary: 'Get my bonus predictions in a group for a tournament',
+  })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiQuery({ name: 'tournamentId', description: 'Tournament ID (UUID)', required: true })
-  @ApiResponse({ status: 200, description: 'List of bonus predictions', type: [BonusPredictionResponseDto] })
+  @ApiQuery({
+    name: 'tournamentId',
+    description: 'Tournament ID (UUID)',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of bonus predictions',
+    type: [BonusPredictionResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   async findByGroup(
@@ -61,14 +87,29 @@ export class BonusPredictionsController {
     @Param('groupId', ParseUUIDPipe) groupId: string,
     @Query('tournamentId', ParseUUIDPipe) tournamentId: string,
   ): Promise<BonusPredictionResponseDto[]> {
-    return this.bonusPredictionsService.findByGroup(groupId, user.sub, tournamentId);
+    return this.bonusPredictionsService.findByGroup(
+      groupId,
+      user.sub,
+      tournamentId,
+    );
   }
 
   @Get('group/:groupId/all')
-  @ApiOperation({ summary: 'Get all users\' bonus predictions in a group (revealed after tournament starts)' })
+  @ApiOperation({
+    summary:
+      "Get all users' bonus predictions in a group (revealed after tournament starts)",
+  })
   @ApiParam({ name: 'groupId', description: 'Group ID (UUID)' })
-  @ApiQuery({ name: 'tournamentId', description: 'Tournament ID (UUID)', required: true })
-  @ApiResponse({ status: 200, description: 'Group bonus predictions', type: GroupBonusPredictionsResponseDto })
+  @ApiQuery({
+    name: 'tournamentId',
+    description: 'Tournament ID (UUID)',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Group bonus predictions',
+    type: GroupBonusPredictionsResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Not a member of the group' })
   async findAllByGroup(
@@ -76,24 +117,40 @@ export class BonusPredictionsController {
     @Param('groupId', ParseUUIDPipe) groupId: string,
     @Query('tournamentId', ParseUUIDPipe) tournamentId: string,
   ): Promise<GroupBonusPredictionsResponseDto> {
-    return this.bonusPredictionsService.findAllByGroup(groupId, user.sub, tournamentId);
+    return this.bonusPredictionsService.findAllByGroup(
+      groupId,
+      user.sub,
+      tournamentId,
+    );
   }
 
   @Post('resolve')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Bulk-resolve bonus predictions by type key for a tournament (admin)' })
+  @ApiOperation({
+    summary:
+      'Bulk-resolve bonus predictions by type key for a tournament (admin)',
+  })
   @ApiResponse({ status: 200, description: 'Bonus predictions resolved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Bonus type not found for tournament' })
+  @ApiResponse({
+    status: 404,
+    description: 'Bonus type not found for tournament',
+  })
   async resolveByKey(
     @Body() dto: ResolveBonusByKeyDto,
   ): Promise<BulkResolveResult> {
-    return this.bonusPredictionsService.resolveByKey(dto.tournamentId, dto.key, dto.correctValue);
+    return this.bonusPredictionsService.resolveByKey(
+      dto.tournamentId,
+      dto.key,
+      dto.correctValue,
+    );
   }
 
   @Patch(':id/resolve')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resolve a bonus prediction as correct or incorrect (admin)' })
+  @ApiOperation({
+    summary: 'Resolve a bonus prediction as correct or incorrect (admin)',
+  })
   @ApiParam({ name: 'id', description: 'Bonus Prediction ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Bonus prediction resolved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

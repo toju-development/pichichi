@@ -11,9 +11,15 @@ export class LeaderboardResponseDto {
   @ApiPropertyOptional({ description: 'Tournament ID (if filtered)' })
   tournamentId?: string | null;
 
-  @ApiProperty({ description: 'Leaderboard entries', type: [LeaderboardEntryDto] })
+  @ApiProperty({
+    description: 'Leaderboard entries',
+    type: [LeaderboardEntryDto],
+  })
   entries!: LeaderboardEntryDto[];
 
-  @ApiProperty({ description: 'Total active members in the group', example: 12 })
+  @ApiProperty({
+    description: 'Total active members in the group',
+    example: 12,
+  })
   totalMembers!: number;
 }
