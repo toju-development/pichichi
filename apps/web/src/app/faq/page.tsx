@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     description:
       "Todo lo que necesitás saber sobre Pichichi: grupos, puntos, pronósticos y más.",
     images: ["/og-image.png"],
-    site: "@pichichi_app",
+    site: "@Pichichi_app",
   },
 };
 
@@ -53,7 +53,7 @@ const FAQ_SECTIONS = [
       {
         question: "¿Cómo empiezo a jugar?",
         answer:
-          "Descargá la app para iOS o Android, iniciá sesión con tu cuenta de Google o Apple (gratis, sin tarjeta de crédito) y listo. Desde ahí podés crear un grupo nuevo o unirte a uno existente con un código de invitación. En minutos ya estás cargando pronósticos.",
+          "Descargá la app para Android, iniciá sesión con tu cuenta de Google (gratis, sin tarjeta de crédito) y listo. Desde ahí podés crear un grupo nuevo o unirte a uno existente con un código de invitación. En minutos ya estás cargando pronósticos.",
       },
       {
         question: "¿Es gratis?",
@@ -156,17 +156,17 @@ const FAQ_SECTIONS = [
       {
         question: "¿En qué dispositivos está disponible?",
         answer:
-          "Pichichi está disponible para iOS (iPhone) y Android. La app está optimizada para móvil, que es donde más se usa — durante el partido, desde el sillón o la cancha.",
+          "Pichichi está disponible para Android. La app está optimizada para móvil, que es donde más se usa — durante el partido, desde el sillón o la cancha. Próximamente vas a poder jugar también desde la web.",
       },
       {
         question: "¿Necesito crear una cuenta?",
         answer:
-          "Solo necesitás iniciar sesión con tu cuenta de Google o tu cuenta de Apple. No hay formularios largos, no hay contraseñas que recordar — un toque y adentro. Y es completamente gratis.",
+          "Solo necesitás iniciar sesión con tu cuenta de Google. No hay formularios largos, no hay contraseñas que recordar — un toque y adentro. Y es completamente gratis.",
       },
       {
         question: "¿Mis datos están seguros?",
         answer:
-          "Sí. Pichichi usa Google Sign-In y Apple Sign-In, que son los sistemas de autenticación más seguros del mercado. No almacenamos contraseñas. Los datos de tu cuenta se usan exclusivamente para identificarte dentro de la app y mostrarte tu historial de pronósticos.",
+          "Sí. Pichichi usa Google Sign-In, uno de los sistemas de autenticación más seguros del mercado. No almacenamos contraseñas. Los datos de tu cuenta se usan exclusivamente para identificarte dentro de la app y mostrarte tu historial de pronósticos.",
       },
     ],
   },
@@ -302,8 +302,8 @@ export default function FaqPage() {
               <span className="text-accent-gold"> Descargá la app.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-text-on-primary/75 sm:text-lg">
-              Gratis para iOS y Android. Armá tu grupo y empezá a cargar
-              pronósticos antes de que arranque el Mundial.
+              Gratis para Android. Armá tu grupo y empezá a cargar
+              pronósticos cuando quieras.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a

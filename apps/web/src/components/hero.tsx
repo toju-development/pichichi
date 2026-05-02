@@ -22,7 +22,7 @@ export function Hero() {
         <div className="flex max-w-2xl flex-col items-center text-center lg:items-start lg:text-left">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-surface/60 px-4 py-2 text-xs font-semibold tracking-wide text-primary backdrop-blur-sm">
             <span className="flex h-2 w-2 rounded-full bg-accent-gold animate-pulse" />
-            MUNDIAL 2026 · JUNIO–JULIO
+            EL PRODE ENTRE AMIGOS
           </span>
 
           <h1 className="font-display text-5xl font-bold tracking-tight text-text-primary sm:text-6xl lg:text-7xl">
@@ -33,7 +33,11 @@ export function Hero() {
 
           <p className="mt-6 text-lg leading-relaxed text-text-secondary sm:text-xl">
             Predecí los resultados de cada partido, sumá puntos y competí contra
-            tus amigos en tu propio prode. Resultado exacto, 5 puntos. ¿Podés?
+            tus amigos en tu propio prode. Cualquier torneo, cualquier momento.
+          </p>
+
+          <p className="mt-3 text-sm font-medium text-accent-gold-dark">
+            ⚡ Listo para el Mundial 2026
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -80,35 +84,35 @@ export function Hero() {
             {/* App header */}
             <div className="bg-gradient-to-b from-primary-dark to-primary px-5 pb-5 pt-2">
               <p className="font-display text-sm font-bold text-text-on-primary tracking-wide">PICHICHI</p>
-              <p className="mt-1 text-xs text-text-on-primary/60">Grupo A · Jornada 1</p>
+              <p className="mt-1 text-xs text-text-on-primary/60">Tu grupo · Próxima jornada</p>
             </div>
 
             {/* Match cards inside phone */}
             <div className="space-y-2.5 bg-bg p-3">
               <PhoneMockMatchCard
-                date="11 Jun 2026"
-                team1="México"
-                flag1="🇲🇽"
-                team2="Sudáfrica"
-                flag2="🇿🇦"
+                date="Sábado 20:00"
+                team1="Local"
+                flag1="⚽"
+                team2="Visitante"
+                flag2="🥅"
                 score1={2}
                 score2={1}
               />
               <PhoneMockMatchCard
-                date="11 Jun 2026"
-                team1="Argentina"
-                flag1="🇦🇷"
-                team2="Arabia Saudita"
-                flag2="🇸🇦"
+                date="Domingo 16:30"
+                team1="Tu Equipo"
+                flag1="🔥"
+                team2="Rival"
+                flag2="⚡"
                 score1={3}
                 score2={0}
               />
               <PhoneMockMatchCard
-                date="12 Jun 2026"
-                team1="España"
-                flag1="🇪🇸"
-                team2="Brasil"
-                flag2="🇧🇷"
+                date="Domingo 21:00"
+                team1="Capitán"
+                flag1="🏆"
+                team2="Retador"
+                flag2="🎯"
                 score1={1}
                 score2={1}
               />
@@ -142,7 +146,7 @@ function PhoneMockMatchCard({
 }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
-      <p className="mb-2 text-[10px] text-text-tertiary">{date} · Grupo A</p>
+      <p className="mb-2 text-[10px] text-text-tertiary">{date} · Tu grupo</p>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-1.5 min-w-0">
           <span className="text-lg shrink-0">{flag1}</span>

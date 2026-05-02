@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pichichi Web (PWA)
+
+Next.js 16 + React 19 + Tailwind v4. Hosts the landing pages (root) and the installable PWA shell under `/app/*`.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # dev server on http://localhost:3000
+npm run lint     # 0 errors, 0 warnings expected
+npm run test     # vitest watch
+npm run test -- --run  # vitest single pass (CI style)
+npx tsc --noEmit # type check
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> ⚠️ **NEVER run `npm run build`** in agent automation. Builds are performed by the deploy pipeline only.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## PWA verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The PWA layer lives under `apps/web/src/app/manifest.ts` (manifest), `apps/web/public/sw.js` (service worker) and `apps/web/src/features/pwa/` (registration + install banner).
 
-## Learn More
+### Verify the manifest
 
-To learn more about Next.js, take a look at the following resources:
+1. `npm run dev`
+2. Open Chrome → DevTools → **Application** → **Manifest**.
+3. Confirm:
+   - `name` = "Pichichi", `short_name` = "Pichichi"
+   - `start_url` = `/app`, `scope` = `/app`
+   - `display` = `standalone`, `orientation` = `portrait`
+   - Icons 192/512 load without 404.
+4. Alternatively: `curl -s http://localhost:3000/manifest.webmanifest | jq`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Verify the install prompt
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The custom banner is mounted in `apps/web/src/app/app/(authed)/layout.tsx` so it only appears for authenticated users.
 
-## Deploy on Vercel
+1. Open the PWA at `/app` in Chrome (Android or desktop).
+2. DevTools → **Application** → **Manifest** → click **"Add to home screen"** to manually trigger `beforeinstallprompt`.
+3. The custom banner ("Instalá Pichichi") should appear with **Instalar** + **Ahora no**.
+4. **Instalar** → invokes the native prompt and hides.
+5. **Ahora no** → writes `pichichi-install-dismissed=1` to `localStorage` and hides for the rest of this profile (clear it from DevTools → Application → Local Storage to re-test).
+6. If the app is already installed (display-mode `standalone` or iOS `navigator.standalone`), the banner is suppressed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Verify the offline shell
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Visit `/app` in Chrome with DevTools open.
+2. **Application** → **Service Workers** → confirm `/sw.js` is `activated and is running`, scope = `/app/`.
+3. **Network** → check **Offline**.
+4. Reload `/app` → the cached shell renders (network-first with cache fallback).
+5. **Authenticated API requests are NOT cached** — `/api/*` paths and any request with an `Authorization` header bypass the SW entirely. Cross-origin requests also pass through.
+
+### Bumping the SW version
+
+When the cached shell needs to invalidate (e.g. layout changes that affect `/app`):
+
+1. Edit `apps/web/public/sw.js`.
+2. Bump the constant `CACHE_VERSION` (e.g. `"v1"` → `"v2"`).
+3. On the next page load, the new SW installs, the `activate` event prunes any cache whose name starts with `pichichi-shell-` and does NOT match the new version, and `clients.claim()` switches active tabs over.
+
+There is no automatic versioning. Bumping is manual and intentional.
+
+## Deployment guardrails
+
+> **Vercel and Railway are operated manually. NO push automático. NO deploy automático.**
+
+Agents and CI MUST NOT run:
+
+- `git commit`, `git push`, `git add`
+- `npm run build`, `next build`
+- `vercel deploy`, `railway up`, or any deploy CLI
+
+The deploy is a manual human action against the production project. If you need a preview, ask the human operator.
+
+## Project layout
+
+- `src/app/` — App Router. Landing at `/`, PWA shell at `/app/*`.
+- `src/app/app/(authed)/` — auth-gated routes (dashboard, groups, tournaments, predictions, leaderboard, notifications, profile).
+- `src/features/` — feature modules (predictions, groups, leaderboard, notifications, profile, app-shell, pwa, auth, dashboard, tournaments, matches, shared).
+- `src/hooks/` — TanStack Query hooks + small reusable hooks (`use-dialog-a11y`, `use-confirm-dialog`).
+- `src/stores/` — Zustand stores (auth-store with `persist` + hydration).
+- `src/lib/` — routes, storage keys, axios client.
+- `src/test/` — Vitest setup.
+- `public/` — static assets including `sw.js` and PWA icons (`icon-192.png`, `icon-512.png`).

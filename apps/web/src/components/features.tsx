@@ -40,7 +40,7 @@ const FEATURES = [
     icon: GlobeIcon,
     title: "Preparado para más",
     description:
-      "Diseñado para el Mundial 2026, pero también para Copa América, Champions, Libertadores y más torneos.",
+      "Diseñado para cualquier torneo: Mundial, Copa América, Champions, Libertadores, ligas locales y más.",
     accent: "from-primary-light to-primary",
   },
 ] as const;

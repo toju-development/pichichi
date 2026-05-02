@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     description:
       "Conocé cómo Pichichi recopila, usa y protege tus datos personales.",
     images: ["/og-image.png"],
-    site: "@pichichi_app",
+    site: "@Pichichi_app",
   },
 };
 
@@ -115,7 +115,7 @@ const PRIVACY_SECTIONS = [
       },
       {
         heading: "Eliminación de tu cuenta",
-        text: "Si querés que eliminemos tu cuenta y todos los datos asociados, escribinos a pablomartinez555@gmail.com con el asunto \"Eliminar cuenta\". Procesamos el pedido dentro de los 7 días hábiles.",
+        text: "Si querés que eliminemos tu cuenta y todos los datos asociados, escribinos a soporte@pichichi.app con el asunto \"Eliminar cuenta\". Procesamos el pedido dentro de los 7 días hábiles.",
       },
       {
         heading: "Portabilidad",
@@ -130,7 +130,7 @@ const PRIVACY_SECTIONS = [
     content: [
       {
         heading: "¿Tenés preguntas?",
-        text: "Si tenés dudas sobre esta política de privacidad o sobre cómo manejamos tus datos, escribinos a pablomartinez555@gmail.com. Respondemos todos los mensajes.",
+        text: "Si tenés dudas sobre esta política de privacidad o sobre cómo manejamos tus datos, escribinos a soporte@pichichi.app. Respondemos todos los mensajes.",
       },
       {
         heading: "Cambios a esta política",
@@ -235,11 +235,11 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-text-on-primary/75 sm:text-lg">
               Si algo no quedó claro, mandanos un email a
-              pablomartinez555@gmail.com y te respondemos.
+              soporte@pichichi.app y te respondemos.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
-                href="mailto:pablomartinez555@gmail.com"
+                href="mailto:soporte@pichichi.app"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-sm font-bold text-primary-dark shadow-xl shadow-primary-dark/30 transition-all hover:scale-105 hover:shadow-2xl"
               >
                 Contactanos

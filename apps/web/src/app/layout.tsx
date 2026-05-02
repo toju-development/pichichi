@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://pichichi.app"),
   title: "Pichichi — Armá tu prode, ganale a tus amigos",
   description:
-    "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
+    "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para Android.",
   keywords: [
     "prode futbol",
     "prode",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
-      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
+      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para Android.",
     type: "website",
     url: "https://pichichi.app",
     locale: "es_AR",
@@ -73,10 +73,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pichichi — Armá tu prode, ganale a tus amigos",
     description:
-      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
+      "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para Android.",
     images: ["/og-image.png"],
-    site: "@pichichi_app",
-    creator: "@pichichi_app",
+    site: "@Pichichi_app",
+    creator: "@Pichichi_app",
   },
 };
 
@@ -88,6 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <head>
@@ -100,9 +101,9 @@ export default function RootLayout({
               "@type": "SoftwareApplication",
               name: "Pichichi",
               applicationCategory: "SportsApplication",
-              operatingSystem: "iOS, Android",
+              operatingSystem: "Android",
               description:
-                "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para iOS y Android.",
+                "Creá tu grupo, predecí los scores de cada partido y competí contra amigos. El prode de fútbol más completo. Gratis para Android.",
               url: "https://pichichi.app",
               offers: {
                 "@type": "Offer",

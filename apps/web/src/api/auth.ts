@@ -1,0 +1,21 @@
+import type { AuthResponseDto } from "@pichichi/shared";
+
+import { api } from "./client";
+
+export async function loginWithGoogle(token: string): Promise<AuthResponseDto> {
+  const { data } = await api.post<AuthResponseDto>("/auth/google", { token });
+  return data;
+}
+
+export async function refreshTokens(
+  refreshToken: string,
+): Promise<AuthResponseDto> {
+  const { data } = await api.post<AuthResponseDto>("/auth/refresh", {
+    refreshToken,
+  });
+  return data;
+}
+
+export async function logout(refreshToken: string): Promise<void> {
+  await api.post("/auth/logout", { refreshToken });
+}

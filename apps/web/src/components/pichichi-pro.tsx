@@ -86,7 +86,7 @@ export function PichichiPro() {
         {/* CTA */}
         <div className="mt-12 text-center">
           <a
-            href="mailto:pablomartinez555@gmail.com"
+            href="mailto:pro@pichichi.app"
             className="inline-flex items-center rounded-xl bg-gradient-to-r from-accent-gold to-accent-gold-dark px-8 py-4 text-sm font-semibold text-primary-dark shadow-lg shadow-accent-gold/20 transition-all hover:brightness-110 hover:shadow-xl"
           >
             Contactanos

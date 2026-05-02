@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     description:
       "Términos y condiciones de uso de Pichichi, la app de pronósticos deportivos entre amigos.",
     images: ["/og-image.png"],
-    site: "@pichichi_app",
+    site: "@Pichichi_app",
   },
 };
 
@@ -77,7 +77,7 @@ const TERMS_SECTIONS = [
       },
       {
         heading: "Tu responsabilidad",
-        text: "Sos responsable de toda la actividad que ocurra bajo tu cuenta. Si sospechás que alguien accedió a tu cuenta sin tu permiso, avisanos inmediatamente a pablomartinez555@gmail.com.",
+        text: "Sos responsable de toda la actividad que ocurra bajo tu cuenta. Si sospechás que alguien accedió a tu cuenta sin tu permiso, avisanos inmediatamente a soporte@pichichi.app.",
       },
     ],
   },
@@ -144,7 +144,7 @@ const TERMS_SECTIONS = [
     content: [
       {
         heading: "¿Tenés dudas?",
-        text: "Si tenés preguntas sobre estos términos y condiciones, escribinos a pablomartinez555@gmail.com. Respondemos todos los mensajes.",
+        text: "Si tenés preguntas sobre estos términos y condiciones, escribinos a soporte@pichichi.app. Respondemos todos los mensajes.",
       },
     ],
   },
@@ -245,11 +245,11 @@ export default function TermsPage() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-text-on-primary/75 sm:text-lg">
               Si algo no quedó claro, mandanos un email a
-              pablomartinez555@gmail.com y te respondemos.
+              soporte@pichichi.app y te respondemos.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
-                href="mailto:pablomartinez555@gmail.com"
+                href="mailto:soporte@pichichi.app"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-sm font-bold text-primary-dark shadow-xl shadow-primary-dark/30 transition-all hover:scale-105 hover:shadow-2xl"
               >
                 Contactanos
