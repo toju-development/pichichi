@@ -58,6 +58,21 @@ When the cached shell needs to invalidate (e.g. layout changes that affect `/app
 
 There is no automatic versioning. Bumping is manual and intentional.
 
+## Local OAuth Setup
+
+The web app uses Google Sign-In via `@react-oauth/google` (`<GoogleLogin />`), which runs in **ID-token mode** (FedCM/popup). This flow returns a credential to the browser and posts it to `POST /auth/google` — there is **no server-side redirect URI**.
+
+To configure locally:
+
+1. Go to **Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs** and pick (or create) a Web client.
+2. Under **Authorized JavaScript origins**, add:
+   - `http://localhost:3000` (web dev server)
+   - `http://localhost:3001` (used by some scripts/tests)
+   - The production web origin (e.g. `https://pichichi.app`)
+3. **Authorized redirect URIs**: leave empty for the FedCM/popup ID-token flow used by `<GoogleLogin />`. Only required if you switch to the auth-code flow.
+4. Copy the Web client ID into `apps/web/.env.local` as `NEXT_PUBLIC_GOOGLE_CLIENT_ID=...`. See `apps/web/.env.local.example` for the full env contract.
+5. Restart `npm run dev` so Next picks up the new env.
+
 ## Deployment guardrails
 
 > **Vercel and Railway are operated manually. NO push automático. NO deploy automático.**

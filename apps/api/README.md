@@ -45,6 +45,44 @@ For local development the default in `.env.example` covers the Next.js web app (
 
 When deploying changes that touch the socket handshake, deploy the **backend first**. Already-connected clients will be disconnected on restart and reconnect automatically with their stored access token, so no client-side change is required for mobile or the web PWA.
 
+### Deploy Checklist (Manual)
+
+> **Vercel and Railway are operated manually. NO push automático. NO deploy automático.** Agents and CI MUST NOT run `vercel deploy`, `vercel --prod`, `railway up`, or any deploy CLI.
+
+Order: **backend first (Railway) → web (Vercel)**. This guarantees clients reconnect against an API that already speaks the new contract.
+
+#### 1. Railway (API)
+
+Required env vars (set via Railway dashboard → Variables):
+
+- `DATABASE_URL` — PostgreSQL connection string (Railway-managed instance).
+- `JWT_SECRET` — long random secret for access/refresh signing.
+- `JWT_REFRESH_SECRET` — separate secret for refresh tokens.
+- `CORS_ORIGINS` — comma-separated allow-list. MUST include the Vercel web domain (and any preview domains you want to allow).
+- `REDIS_URL` — Redis connection string for socket adapter / queues.
+- `GOOGLE_CLIENT_ID` — Google OAuth Web client ID (matches the one used by web/mobile).
+- `APPLE_*` — Apple Sign-In credentials if enabled.
+- Any API-Football / external service keys used by importers.
+
+Steps:
+
+1. Verify Prisma migrations are committed.
+2. Trigger the Railway deploy (manual button or `git push` to the deploy branch — human action).
+3. After deploy, smoke check: `curl https://<api-host>/health` returns `200`.
+
+#### 2. Vercel (Web)
+
+Required env vars (Vercel dashboard → Project → Settings → Environment Variables):
+
+- `NEXT_PUBLIC_API_URL` — Railway API base URL (e.g. `https://api.pichichi.app`).
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` — same Google Web client ID. Make sure the Vercel domain is listed under Authorized JavaScript origins in Google Cloud Console.
+
+Steps:
+
+1. Confirm the API is healthy.
+2. Trigger the Vercel deploy (human action).
+3. After deploy, smoke check: open `/app/login`, perform Google login, confirm dashboard renders and the WebSocket handshake succeeds (DevTools → Network → WS → `/events` → status 101).
+
 ## Project setup
 
 ```bash
