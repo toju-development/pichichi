@@ -25,6 +25,26 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Pichichi notes
+
+### CORS_ORIGINS (REST + WebSocket)
+
+The `CORS_ORIGINS` env var is a comma-separated allow-list applied to **both** the REST API and the Socket.IO `/events` namespace. In production it MUST include every web origin that should be able to connect, including the PWA shell:
+
+```
+CORS_ORIGINS=https://pichichi.app,https://pichichi.app/app
+```
+
+For local development the default in `.env.example` covers the Next.js web app (`http://localhost:3001`) and the Expo dev client (`http://localhost:8081`).
+
+### Socket authentication
+
+`EventsGateway` (`src/gateways/events.gateway.ts`) verifies the JWT during the WebSocket handshake. Clients must send the access token via `client.handshake.auth.token` (preferred) or an `Authorization: Bearer <token>` header. Connections without a valid token are dropped with `client.disconnect(true)`.
+
+### Rollout order
+
+When deploying changes that touch the socket handshake, deploy the **backend first**. Already-connected clients will be disconnected on restart and reconnect automatically with their stored access token, so no client-side change is required for mobile or the web PWA.
+
 ## Project setup
 
 ```bash
