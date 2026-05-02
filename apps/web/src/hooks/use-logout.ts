@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -16,12 +17,14 @@ import { useAuthStore } from "@/stores/auth-store";
  *      al usuario "logueado pero roto".
  *   2. Limpiar estado local + persistencia (Zustand persist remueve la key
  *      automáticamente al pasar todos los campos persistidos a null).
- *   3. Redirigir a `/app/login` con `router.replace` (no se acumula history).
- *
- * Cuando exista QueryClient (Phase 4) este hook también hará `qc.clear()`.
+ *   3. Limpiar el cache de TanStack Query con `qc.clear()` para evitar que el
+ *      próximo usuario que se loguee en este browser vea datos cacheados del
+ *      anterior (privacidad + correctitud).
+ *   4. Redirigir a `/app/login` con `router.replace` (no se acumula history).
  */
 export function useLogout() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const storeLogout = useAuthStore((s) => s.logout);
   const [isPending, setIsPending] = useState(false);
 
@@ -37,6 +40,7 @@ export function useLogout() {
         }
       }
       storeLogout();
+      queryClient.clear();
       router.replace(ROUTES.app.login);
     } finally {
       setIsPending(false);
