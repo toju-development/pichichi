@@ -824,17 +824,21 @@ describe('DashboardService', () => {
     it('should use semi-open SQL range for today matches', async () => {
       await service.getDashboard('user-1', 'UTC');
 
-      const queryCall = prisma.$queryRaw.mock.calls.find((call) => {
-        const strings = call[0] as TemplateStringsArray;
-        const sql = Array.isArray(strings)
-          ? strings.join(' ')
-          : String(strings);
-        return sql.includes('FROM matches m');
-      });
+      const queryCall = (prisma.$queryRaw.mock.calls as unknown[][]).find(
+        (call) => {
+          const strings = call[0] as TemplateStringsArray;
+          const sql = Array.isArray(strings)
+            ? strings.join(' ')
+            : String(strings);
+          return sql.includes('FROM matches m');
+        },
+      );
 
       expect(queryCall).toBeDefined();
 
-      const sql = (queryCall?.[0] as TemplateStringsArray).join(' ');
+      const sql = ((queryCall as unknown[])[0] as TemplateStringsArray).join(
+        ' ',
+      );
       expect(sql).toContain('m.scheduled_at >=');
       expect(sql).toContain('m.scheduled_at <');
       expect(sql).not.toContain('m.scheduled_at <=');

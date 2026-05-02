@@ -163,7 +163,15 @@ describe('GroupsService', () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(notifications.createMany).toHaveBeenCalledTimes(1);
-      const notifs = notifications.createMany.mock.calls[0][0];
+      const notifs = (
+        notifications.createMany.mock.calls as unknown[][]
+      )[0][0] as Array<{
+        userId: string;
+        type: string;
+        title: string;
+        body: string;
+        data: unknown;
+      }>;
       expect(notifs).toHaveLength(3);
       expect(notifs[0]).toEqual({
         userId: 'member-1',
@@ -208,8 +216,12 @@ describe('GroupsService', () => {
       });
 
       // Verify the joiner is NOT in the notifications
-      const notifs = notifications.createMany.mock.calls[0][0];
-      const recipientIds = notifs.map((n: { userId: string }) => n.userId);
+      const notifs = (
+        notifications.createMany.mock.calls as unknown[][]
+      )[0][0] as Array<{
+        userId: string;
+      }>;
+      const recipientIds = notifs.map((n) => n.userId);
       expect(recipientIds).not.toContain(userId);
     });
 
@@ -254,7 +266,14 @@ describe('GroupsService', () => {
       await service.joinByCode(userId, inviteCode);
       await new Promise((resolve) => setImmediate(resolve));
 
-      const notif = notifications.createMany.mock.calls[0][0][0];
+      const notif = (
+        (notifications.createMany.mock.calls as unknown[][])[0][0] as Array<{
+          type: string;
+          title: string;
+          body: string;
+          data: unknown;
+        }>
+      )[0];
       expect(notif.type).toBe('GROUP_JOIN');
       expect(notif.title).toBe('Juan Román Riquelme se unió a tu grupo');
       expect(notif.body).toBe(groupName);
@@ -268,7 +287,11 @@ describe('GroupsService', () => {
       await service.joinByCode(userId, inviteCode);
       await new Promise((resolve) => setImmediate(resolve));
 
-      const notif = notifications.createMany.mock.calls[0][0][0];
+      const notif = (
+        (notifications.createMany.mock.calls as unknown[][])[0][0] as Array<{
+          title: string;
+        }>
+      )[0];
       expect(notif.title).toBe('Alguien se unió a tu grupo');
     });
 
@@ -524,7 +547,7 @@ describe('GroupsService', () => {
 
       await service.getUpcomingPredictions(groupId, userId, 'UTC');
 
-      const queryCall = prisma.$queryRaw.mock.calls[0];
+      const queryCall = prisma.$queryRaw.mock.calls[0] as unknown[];
       expect(queryCall).toBeDefined();
 
       const sql = (queryCall[0] as TemplateStringsArray).join(' ');

@@ -440,7 +440,9 @@ describe('BonusPredictionsService', () => {
       await service.resolveByKey('tournament-1', 'TOP_SCORER', 'Messi');
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      const transactionArg = prisma.$transaction.mock.calls[0][0];
+      const transactionArg = (
+        prisma.$transaction.mock.calls as unknown[][]
+      )[0][0] as unknown[];
       // 1 correct batch + 1 incorrect batch = 2 updateMany calls
       expect(transactionArg).toHaveLength(2);
     });
@@ -458,7 +460,9 @@ describe('BonusPredictionsService', () => {
 
       await service.resolveByKey('tournament-1', 'TOP_SCORER', 'Messi');
 
-      const transactionArg = prisma.$transaction.mock.calls[0][0];
+      const transactionArg = (
+        prisma.$transaction.mock.calls as unknown[][]
+      )[0][0] as unknown[];
       expect(transactionArg).toHaveLength(1);
     });
 
@@ -475,7 +479,9 @@ describe('BonusPredictionsService', () => {
 
       await service.resolveByKey('tournament-1', 'TOP_SCORER', 'Messi');
 
-      const transactionArg = prisma.$transaction.mock.calls[0][0];
+      const transactionArg = (
+        prisma.$transaction.mock.calls as unknown[][]
+      )[0][0] as unknown[];
       expect(transactionArg).toHaveLength(1);
     });
 

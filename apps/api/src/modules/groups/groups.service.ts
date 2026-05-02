@@ -6,11 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  GroupMemberRole,
-  NotificationType,
-  TournamentStatus,
-} from '@prisma/client';
+import { GroupMemberRole, TournamentStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma.service.js';
 import { PlansService } from '../plans/plans.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';

@@ -16,14 +16,17 @@ export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const ctx = context.switchToHttp();
     const request = ctx.getRequest<Request>();
-    const { method, originalUrl, body } = request;
+    const method = request.method;
+    const originalUrl = request.originalUrl;
+    const body = request.body as unknown;
     const startTime = Date.now();
 
     // Log incoming request with body for mutation methods
     const hasBody =
       ['POST', 'PUT', 'PATCH'].includes(method) &&
-      body &&
-      Object.keys(body as object).length > 0;
+      body !== null &&
+      typeof body === 'object' &&
+      Object.keys(body as Record<string, unknown>).length > 0;
     const authHeader = request.headers.authorization;
     const authInfo = authHeader
       ? `[Auth: Bearer ...${authHeader.slice(-8)}]`

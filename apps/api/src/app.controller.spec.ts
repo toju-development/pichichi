@@ -24,7 +24,7 @@ describe('AppController', () => {
 
       expect(result).toEqual({
         status: 'ok',
-        timestamp: expect.any(String),
+        timestamp: expect.any(String) as unknown as string,
       });
     });
   });

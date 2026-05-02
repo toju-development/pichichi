@@ -128,8 +128,8 @@ describe('MatchSyncController', () => {
   // ---------------------------------------------------------------------------
 
   describe('toggleSync', () => {
-    it('should call setSyncEnabled(true) when body is { enabled: true }', async () => {
-      const result = await controller.toggleSync({ enabled: true });
+    it('should call setSyncEnabled(true) when body is { enabled: true }', () => {
+      const result = controller.toggleSync({ enabled: true });
 
       expect(mockMatchSyncService.setSyncEnabled).toHaveBeenCalledWith(true);
       expect(result).toEqual({
@@ -138,8 +138,8 @@ describe('MatchSyncController', () => {
       });
     });
 
-    it('should call setSyncEnabled(false) when body is { enabled: false }', async () => {
-      const result = await controller.toggleSync({ enabled: false });
+    it('should call setSyncEnabled(false) when body is { enabled: false }', () => {
+      const result = controller.toggleSync({ enabled: false });
 
       expect(mockMatchSyncService.setSyncEnabled).toHaveBeenCalledWith(false);
       expect(result).toEqual({
@@ -148,8 +148,8 @@ describe('MatchSyncController', () => {
       });
     });
 
-    it('should return proper response shape with message', async () => {
-      const result = await controller.toggleSync({ enabled: true });
+    it('should return proper response shape with message', () => {
+      const result = controller.toggleSync({ enabled: true });
 
       expect(result).toHaveProperty('syncEnabled');
       expect(result).toHaveProperty('message');
@@ -163,19 +163,19 @@ describe('MatchSyncController', () => {
   // ---------------------------------------------------------------------------
 
   describe('getStatus', () => {
-    it('should return { syncEnabled: true } when sync is enabled', async () => {
+    it('should return { syncEnabled: true } when sync is enabled', () => {
       mockMatchSyncService.isSyncEnabled.mockReturnValue(true);
 
-      const result = await controller.getStatus();
+      const result = controller.getStatus();
 
       expect(result).toEqual({ syncEnabled: true });
       expect(mockMatchSyncService.isSyncEnabled).toHaveBeenCalledTimes(1);
     });
 
-    it('should return { syncEnabled: false } when sync is disabled', async () => {
+    it('should return { syncEnabled: false } when sync is disabled', () => {
       mockMatchSyncService.isSyncEnabled.mockReturnValue(false);
 
-      const result = await controller.getStatus();
+      const result = controller.getStatus();
 
       expect(result).toEqual({ syncEnabled: false });
       expect(mockMatchSyncService.isSyncEnabled).toHaveBeenCalledTimes(1);

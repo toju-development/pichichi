@@ -242,7 +242,9 @@ describe('ApiFootballService', () => {
 
       await service.fetchFixturesByIds([10, 20, 30]);
 
-      const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+      const calledUrl = (
+        (global.fetch as jest.Mock).mock.calls as unknown[][]
+      )[0][0] as string;
       expect(calledUrl).toContain('ids=10-20-30');
       expect(calledUrl).toContain('v3.football.api-sports.io/fixtures');
     });
@@ -252,7 +254,12 @@ describe('ApiFootballService', () => {
 
       await service.fetchFixturesByIds([1]);
 
-      const fetchOptions = (global.fetch as jest.Mock).mock.calls[0][1];
+      const fetchOptions = (
+        (global.fetch as jest.Mock).mock.calls as unknown[][]
+      )[0][1] as {
+        headers: Record<string, string>;
+        method: string;
+      };
       expect(fetchOptions.headers).toEqual({
         'x-apisports-key': FAKE_API_KEY,
       });
@@ -273,12 +280,16 @@ describe('ApiFootballService', () => {
       expect(result).toHaveLength(3);
 
       // Verify first batch: IDs 1-20 dash-separated
-      const firstUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+      const firstUrl = (
+        (global.fetch as jest.Mock).mock.calls as unknown[][]
+      )[0][0] as string;
       const firstIds = Array.from({ length: 20 }, (_, i) => i + 1).join('-');
       expect(firstUrl).toContain(`ids=${firstIds}`);
 
       // Verify third batch: IDs 41-45
-      const thirdUrl = (global.fetch as jest.Mock).mock.calls[2][0] as string;
+      const thirdUrl = (
+        (global.fetch as jest.Mock).mock.calls as unknown[][]
+      )[2][0] as string;
       const thirdIds = Array.from({ length: 5 }, (_, i) => i + 41).join('-');
       expect(thirdUrl).toContain(`ids=${thirdIds}`);
     });
@@ -405,7 +416,9 @@ describe('ApiFootballService', () => {
 
       await service.fetchTopScorers(39, 2025);
 
-      const calledUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+      const calledUrl = (
+        (global.fetch as jest.Mock).mock.calls as unknown[][]
+      )[0][0] as string;
       expect(calledUrl).toContain('league=39');
       expect(calledUrl).toContain('season=2025');
       expect(calledUrl).toContain('/players/topscorers');

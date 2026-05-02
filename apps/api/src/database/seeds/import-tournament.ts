@@ -24,7 +24,6 @@ import { MatchPhase, PrismaClient, TournamentStatus } from '@prisma/client';
 import {
   buildTeamGroupMap,
   createApiFootballClient,
-  type ApiFootballLeague,
 } from './api-football-client.js';
 import {
   adaptTournamentPlayerToSquadPlayer,

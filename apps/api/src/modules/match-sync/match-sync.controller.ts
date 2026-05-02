@@ -51,9 +51,10 @@ export class MatchSyncController {
   @ApiOperation({ summary: 'Enable or disable automatic match sync' })
   @ApiResponse({ status: 200, description: 'Sync toggle updated' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async toggleSync(
-    @Body() dto: ToggleSyncDto,
-  ): Promise<{ syncEnabled: boolean; message: string }> {
+  toggleSync(@Body() dto: ToggleSyncDto): {
+    syncEnabled: boolean;
+    message: string;
+  } {
     this.matchSyncService.setSyncEnabled(dto.enabled);
 
     return {
@@ -66,7 +67,7 @@ export class MatchSyncController {
   @ApiOperation({ summary: 'Get current match sync status' })
   @ApiResponse({ status: 200, description: 'Current sync status' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getStatus(): Promise<{ syncEnabled: boolean }> {
+  getStatus(): { syncEnabled: boolean } {
     return {
       syncEnabled: this.matchSyncService.isSyncEnabled(),
     };

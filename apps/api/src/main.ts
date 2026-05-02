@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module.js';
 
 async function bootstrap(): Promise<void> {
@@ -11,7 +12,7 @@ async function bootstrap(): Promise<void> {
 
   // Health check — must be registered BEFORE setGlobalPrefix so it bypasses the prefix
   const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/health', (_req: any, res: any) => {
+  httpAdapter.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
@@ -67,4 +68,4 @@ async function bootstrap(): Promise<void> {
   logger.log(`Swagger docs at http://localhost:${port}/api/v1/docs`);
 }
 
-bootstrap();
+void bootstrap();

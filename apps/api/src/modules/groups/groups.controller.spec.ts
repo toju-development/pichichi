@@ -133,7 +133,10 @@ describe('GroupsController', () => {
 
   describe('guard metadata', () => {
     it('should have JwtAuthGuard applied at controller level', () => {
-      const guards = Reflect.getMetadata('__guards__', GroupsController);
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        GroupsController,
+      ) as Array<{ name: string }>;
       expect(guards).toBeDefined();
       expect(guards).toHaveLength(1);
       expect(guards[0].name).toBe('JwtAuthGuard');

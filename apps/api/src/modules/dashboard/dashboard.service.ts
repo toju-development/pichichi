@@ -318,7 +318,6 @@ export class DashboardService {
     const exactCount = Number(row?.exact_count ?? 0);
     const goalDiffCount = Number(row?.goal_diff_count ?? 0);
     const winnerCount = Number(row?.winner_count ?? 0);
-    const missCount = Number(row?.miss_count ?? 0);
     const totalPoints = Number(row?.total_points ?? 0);
 
     const correctCount = exactCount + goalDiffCount + winnerCount;

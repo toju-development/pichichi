@@ -39,7 +39,7 @@ describe('TournamentsService', () => {
           where: expect.objectContaining({
             isActive: true,
             status: { in: ['UPCOMING', 'IN_PROGRESS'] },
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -52,7 +52,7 @@ describe('TournamentsService', () => {
           where: expect.objectContaining({
             isActive: true,
             status: { in: ['UPCOMING'] },
-          }),
+          }) as unknown,
         }),
       );
     });

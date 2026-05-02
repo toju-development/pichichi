@@ -63,6 +63,7 @@ function createIoredisKeyvStore(redisUrl: string): KeyvStoreAdapter {
     async get(key: string) {
       try {
         const val = await redis.get(key);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Keyv StoredData<Value> is generic over caller's type; ioredis returns string
         return val === null ? undefined : (val as any);
       } catch {
         return undefined;

@@ -195,7 +195,10 @@ describe('DashboardController', () => {
   describe('guard metadata', () => {
     it('should have JwtAuthGuard applied at controller level', () => {
       // Reflector reads guard metadata from the controller class
-      const guards = Reflect.getMetadata('__guards__', DashboardController);
+      const guards = Reflect.getMetadata(
+        '__guards__',
+        DashboardController,
+      ) as Array<{ name: string }>;
       expect(guards).toBeDefined();
       expect(guards).toHaveLength(1);
 

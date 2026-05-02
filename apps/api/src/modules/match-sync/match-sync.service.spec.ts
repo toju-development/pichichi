@@ -453,7 +453,7 @@ describe('MatchSyncService', () => {
 
       expect(mockPrisma.match.update).toHaveBeenCalledWith({
         where: { id: 'match-1' },
-        data: { lastSyncedAt: expect.any(Date) },
+        data: { lastSyncedAt: expect.any(Date) as unknown as Date },
       });
     });
 
@@ -1262,7 +1262,7 @@ describe('MatchSyncService', () => {
 
       expect(mockPrisma.match.update).toHaveBeenCalledWith({
         where: { id: 'match-reminder-1' },
-        data: { reminderSentAt: expect.any(Date) },
+        data: { reminderSentAt: expect.any(Date) as unknown as Date },
       });
     });
 
@@ -1289,7 +1289,7 @@ describe('MatchSyncService', () => {
       // But SHOULD still set reminderSentAt to prevent future checks
       expect(mockPrisma.match.update).toHaveBeenCalledWith({
         where: { id: 'match-reminder-1' },
-        data: { reminderSentAt: expect.any(Date) },
+        data: { reminderSentAt: expect.any(Date) as unknown as Date },
       });
     });
 
@@ -1305,7 +1305,7 @@ describe('MatchSyncService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             reminderSentAt: null,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -1323,7 +1323,7 @@ describe('MatchSyncService', () => {
             status: 'SCHEDULED',
             scheduledAt: { lte: expectedWindowEnd },
             reminderSentAt: null,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -1401,7 +1401,7 @@ describe('MatchSyncService', () => {
       expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
       expect(mockPrisma.match.update).toHaveBeenCalledWith({
         where: { id: 'match-success' },
-        data: { reminderSentAt: expect.any(Date) },
+        data: { reminderSentAt: expect.any(Date) as unknown as Date },
       });
     });
 

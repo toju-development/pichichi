@@ -372,7 +372,9 @@ describe('ScoringService', () => {
 
       // $transaction should be called with an array of updateMany promises
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
-      const transactionArg = mockPrisma.$transaction.mock.calls[0][0];
+      const transactionArg = (
+        mockPrisma.$transaction.mock.calls as unknown[][]
+      )[0][0] as unknown[];
       // 4 predictions mapped to 4 different point types → 4 groups
       expect(transactionArg).toHaveLength(4);
     });
@@ -404,7 +406,9 @@ describe('ScoringService', () => {
       await service.calculatePointsForMatch(matchId);
 
       // 2 EXACT predictions → 1 group
-      const transactionArg = mockPrisma.$transaction.mock.calls[0][0];
+      const transactionArg = (
+        mockPrisma.$transaction.mock.calls as unknown[][]
+      )[0][0] as unknown[];
       expect(transactionArg).toHaveLength(1);
     });
 
@@ -428,7 +432,9 @@ describe('ScoringService', () => {
       await service.calculatePointsForMatch(matchId);
 
       expect(mockCache.mdel).toHaveBeenCalledTimes(1);
-      const deletedKeys = mockCache.mdel.mock.calls[0][0] as string[];
+      const deletedKeys = (
+        mockCache.mdel.mock.calls as unknown[][]
+      )[0][0] as string[];
 
       // 2 groups × 3 key patterns = 6 keys + 1 global key = 7 keys
       expect(deletedKeys).toHaveLength(7);
@@ -524,7 +530,9 @@ describe('ScoringService', () => {
       expect(mockEventsGateway.emitMatchUpdated).toHaveBeenCalledWith(matchId);
       // Global cache is always invalidated, even with no group-specific predictions
       expect(mockCache.mdel).toHaveBeenCalledTimes(1);
-      const deletedKeys = mockCache.mdel.mock.calls[0][0] as string[];
+      const deletedKeys = (
+        mockCache.mdel.mock.calls as unknown[][]
+      )[0][0] as string[];
       expect(deletedKeys).toEqual(['lb:global:all']);
       // No predictions → no notifications
       expect(mockNotificationsService.createMany).not.toHaveBeenCalled();
@@ -547,8 +555,15 @@ describe('ScoringService', () => {
         await new Promise((resolve) => setImmediate(resolve));
 
         expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
-        const notifications =
-          mockNotificationsService.createMany.mock.calls[0][0];
+        const notifications = (
+          mockNotificationsService.createMany.mock.calls as unknown[][]
+        )[0][0] as Array<{
+          userId: string;
+          type: string;
+          title: string;
+          body: string;
+          data: unknown;
+        }>;
         expect(notifications).toHaveLength(4); // 4 unique users
         expect(notifications[0]).toEqual({
           userId: 'user-1',
@@ -598,8 +613,15 @@ describe('ScoringService', () => {
         await new Promise((resolve) => setImmediate(resolve));
 
         expect(mockNotificationsService.createMany).toHaveBeenCalledTimes(1);
-        const notifications =
-          mockNotificationsService.createMany.mock.calls[0][0];
+        const notifications = (
+          mockNotificationsService.createMany.mock.calls as unknown[][]
+        )[0][0] as Array<{
+          userId: string;
+          type: string;
+          title: string;
+          body: string;
+          data: unknown;
+        }>;
         // ONE notification for user-1, not 3
         expect(notifications).toHaveLength(1);
         expect(notifications[0]).toEqual({
