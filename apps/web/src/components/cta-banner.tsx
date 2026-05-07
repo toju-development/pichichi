@@ -32,18 +32,20 @@ export function CtaBanner() {
 
         {/* Store buttons */}
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <div
-            aria-disabled="true"
-            className="inline-flex cursor-not-allowed items-center gap-3 rounded-xl bg-white/90 px-6 py-4 text-sm font-semibold text-primary-dark opacity-80 shadow-xl shadow-primary-dark/30"
+          <a
+            href="https://play.google.com/store/apps/details?id=com.pichichi.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 rounded-xl bg-white/90 px-6 py-4 text-sm font-semibold text-primary-dark shadow-xl shadow-primary-dark/30 transition-all hover:bg-white hover:shadow-2xl hover:shadow-primary-dark/40"
           >
             <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 20.5v-17c0-.59.34-1.11.84-1.35L13.69 12l-9.85 9.85c-.5-.24-.84-.76-.84-1.35m13.81-5.38L6.05 21.34l8.49-8.49 2.27 2.27m3.35-4.31c.34.27.56.69.56 1.19s-.22.92-.57 1.19l-1.96 1.12-2.5-2.5 2.5-2.5 1.97 1.5M6.05 2.66l10.76 6.22-2.27 2.27L6.05 2.66z" />
             </svg>
             <div className="text-left">
-              <p className="text-[10px] leading-none text-text-secondary">Próximamente en</p>
+              <p className="text-[10px] leading-none text-text-secondary">Disponible en</p>
               <p className="text-base font-bold leading-tight">Google Play</p>
             </div>
-          </div>
+          </a>
         </div>
       </div>
     </section>

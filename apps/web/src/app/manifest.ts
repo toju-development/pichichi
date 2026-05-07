@@ -1,16 +1,15 @@
 import type { MetadataRoute } from "next";
 
 /**
- * Web App Manifest del PWA Pichichi.
+ * Web App Manifest de la landing pública de Pichichi.
  *
  * Next 16: archivo `app/manifest.ts` con default export que retorna
  * `MetadataRoute.Manifest`. Servido en `/manifest.webmanifest`.
  *
- * Decisiones (Spec web-pwa, Design §0/§9, paridad mobile):
- *   - `start_url` y `scope` en `/app` para que el shell instalado abra en el
- *     PWA autenticado, NO en la landing.
- *   - `display: "standalone"` — sin chrome del browser, paridad app nativa.
- *   - `orientation: "portrait"` — paridad mobile.
+ * Notas:
+ *   - `start_url` y `scope` apuntan a la home (`/`). La app interactiva vive en
+ *     mobile (Android primero); el sitio web es solo landing/marketing.
+ *   - `display: "browser"` — esto es un sitio, no un PWA instalable.
  *   - Colores extraídos de los CSS tokens (`apps/web/src/app/globals.css`):
  *       background_color = --color-bg          → #F0FAF4
  *       theme_color      = --color-primary     → #0B6E4F
@@ -22,10 +21,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Pichichi",
     description:
       "Armá tu prode, predecí los scores y ganale a tus amigos. El prode de fútbol más completo.",
-    start_url: "/app",
-    scope: "/app",
-    display: "standalone",
-    orientation: "portrait",
+    start_url: "/",
+    scope: "/",
+    display: "browser",
     background_color: "#F0FAF4",
     theme_color: "#0B6E4F",
     icons: [
