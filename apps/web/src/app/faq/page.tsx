@@ -58,7 +58,7 @@ const FAQ_SECTIONS = [
       {
         question: "¿Es gratis?",
         answer:
-          "Sí, Pichichi es completamente gratis. Podés crear hasta 3 grupos, unirte a hasta 5 grupos de otros, tener hasta 10 miembros por grupo y participar en hasta 2 torneos por grupo — todo sin pagar nada ni dar datos de tarjeta.",
+          "Sí, Pichichi es completamente gratis. Podés crear hasta 1 grupo, unirte a hasta 3 grupos de otros, tener hasta 5 miembros por grupo y participar en hasta 1 torneo por grupo — todo sin pagar nada ni dar datos de tarjeta.",
       },
     ],
   },
@@ -80,12 +80,12 @@ const FAQ_SECTIONS = [
       {
         question: "¿Cuántos grupos puedo tener?",
         answer:
-          "Con el plan gratuito podés crear hasta 3 grupos propios y unirte como miembro a hasta 5 grupos creados por otros. O sea, podés estar activo en hasta 8 grupos en simultáneo.",
+          "Con el plan gratuito podés crear hasta 1 grupo propio y unirte como miembro a hasta 3 grupos creados por otros. O sea, podés estar activo en hasta 3 grupos en simultáneo.",
       },
       {
         question: "¿Cuántos miembros puede tener un grupo?",
         answer:
-          "Cada grupo puede tener hasta 10 miembros en el plan gratuito. El ranking del grupo muestra la posición de cada uno en tiempo real.",
+          "Cada grupo puede tener hasta 5 miembros en el plan gratuito. El ranking del grupo muestra la posición de cada uno en tiempo real.",
       },
     ],
   },
